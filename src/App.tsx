@@ -1,12 +1,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CartProvider } from "@/context/cart";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-
+import { store } from "./redux/store";
+import { Provider } from "react-redux";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RecoverPasswordPage from "./pages/auth/RecoverPasswordPage";
@@ -35,10 +35,9 @@ import PaymentPage from "./pages/enrichmentStore/payment";
 import MyOrdersPage from "./pages/myOrders";
 import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
 
-const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <Provider store={store}>
     <CartProvider>
       <TooltipProvider>
         <Toaster />
@@ -83,7 +82,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </CartProvider>
-  </QueryClientProvider>
+    </Provider>
 );
 
 export default App;

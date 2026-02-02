@@ -1,8 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, GraduationCap, User, Users } from "lucide-react";
 import { toast } from "sonner";
-
 import AuthLayout from "@/components/layout/AuthLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
+import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
+import { useDispatch } from "react-redux";
+import { addUser } from "@/redux/services/Slices/userSlice";
 
 const roleCards = [
   { key: "admin", label: "Admin", icon: User },
@@ -20,10 +22,36 @@ const roleCards = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [login, { isLoading }] = useLoginMutation();
+  const dispatch = useDispatch();
+
+  // Add state for email and password only
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     document.title = "Sign In • iFuntology Teacher";
   }, []);
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res: any = await login({ email, password, role: "teacher" }).unwrap();
+      if (res?.status) {
+        toast.success("Signed in successfully");
+        dispatch(addUser({ user: res?.data?.user, token: res?.data?.accessToken }));
+        navigate("/dashboard");
+      }
+      else {
+        toast.error(res?.message || "Something went wrong");
+      }
+    } catch (err: any) {
+      console.log("error----", err);
+      let message = err?.data?.message || err?.message;
+      toast.error(message || "Login failed");
+    }
+  };
 
   return (
     <AuthLayout>
@@ -69,60 +97,32 @@ export default function LoginPage() {
         <Card className="surface-glass w-full rounded-3xl border border-border/60 p-6 shadow-elev sm:p-8">
           <h2 className="text-4xl font-extrabold tracking-tight text-primary">Sign In</h2>
           <p className="mt-2 text-sm text-muted-foreground">Access your personalized dashboard.</p>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            {roleCards.map((r) => {
-              const featured = r.key === "teacher";
-              return (
-              <button
-                key={r.key}
-                type="button"
-                className={
-                  "group flex items-center justify-center gap-2 rounded-2xl border border-border/60 px-3 py-4 text-sm font-semibold transition hover:border-border hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                }
-                onClick={() => toast.message(`${r.label} selected`)}
-              >
-                <r.icon className={featured ? "text-primary" : "text-muted-foreground"} />
-                <span className={featured ? "text-foreground" : "text-foreground/90"}>{r.label}</span>
-              </button>
-              );
-            })}
-          </div>
-
           <form
             className="mt-6 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              toast.success("Signed in (demo)");
-              navigate("/dashboard");
-            }}
+            onSubmit={handleSubmit}
           >
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
               <div className="relative">
-                <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full" />
+                <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
-              <PasswordField id="password" required placeholder="••••••••" />
+              <PasswordField id="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-
             <div className="flex items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Checkbox id="remember" />
+                <Checkbox id="remember" disabled={isLoading} />
                 Remember Me
               </label>
               <Link to="/forgot-password" className="text-sm text-accent hover:underline">
                 Forgot Password
               </Link>
             </div>
-
-            <Button type="submit" variant="brand" size="pill" className="w-full">
-              Sign In
+            <Button type="submit" variant="brand" size="pill" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
-
             <p className="text-center text-sm text-muted-foreground">
               Don’t have an account?{" "}
               <Link to="/sign-up" className="text-accent hover:underline">
