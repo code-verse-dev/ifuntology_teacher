@@ -12,8 +12,8 @@ export default function DashboardWithSidebarLayout({ children }: { children: Rea
         <div className="min-h-screen w-full">
           <DashboardSidebar />
     <SidebarInset>
-              <Topbar showSidebarTrigger />
-              <div className="mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6">
+              <Topbar />
+              <div className="min-h-[calc(100vh-3.5rem)] w-full bg-[#f4f3e2] px-4 pb-10 sm:px-6">
                 <main className="w-full py-8">{children}</main>
               </div>
             </SidebarInset>

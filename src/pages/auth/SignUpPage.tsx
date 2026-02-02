@@ -4,7 +4,6 @@ import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 
 import AuthLayout from "@/components/layout/AuthLayout";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +20,16 @@ export default function SignUpPage() {
   return (
     <AuthLayout>
       <section className="mx-auto w-full max-w-4xl">
-        <Card className="surface-glass rounded-3xl border border-border/60 p-6 shadow-elev sm:p-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-primary">Sign Up</h1>
-          <p className="mt-2 text-base text-foreground/90">Begin Your Funtology Journey Now!</p>
+        <div className="surface-glass min-h-[560px] rounded-2xl border border-border/60 p-8 shadow-elev backdrop-blur-xl">
+          <h1 className="text-3xl font-medium tracking-tight text-gradient-count-down sm:text-4xl">
+            Sign Up
+          </h1>
+          <p className="mt-3 text-sm text-foreground">
+            Begin Your Funtology Journey Now!
+          </p>
 
           <form
-            className="mt-8 space-y-7"
+            className="mx-auto mt-8  space-y-8"
             onSubmit={(e) => {
               e.preventDefault();
               toast.success("Account created (demo)");
@@ -34,82 +37,133 @@ export default function SignUpPage() {
             }}
           >
             <div>
-              <div className="text-sm font-semibold">Personal Information</div>
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="first">First Name *</Label>
+              <div className="text-sm font-medium text-foreground">Personal Information</div>
+              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="space-y-3">
+                  <Label htmlFor="first" className="text-sm font-normal text-foreground">
+                    First Name <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="first" required placeholder="Enter Name" className="h-11 rounded-full pl-10" />
+                    <Input
+                      id="first"
+                      required
+                      placeholder="Enter Name"
+                      className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last">Last Name *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="last" className="text-sm font-normal text-foreground">
+                    Last Name <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="last" required placeholder="Enter Name" className="h-11 rounded-full pl-10" />
+                    <Input
+                      id="last"
+                      required
+                      placeholder="Enter Name"
+                      className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-sm font-normal text-foreground">
+                    Email Address <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full pl-10" />
+                    <Input
+                      id="email"
+                      type="email"
+                      required
+                      placeholder="your@email.com"
+                      className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="pw">Password *</Label>
+              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="space-y-3">
+                  <Label htmlFor="pw" className="text-sm font-normal text-foreground">
+                    Password <span className="text-accent">*</span>
+                  </Label>
                   <PasswordField id="pw" required placeholder="••••••••" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pw2">Confirm Password *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="pw2" className="text-sm font-normal text-foreground">
+                    Confirm Password <span className="text-accent">*</span>
+                  </Label>
                   <PasswordField id="pw2" required placeholder="••••••••" />
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="text-sm font-semibold">Organization Information</div>
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="org">Organization / School Name *</Label>
-                  <Input id="org" required placeholder="Enter Name" className="h-11 rounded-full" />
+              <div className="text-sm font-medium text-foreground">Organization Information</div>
+              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="org" className="text-sm font-normal text-foreground">
+                    Organization / School Name <span className="text-accent">*</span>
+                  </Label>
+                  <Input
+                    id="org"
+                    required
+                    placeholder="Enter Name"
+                    className="h-11 rounded-full border-border/80 bg-background/80"
+                  />
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="country">Country *</Label>
-                  <Input id="country" required placeholder="Enter Name" className="h-11 rounded-full" />
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="country" className="text-sm font-normal text-foreground">
+                    Country <span className="text-accent">*</span>
+                  </Label>
+                  <Input
+                    id="country"
+                    required
+                    placeholder="Enter Name"
+                    className="h-11 rounded-full border-border/80 bg-background/80"
+                  />
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="phone">Phone Number (optional)</Label>
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="phone" className="text-sm font-normal text-foreground">
+                    Phone Number (optional)
+                  </Label>
                   <div className="relative">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="phone" placeholder="+1 555 000 0000" className="h-11 rounded-full pl-10" />
+                    <Input
+                      id="phone"
+                      placeholder="+1 555 000 0000"
+                      className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
               <Checkbox required />
-              I Agree to the <span className="text-accent">Privacy Policy</span> &amp; <span className="text-accent">Terms</span>.
+              I Agree to the <Link to="#" className="font-medium text-accent hover:underline">Privacy Policy</Link> &amp;{" "}
+              <Link to="#" className="font-medium text-accent hover:underline">Terms &amp; Conditions</Link>.
             </label>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Button type="submit" variant="brand" size="pill" className="w-full sm:w-auto">
+            <div className="flex flex-col items-start gap-4 pt-2">
+              <Button
+                type="submit"
+                size="pill"
+                className="bg-gradient-count-down text-white shadow-elev hover:opacity-95"
+              >
                 Create Teacher Account
               </Button>
-              <div className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground">
                 Already Have An Account?{" "}
-                <Link to="/login" className="text-accent hover:underline">
+                <Link to="/login" className="font-medium text-accent hover:underline">
                   Login
                 </Link>
-              </div>
+              </p>
             </div>
           </form>
-        </Card>
+        </div>
       </section>
     </AuthLayout>
   );

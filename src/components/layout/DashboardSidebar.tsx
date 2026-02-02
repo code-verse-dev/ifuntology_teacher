@@ -43,7 +43,7 @@ function MenuLink({ item }: { item: Item }) {
           to={item.url}
           end
           className="w-full"
-          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-normal"
         >
           <item.icon className="h-4 w-4" />
           {!collapsed && <span>{item.title}</span>}
@@ -86,7 +86,7 @@ export default function DashboardSidebar() {
         <div
           className="overflow-hidden rounded-2xl border-sidebar-border p-2">
           <div className="px-1">
-            <IfuntologyMark />
+            <IfuntologyMark logoOnly size="medium" />
           </div>
         </div>
       </SidebarHeader>

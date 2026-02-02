@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -9,8 +9,65 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  :root {
-    /* iFuntology Teacher — dark, glassy dashboard theme */
+  /* Light mode — default when .dark is not on <html> */
+  :root,
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 214 32% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 214 32% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 32% 12%;
+
+    /* brand green */
+    --primary: 84 72% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 20% 94%;
+    --secondary-foreground: 214 32% 12%;
+
+    --muted: 214 20% 94%;
+    --muted-foreground: 214 16% 45%;
+
+    /* warm orange accent */
+    --accent: 24 92% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 74% 54%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 84 72% 44%;
+
+    --radius: 0.5rem;
+
+    --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+      "Apple Color Emoji", "Segoe UI Emoji";
+
+    --gradient-app: radial-gradient(900px 550px at 15% 15%, hsl(200 60% 95% / 0.6), transparent 55%),
+      radial-gradient(900px 550px at 85% 75%, hsl(84 72% 90% / 0.3), transparent 60%),
+      linear-gradient(180deg, hsl(0 0% 98%), hsl(214 20% 96%));
+    --gradient-brand: linear-gradient(180deg, hsl(84 72% 50%), hsl(84 72% 38%));
+    --gradient-accent: linear-gradient(180deg, hsl(24 92% 56%), hsl(14 92% 46%));
+    --shadow-elev: 0 20px 60px -30px hsl(214 32% 12% / 0.12);
+    --shadow-glow: 0 0 0 1px hsl(214 32% 12% / 0.06), 0 18px 60px -40px hsl(84 72% 44% / 0.2);
+
+    /* Sidebar: deep slate blue (dashboard header color) */
+    --sidebar-background: 218 26% 14%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 84 72% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 218 22% 20%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 218 20% 24%;
+    --sidebar-ring: 84 72% 44%;
+  }
+
+  /* Dark mode — applied when .dark is on <html> */
+  .dark {
     --background: 214 50% 6%;
     --foreground: 210 40% 98%;
 
@@ -20,7 +77,6 @@ All colors MUST be HSL.
     --popover: 215 40% 11%;
     --popover-foreground: 210 40% 98%;
 
-    /* brand green */
     --primary: 84 72% 44%;
     --primary-foreground: 214 50% 6%;
 
@@ -30,7 +86,6 @@ All colors MUST be HSL.
     --muted: 215 34% 16%;
     --muted-foreground: 215 18% 70%;
 
-    /* warm orange accent (for secondary CTA) */
     --accent: 24 92% 52%;
     --accent-foreground: 214 50% 6%;
 
@@ -40,11 +95,6 @@ All colors MUST be HSL.
     --border: 215 24% 22%;
     --input: 215 24% 22%;
     --ring: 84 72% 44%;
-
-    --radius: 0.5rem;
-
-    --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
-      "Apple Color Emoji", "Segoe UI Emoji";
 
     --gradient-app: radial-gradient(900px 550px at 15% 15%, hsl(200 75% 20% / 0.45), transparent 55%),
       radial-gradient(900px 550px at 85% 75%, hsl(300 75% 20% / 0.25), transparent 60%),
@@ -54,45 +104,14 @@ All colors MUST be HSL.
     --shadow-elev: 0 20px 60px -30px hsl(215 80% 2% / 0.85);
     --shadow-glow: 0 0 0 1px hsl(210 40% 98% / 0.06), 0 18px 60px -40px hsl(84 72% 44% / 0.35);
 
-    /* sidebar (match app's dark glass style) */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+    /* Sidebar: deep slate blue (dashboard header color) */
+    --sidebar-background: 218 26% 14%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    /* kept for compatibility; app uses dark tokens by default */
-    --background: 214 50% 6%;
-    --foreground: 210 40% 98%;
-    --card: 215 40% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 215 40% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 84 72% 44%;
-    --primary-foreground: 214 50% 6%;
-    --secondary: 215 34% 16%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 215 34% 16%;
-    --muted-foreground: 215 18% 70%;
-    --accent: 24 92% 52%;
-    --accent-foreground: 214 50% 6%;
-    --destructive: 0 74% 54%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 24% 22%;
-    --input: 215 24% 22%;
-    --ring: 84 72% 44%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 218 22% 20%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 218 20% 24%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
@@ -126,6 +145,18 @@ All colors MUST be HSL.
     background-color: hsl(var(--card));
   }
 
+  /* Sidebar linear gradient (#040C15 → #0B1B2C → #040C15) — always dark in both themes */
+  .bg-sidebar-gradient {
+    background: linear-gradient(to bottom, #040C15, #0B1B2C, #040C15);
+    color-scheme: dark;
+    color: hsl(210 40% 98%);
+  }
+
+  /* Selected sidebar item: left border #7EC844 (active state comes from NavLink class, not data-active) */
+  [data-sidebar="menu-button"].bg-sidebar-accent {
+    border-left: 2px solid #7EC844;
+  }
+
   /* Active / accent background for sidebar menu (uses brand gradient + radial) */
   .bg-sidebar-accent {
     background: linear-gradient(100deg, hsl(var(--primary) / 0.38), hsl(var(--primary) / 0.18)), radial-gradient(520px 320px at 88% 40%, hsl(var(--primary) / 0.28), transparent 60%);
@@ -139,5 +170,53 @@ All colors MUST be HSL.
 
   .shadow-elev {
     box-shadow: var(--shadow-elev);
+  }
+
+  /* Count numbers gradient (brand green progression) */
+  .text-gradient-count {
+    background: linear-gradient(to right, #97BE0E, #8DBA10, #73B016, #49A11F, #0E8B2D, #08892F);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Same gradient as background (e.g. for buttons) */
+  .bg-gradient-count {
+    background: linear-gradient(to right, #97BE0E, #8DBA10, #73B016, #49A11F, #0E8B2D, #08892F);
+  }
+
+  /* Gradient down (top to bottom) — text */
+  .text-gradient-count-down {
+    background: linear-gradient(to bottom, #97BE0E, #8DBA10, #73B016, #49A11F, #0E8B2D, #08892F);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Gradient down (top to bottom) — background */
+  .bg-gradient-count-down {
+    background: linear-gradient(to bottom, #97BE0E, #8DBA10, #73B016, #49A11F, #0E8B2D, #08892F);
+  }
+
+  /* Dashboard header: blue linear gradient (left → right, design spec colors) */
+  .bg-dashboard-header {
+    background: linear-gradient(
+      to right,
+      #10355c,
+      #3773b3,
+      #3671b0,
+      #214873,
+      #122b46,
+      #09192b,
+      #061321
+    );
+  }
+
+  /* Shadow for stat card icon circles (header circles) */
+  .shadow-icon-circle {
+    box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.15), 0 2px 6px -2px rgba(0, 0, 0, 0.08);
+  }
+  .dark .shadow-icon-circle {
+    box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -2px rgba(0, 0, 0, 0.25);
   }
 }
