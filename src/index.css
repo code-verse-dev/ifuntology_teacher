@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* iFuntology Teacher — dark, glassy dashboard theme */
+    --background: 214 50% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 40% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 40% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    /* brand green */
+    --primary: 84 72% 44%;
+    --primary-foreground: 214 50% 6%;
+
+    --secondary: 215 34% 16%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 34% 16%;
+    --muted-foreground: 215 18% 70%;
+
+    /* warm orange accent (for secondary CTA) */
+    --accent: 24 92% 52%;
+    --accent-foreground: 214 50% 6%;
+
+    --destructive: 0 74% 54%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 24% 22%;
+    --input: 215 24% 22%;
+    --ring: 84 72% 44%;
+
+    --radius: 0.5rem;
+
+    --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+      "Apple Color Emoji", "Segoe UI Emoji";
+
+    --gradient-app: radial-gradient(900px 550px at 15% 15%, hsl(200 75% 20% / 0.45), transparent 55%),
+      radial-gradient(900px 550px at 85% 75%, hsl(300 75% 20% / 0.25), transparent 60%),
+      linear-gradient(180deg, hsl(214 50% 6%), hsl(214 50% 5%));
+    --gradient-brand: linear-gradient(180deg, hsl(84 72% 50%), hsl(84 72% 38%));
+    --gradient-accent: linear-gradient(180deg, hsl(24 92% 56%), hsl(14 92% 46%));
+    --shadow-elev: 0 20px 60px -30px hsl(215 80% 2% / 0.85);
+    --shadow-glow: 0 0 0 1px hsl(210 40% 98% / 0.06), 0 18px 60px -40px hsl(84 72% 44% / 0.35);
+
+    /* sidebar (match app's dark glass style) */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* kept for compatibility; app uses dark tokens by default */
+    --background: 214 50% 6%;
+    --foreground: 210 40% 98%;
+    --card: 215 40% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 215 40% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 84 72% 44%;
+    --primary-foreground: 214 50% 6%;
+    --secondary: 215 34% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 215 34% 16%;
+    --muted-foreground: 215 18% 70%;
+    --accent: 24 92% 52%;
+    --accent-foreground: 214 50% 6%;
+    --destructive: 0 74% 54%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 24% 22%;
+    --input: 215 24% 22%;
+    --ring: 84 72% 44%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .bg-app {
+    background-image: var(--gradient-app);
+  }
+
+  .bg-brand-gradient {
+    background-image: var(--gradient-brand);
+  }
+
+  .bg-accent-gradient {
+    background-image: var(--gradient-accent);
+  }
+
+  /* Sidebar background should use the card color to match the design */
+  .bg-sidebar {
+    background-color: hsl(var(--card));
+  }
+
+  /* Active / accent background for sidebar menu (uses brand gradient + radial) */
+  .bg-sidebar-accent {
+    background: linear-gradient(100deg, hsl(var(--primary) / 0.38), hsl(var(--primary) / 0.18)), radial-gradient(520px 320px at 88% 40%, hsl(var(--primary) / 0.28), transparent 60%);
+  }
+
+  .surface-glass {
+    box-shadow: var(--shadow-glow);
+    backdrop-filter: blur(14px);
+    background-color: hsl(var(--card) / 0.72);
+  }
+
+  .shadow-elev {
+    box-shadow: var(--shadow-elev);
+  }
+}

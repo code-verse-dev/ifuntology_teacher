@@ -1,0 +1,79 @@
+/* Custom overrides for react-big-calendar to match the design */
+
+.rbc-calendar {
+  font-family: var(--font-sans);
+  color: hsl(var(--foreground));
+}
+
+.rbc-month-view {
+  border: none;
+  border-top: 1px solid hsl(var(--border) / 0.6);
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+.rbc-header {
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+  border-left: none; /* remove double borders */
+  padding: 10px 0;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+.rbc-day-bg {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+.rbc-day-bg + .rbc-day-bg {
+    border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+.rbc-month-row {
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+}
+
+.rbc-date-cell {
+  padding: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: hsl(var(--foreground) / 0.7);
+  text-align: left; /* Align date to left as per design? Screenshot shows left alignment */
+}
+
+/* Event Styling */
+.rbc-event {
+  background-color: transparent !important; /* Remove default blue background */
+  border: none !important;
+  padding: 0 !important;
+  outline: none !important;
+  margin: 2px 0 !important;
+}
+
+.rbc-event:focus {
+  outline: none;
+}
+
+/* Selected state or today state */
+.rbc-today {
+  background-color: transparent; /* let our custom coloring handle it, or use a specific color */
+}
+
+.rbc-off-range-bg {
+  background-color: hsl(var(--muted) / 0.3); /* dark theme off-range */
+}
+
+/* Hide the "Show more" link if we want all events or handle it gracefully */
+.rbc-show-more {
+  color: hsl(var(--primary));
+  font-size: 0.8rem;
+  padding: 4px;
+}
+
+/* Adjust grid lines context for Dark Mode */
+.dark .rbc-month-view, .dark .rbc-header, .dark .rbc-day-bg, .dark .rbc-month-row {
+    border-color: hsl(var(--border) / 0.4);
+}
