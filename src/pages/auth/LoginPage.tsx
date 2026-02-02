@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
-import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
+import { useForgetPasswordMutation, useLoginMutation } from "@/redux/services/apiSlices/authSlice";
 import { useDispatch } from "react-redux";
 import { addUser } from "@/redux/services/Slices/userSlice";
 
@@ -24,6 +24,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useDispatch();
+
+
 
   // Add state for email and password only
   const [email, setEmail] = useState("");
@@ -40,7 +42,7 @@ export default function LoginPage() {
       const res: any = await login({ email, password, role: "teacher" }).unwrap();
       if (res?.status) {
         toast.success("Signed in successfully");
-        dispatch(addUser({ user: res?.data?.user, token: res?.data?.accessToken }));
+        dispatch(addUser({ user: res?.data?.user }));
         navigate("/dashboard");
       }
       else {

@@ -16,6 +16,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLogoutMutation } from "@/redux/services/apiSlices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { removeUser } from "@/redux/services/Slices/userSlice";
+import { RootState } from "@/redux/store";
 
 export default function Topbar({
   userName = "Tom Felix",
@@ -27,9 +31,14 @@ export default function Topbar({
   showSidebarTrigger?: boolean;
 }) {
   const navigate = useNavigate();
+  const [logout] = useLogoutMutation();
+  const user = useSelector((state: RootState) => state.user.userData);
 
-  const onLogout = () => {
-    toast.message("Logged out (demo)");
+  const dispatch = useDispatch();
+
+  const onLogout = async() => {
+    const res = await logout().unwrap();
+    dispatch(removeUser());
     navigate("/login", { replace: true });
   };
 
@@ -120,7 +129,7 @@ export default function Topbar({
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={onLogout} className="flex items-center gap-2">
+              <DropdownMenuItem onSelect={onLogout} className="flex items-center gap-2 cursor-pointer">
                 <LogOut className="h-4 w-4" />
                 Logout
               </DropdownMenuItem>

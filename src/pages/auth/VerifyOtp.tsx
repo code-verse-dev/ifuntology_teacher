@@ -6,43 +6,40 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import PasswordField from "@/components/inputs/PasswordField";
-import { useResetPasswordMutation } from "@/redux/services/apiSlices/authSlice";
+import { useVerifyOtpMutation } from "@/redux/services/apiSlices/authSlice";
 
 export default function RecoverPasswordPage() {
   const navigate = useNavigate();
-  const [resetPassword] = useResetPasswordMutation();
   const location = useLocation();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const { email, code } = location.state;
+  const email = location.state?.email;
+  const [code, setCode] = useState("");
+  const [verifyOtp] = useVerifyOtpMutation();
 
   useEffect(() => {
     document.title = "Recover Password • iFuntology Teacher";
   }, []);
 
   useEffect(() => {
-    if(!email || !code) {
+    if (!email) {
       navigate(-1);
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
     try {
-      const res: any = await resetPassword({ email, code, password, type: "teacher" }).unwrap();
+      e.preventDefault();
+      const res: any = await verifyOtp({ email: email, code }).unwrap();
       if (res?.status) {
-        toast.success("Password reset successfully");
-        navigate("/login");
+        toast.success("verification successful");
+        navigate("/recover-password", { state: { email, code } });
+      } else {
+        toast.error(res?.message || "Something went wrong");
       }
     } catch (err) {
       console.log("err", err);
-      toast.error("Failed to reset password");
+      toast.error(err?.data?.message || "Failed to verify otp");
     }
-  }
+  };
 
   return (
     <AuthLayout>
@@ -52,24 +49,28 @@ export default function RecoverPasswordPage() {
             Recover Password
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Create a new password for your account.
+            Enter the 4-digit OTP sent to your email.
           </p>
 
-          <form
-            className="mt-6 space-y-5"
-            onSubmit={handleSubmit}
-          >
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <PasswordField id="password" required placeholder="••••••••" onChange={
-                (e) => setPassword(e.target.value)
-              }/>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm">Confirm Password *</Label>
-              <PasswordField id="confirm" required placeholder="••••••••" onChange={
-                (e) => setConfirmPassword(e.target.value)
-              } />
+              <Label htmlFor="otp">OTP *</Label>
+              <input
+                id="otp"
+                type="text"
+                inputMode="numeric"
+                // pattern="\\d{4}"
+                maxLength={4}
+                minLength={4}
+                required
+                className="h-11 w-full !text-black rounded-full border px-4 text-center text-lg tracking-widest"
+                placeholder="0000"
+                value={code}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                  setCode(val);
+                }}
+              />
             </div>
 
             <Button
@@ -83,7 +84,7 @@ export default function RecoverPasswordPage() {
 
             <div className="text-center">
               <Link to="/login" className="text-sm text-accent hover:underline">
-                 Back to Login
+                ← Back to Login
               </Link>
             </div>
           </form>

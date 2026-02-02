@@ -10,6 +10,7 @@ import { Provider } from "react-redux";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RecoverPasswordPage from "./pages/auth/RecoverPasswordPage";
+import VerifyOtp from "./pages/auth/VerifyOtp";
 import SignUpPage from "./pages/auth/SignUpPage";
 
 import DashboardWelcomePage from "./pages/dashboard/DashboardWelcomePage";
@@ -34,7 +35,7 @@ import CheckoutPage from "./pages/enrichmentStore/checkout";
 import PaymentPage from "./pages/enrichmentStore/payment";
 import MyOrdersPage from "./pages/myOrders";
 import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
-
+import ProtectedRoute from "./pages/protectedRoute";
 
 const App = () => (
   <Provider store={store}>
@@ -48,9 +49,17 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/recover-password" element={<RecoverPasswordPage />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/sign-up" element={<SignUpPage />} />
 
-            <Route path="/dashboard" element={<DashboardHomePage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardHomePage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/welcome" element={<DashboardWelcomePage />} />
             <Route path="/book-session" element={<BookSessionPage />} />
             <Route path="/session-booked" element={<SessionBookedPage />} />
@@ -60,29 +69,46 @@ const App = () => (
             <Route path="/quotes" element={<QutationTracking />} />
             <Route path="/quotes/request" element={<RequestQuotation />} />
             <Route path="/purchase-orders" element={<PurchaseOrder />} />
-            <Route path="/purchase-orders/:id" element={<PurchaseOrderDetails />} />
+            <Route
+              path="/purchase-orders/:id"
+              element={<PurchaseOrderDetails />}
+            />
             <Route path="/enrichment-store" element={<EnrichmentStore />} />
             <Route path="/cart" element={<CartPage />} />
-            <Route path="/enrichment-store/product/:id" element={<ProductDetails />} />
-            <Route path="/enrichment-store/checkout" element={<CheckoutPage />} />
+            <Route
+              path="/enrichment-store/product/:id"
+              element={<ProductDetails />}
+            />
+            <Route
+              path="/enrichment-store/checkout"
+              element={<CheckoutPage />}
+            />
             <Route path="/enrichment-store/payment" element={<PaymentPage />} />
             <Route path="/my-orders" element={<MyOrdersPage />} />
             <Route path="/my-orders/:id" element={<MyOrderDetails />} />
 
-
             <Route path="/invite-student" element={<InviteStudent />} />
 
             <Route path="/quotes/lms" element={<QuoteLmsPage />} />
-            <Route path="/quotes/write-to-read" element={<QuoteWriteToReadPage />} />
-            <Route path="/quotes/enrichment-store" element={<QuoteEnrichmentStorePage />} />
-            <Route path="/quotation-document" element={<QuotationDocumentPage />} />
+            <Route
+              path="/quotes/write-to-read"
+              element={<QuoteWriteToReadPage />}
+            />
+            <Route
+              path="/quotes/enrichment-store"
+              element={<QuoteEnrichmentStorePage />}
+            />
+            <Route
+              path="/quotation-document"
+              element={<QuotationDocumentPage />}
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </CartProvider>
-    </Provider>
+  </Provider>
 );
 
 export default App;

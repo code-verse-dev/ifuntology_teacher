@@ -22,6 +22,13 @@ export const authSlice = createApi({
       }),
     }),
 
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: "/user/logout",
+        method: "POST",
+      }),
+    }),
+
     forgetPassword: builder.mutation<any, { data: any }>({
       query: ({ data }) => ({
         url: "/reset/sendVerificationCode",
@@ -56,4 +63,5 @@ export const {
   useForgetPasswordMutation,
   useVerifyOtpMutation,
   useResetPasswordMutation,
+  useLogoutMutation,
 } = authSlice;
