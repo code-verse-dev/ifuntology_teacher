@@ -141,3 +141,10 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-elev);
   }
 }
+
+.ant-pagination li{
+  background-color: #fff;
+}
+.ant-pagination li a{
+  color: #000 !important;
+}

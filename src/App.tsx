@@ -73,7 +73,14 @@ const App = () => (
               path="/purchase-orders/:id"
               element={<PurchaseOrderDetails />}
             />
-            <Route path="/enrichment-store" element={<EnrichmentStore />} />
+            <Route
+              path="/enrichment-store"
+              element={
+                <ProtectedRoute>
+                  <EnrichmentStore />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/cart" element={<CartPage />} />
             <Route
               path="/enrichment-store/product/:id"
