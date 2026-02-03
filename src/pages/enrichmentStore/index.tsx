@@ -11,13 +11,16 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { useCart } from "@/context/cart.store";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
 import { useNavigate } from "react-router-dom";
-import { ImageUrl } from "@/utils/Functions";
+import { buildCartItems, ImageUrl } from "@/utils/Functions";
 import { Link } from "react-router-dom";
 import { useGetProductsQuery as useGetCategoryProductsQuery } from "@/redux/services/apiSlices/categorySlice";
 import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
+import {
+  useGetCartQuery,
+  useCreateCartMutation,
+} from "@/redux/services/apiSlices/cartSlice";
 import { Pagination } from "antd";
 import { UPLOADS_URL } from "@/constants/api";
 
@@ -44,13 +47,16 @@ export default function EnrichmentStore() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: categoriesData, isLoading } = useGetCategoryProductsQuery({});
-  const {
-    data: productsData,
-    isLoading: productsLoading,
-    isError: productsError,
-    error: productsErrorData,
-  } = useGetProductsQuery(queryOptions);
+  const { data: categoriesData } = useGetCategoryProductsQuery({});
+  const { data: productsData, isLoading: productsLoading } =
+    useGetProductsQuery(queryOptions);
+
+  const navigate = useNavigate();
+  const [addedDialogOpen, setAddedDialogOpen] = useState(false);
+  const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>(
+    undefined
+  );
+  const [tab, setTab] = useState<"categories" | "interactive">("categories");
 
   useEffect(() => {
     if (productsData?.data) {
@@ -76,23 +82,6 @@ export default function EnrichmentStore() {
     document.title = "Enrichment Store • iFuntology Teacher";
   }, []);
 
-  const [tab, setTab] = useState<"categories" | "interactive">("categories");
-
-  const images = [
-    "product-1.png",
-    "product-2.png",
-    "product-3.png",
-    "product-4.png",
-  ];
-  const getImage = (idx: number) => ImageUrl(images[idx % images.length]);
-
-  const { addItem } = useCart();
-  const navigate = useNavigate();
-  const [addedDialogOpen, setAddedDialogOpen] = useState(false);
-  const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>(
-    undefined
-  );
-
   const interactiveCategoryId = categoriesData?.data?.find(
     (cat: any) => cat.title === "Interactive Classroom Kits"
   )?._id;
@@ -106,6 +95,9 @@ export default function EnrichmentStore() {
       setSelectedCategory(null);
     }
   }, [tab, interactiveCategoryId]);
+
+  const { data: cartData } = useGetCartQuery();
+  const [createCart, { isLoading: cartLoading }] = useCreateCartMutation();
 
   return (
     <DashboardWithSidebarLayout>
@@ -121,10 +113,6 @@ export default function EnrichmentStore() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-
-            {/* <div className="flex items-center gap-3">
-              <Button variant="outline">Filter By</Button>
-            </div> */}
           </div>
           <div className="mt-4">
             <div className="flex items-center gap-3">
@@ -204,56 +192,6 @@ export default function EnrichmentStore() {
           </div>
         </Card>
 
-        {/* <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          {productsData?.data?.docs?.map((p: any, i: number) => (
-            <Card key={p._id} className="p-4 flex flex-col">
-              <Link
-                to={`/enrichment-store/product/${p._id}`}
-                state={{ fromTab: tab }}
-                aria-label={p.name}
-                className="block"
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
-                  <img
-                    src={UPLOADS_URL + p.image}
-                    alt={p.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </Link>
-              <Link
-                to={`/enrichment-store/product/${p._id}`}
-                state={{ fromTab: tab }}
-                className="mt-1 font-medium text-base hover:underline"
-              >
-                {p.name}
-              </Link>
-
-              <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-baseline gap-3">
-                  <div className="text-lg font-semibold">${p.price}</div>
-                </div>
-              </div>
-
-              <Button
-                className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                onClick={() => {
-                  addItem({
-                    id: p._id,
-                    title: p.title,
-                    price: p.price,
-                    image: p.image,
-                  });
-                  setLastAddedTitle(p.title);
-                  setAddedDialogOpen(true);
-                }}
-              >
-                Add to Cart
-              </Button>
-            </Card>
-          ))}
-        </div> */}
-        {/* Loading */}
         {productsLoading && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -300,16 +238,29 @@ export default function EnrichmentStore() {
 
                 <Button
                   className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                  onClick={() => {
-                    addItem({
-                      id: p._id,
-                      title: p.name, // ⚠️ you had p.title before
-                      price: p.price,
-                      image: p.image,
-                    });
-                    setLastAddedTitle(p.name);
-                    setAddedDialogOpen(true);
+                  // onClick={() => {
+                  // addItem({
+                  //   id: p._id,
+                  //   title: p.name, // ⚠️ you had p.title before
+                  //   price: p.price,
+                  //   image: p.image,
+                  // });
+                  //   setLastAddedTitle(p.name);
+                  //   setAddedDialogOpen(true);
+                  // }}
+                  onClick={async () => {
+                    try {
+                      const items = buildCartItems(p._id, cartData);
+
+                      await createCart({ items }).unwrap();
+
+                      setLastAddedTitle(p.name);
+                      setAddedDialogOpen(true);
+                    } catch (err: any) {
+                      console.error(err);
+                    }
                   }}
+                  disabled={cartLoading}
                 >
                   Add to Cart
                 </Button>

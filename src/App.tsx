@@ -43,7 +43,12 @@ import ProtectedRoute from "./pages/protectedRoute";
 
 const App = () => (
   <Provider store={store}>
-    <ThemeProvider attribute="class" defaultTheme="dark" storageKey="ifuntology-theme" enableSystem={false}>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      storageKey="ifuntology-theme"
+      enableSystem={false}
+    >
       <CartProvider>
         <TooltipProvider>
           <Toaster />
@@ -53,49 +58,69 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/recover-password" element={<RecoverPasswordPage />} />
+              <Route
+                path="/recover-password"
+                element={<RecoverPasswordPage />}
+              />
               <Route path="/verify-otp" element={<VerifyOtp />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
+              <Route path="/sign-up" element={<SignUpPage />} />
 
               <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardHomePage />
-                </ProtectedRoute>
-              }
-            />
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardHomePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/welcome" element={<DashboardWelcomePage />} />
               <Route path="/book-session" element={<BookSessionPage />} />
               <Route path="/session-booked" element={<SessionBookedPage />} />
 
-              <Route path="/book-a-session" element={<BookaSessionDashboard />} />
+              <Route
+                path="/book-a-session"
+                element={<BookaSessionDashboard />}
+              />
 
               <Route path="/quotes" element={<QutationTracking />} />
               <Route path="/quotes/request" element={<RequestQuotation />} />
               <Route path="/purchase-orders" element={<PurchaseOrder />} />
               <Route
-              path="/purchase-orders/:id"
-              element={<PurchaseOrderDetails />}
-            />
+                path="/purchase-orders/:id"
+                element={<PurchaseOrderDetails />}
+              />
               <Route
-              path="/enrichment-store"
-              element={
-                <ProtectedRoute>
-                  <EnrichmentStore />
-                </ProtectedRoute>
-              }
-            />
-              <Route path="/cart" element={<CartPage />} />
+                path="/enrichment-store"
+                element={
+                  <ProtectedRoute>
+                    <EnrichmentStore />
+                  </ProtectedRoute>
+                }
+              />
               <Route
-              path="/enrichment-store/product/:id"
-              element={<ProductDetails />}
-            />
+                path="/cart"
+                element={
+                  <ProtectedRoute>
+                    <CartPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
-              path="/enrichment-store/checkout"
-              element={<CheckoutPage />}
-            />
-              <Route path="/enrichment-store/payment" element={<PaymentPage />} />
+                path="/enrichment-store/product/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/enrichment-store/checkout"
+                element={<CheckoutPage />}
+              />
+              <Route
+                path="/enrichment-store/payment"
+                element={<PaymentPage />}
+              />
               <Route path="/my-orders" element={<MyOrdersPage />} />
               <Route path="/my-orders/:id" element={<MyOrderDetails />} />
               <Route path="/pay-invoice" element={<PayInvoice />} />
@@ -105,9 +130,18 @@ const App = () => (
               <Route path="/invite-student" element={<InviteStudent />} />
 
               <Route path="/quotes/lms" element={<QuoteLmsPage />} />
-              <Route path="/quotes/write-to-read" element={<QuoteWriteToReadPage />} />
-              <Route path="/quotes/enrichment-store" element={<QuoteEnrichmentStorePage />} />
-              <Route path="/quotation-document" element={<QuotationDocumentPage />} />
+              <Route
+                path="/quotes/write-to-read"
+                element={<QuoteWriteToReadPage />}
+              />
+              <Route
+                path="/quotes/enrichment-store"
+                element={<QuoteEnrichmentStorePage />}
+              />
+              <Route
+                path="/quotation-document"
+                element={<QuotationDocumentPage />}
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -115,7 +149,7 @@ const App = () => (
         </TooltipProvider>
       </CartProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </Provider>
 );
 
 export default App;

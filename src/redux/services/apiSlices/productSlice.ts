@@ -22,10 +22,16 @@ export const productSlice = createApi({
         params: { keyword, page, limit, from, to , category},
       }),
     }),
-
+    getProductById: builder.query<any, string>({
+      query: (id) => ({
+        url: `/product/${id}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
 export const {
     useGetProductsQuery,
+    useGetProductByIdQuery,
 } = productSlice;

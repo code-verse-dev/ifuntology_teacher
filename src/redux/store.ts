@@ -6,12 +6,14 @@ import userReducer from "./services/Slices/userSlice";
 import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import { categorySlice } from "./services/apiSlices/categorySlice";
+import { cartSlice } from "./services/apiSlices/cartSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
   [authSlice.reducerPath]: authSlice.reducer,
   [productSlice.reducerPath]: productSlice.reducer,
   [categorySlice.reducerPath]: categorySlice.reducer,
+  [cartSlice.reducerPath]: cartSlice.reducer,
 });
 
 const persistConfig = {
@@ -21,6 +23,7 @@ const persistConfig = {
     authSlice.reducerPath,
     productSlice.reducerPath,
     categorySlice.reducerPath,
+    cartSlice.reducerPath,
   ],
 };
 
@@ -34,7 +37,9 @@ export const store = configureStore({
     })
       .concat(authSlice.middleware)
       .concat(productSlice.middleware)
-      .concat(categorySlice.middleware),
+      .concat(categorySlice.middleware)
+      .concat(cartSlice.middleware)
+      ,
 });
 
 setupListeners(store.dispatch);

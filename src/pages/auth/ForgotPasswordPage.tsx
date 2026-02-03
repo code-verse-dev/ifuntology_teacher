@@ -49,9 +49,7 @@ export default function ForgotPasswordPage() {
             <form
               className="mt-6 space-y-5"
               onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Recovery email sent (demo)");
-                navigate("/recover-password");
+                handleSubmit(e);
               }}
             >
               <div className="space-y-3">
@@ -66,6 +64,9 @@ export default function ForgotPasswordPage() {
                     required
                     placeholder="your@email.com"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -74,8 +75,9 @@ export default function ForgotPasswordPage() {
                 type="submit"
                 size="pill"
                 className="w-full bg-gradient-count-down text-white shadow-elev hover:opacity-95"
+                disabled={isLoading}
               >
-                Continue
+                {isLoading ? "Sending..." : "Continue"}
               </Button>
 
               <div className="text-center">
