@@ -51,124 +51,124 @@ export default function Topbar({
 
         <div className="ml-auto flex items-center gap-3 sm:gap-4">
           {/* Theme toggle — minimal */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full border border-border bg-background"
-          aria-label={(theme ?? "dark") === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          onClick={() => setTheme((theme ?? "dark") === "dark" ? "light" : "dark")}
-        >
-          {(theme ?? "dark") === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full border border-border bg-background"
+            aria-label={(theme ?? "dark") === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setTheme((theme ?? "dark") === "dark" ? "light" : "dark")}
+          >
+            {(theme ?? "dark") === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
 
-        {/* Cart — circular white/background with thin border + red badge */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full border border-border bg-background"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-              <CartBadge />
-            </div>
-          </SheetTrigger>
-          <SheetContent side="right">
-            <SheetHeader>
-              <SheetTitle>Your Cart</SheetTitle>
-            </SheetHeader>
-            <CartSheet />
-          </SheetContent>
-        </Sheet>
-
-        {/* Notifications — circular with thin border + red dot */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full border border-border bg-background"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </Button>
-              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500" aria-hidden />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50 w-80 bg-popover p-2 shadow-elev">
-            <DropdownMenuLabel className="px-2">Notifications</DropdownMenuLabel>
-            <div className="px-2 pb-2 text-xs text-muted-foreground">Latest updates and reminders.</div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-              <div className="text-sm font-semibold">New booking request</div>
-              <div className="text-xs text-muted-foreground">A student requested a session for next week.</div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-              <div className="text-sm font-semibold">Calendar updated</div>
-              <div className="text-xs text-muted-foreground">Availability synced successfully.</div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="rounded-md">
-              <Link to="/book-session" className="w-full">
-                View all
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Profile — avatar + Hi, name! + role in green (no dropdown chevron) */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-full outline-none ring-ring focus-visible:ring-2 focus-visible:ring-offset-2"
-              aria-label="Profile menu"
-            >
-              <Avatar className="h-9 w-9 border border-border">
-                <AvatarFallback className="bg-muted text-foreground text-sm">TF</AvatarFallback>
-              </Avatar>
-              <div className="hidden text-left sm:block">
-                <div className="text-sm font-semibold leading-none text-foreground">Hi, {userName}!</div>
-                <div className="mt-0.5 text-xs leading-none text-primary">{role}</div>
+          {/* Cart — circular white/background with thin border + red badge */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border border-border bg-background"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+                <CartBadge />
               </div>
-              <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50 min-w-56 bg-popover shadow-elev">
-            <DropdownMenuLabel>Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/dashboard" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onLogout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Your Cart</SheetTitle>
+              </SheetHeader>
+              <CartSheet />
+            </SheetContent>
+          </Sheet>
 
-        {/* Logout — visible orange button with icon + text */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 text-accent hover:bg-accent/10 hover:text-accent"
-          onClick={onLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
-        </Button>
+          {/* Notifications — circular with thin border + red dot */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border border-border bg-background"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                </Button>
+                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500" aria-hidden />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50 w-80 bg-popover p-2 shadow-elev">
+              <DropdownMenuLabel className="px-2">Notifications</DropdownMenuLabel>
+              <div className="px-2 pb-2 text-xs text-muted-foreground">Latest updates and reminders.</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
+                <div className="text-sm font-semibold">New booking request</div>
+                <div className="text-xs text-muted-foreground">A student requested a session for next week.</div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
+                <div className="text-sm font-semibold">Calendar updated</div>
+                <div className="text-xs text-muted-foreground">Availability synced successfully.</div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="rounded-md">
+                <Link to="/notifications" className="w-full">
+                  View all
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Profile — avatar + Hi, name! + role in green (no dropdown chevron) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-full outline-none ring-ring focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label="Profile menu"
+              >
+                <Avatar className="h-9 w-9 border border-border">
+                  <AvatarFallback className="bg-muted text-foreground text-sm">TF</AvatarFallback>
+                </Avatar>
+                <div className="hidden text-left sm:block">
+                  <div className="text-sm font-semibold leading-none text-foreground">Hi, {userName}!</div>
+                  <div className="mt-0.5 text-xs leading-none text-primary">{role}</div>
+                </div>
+                <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50 min-w-56 bg-popover shadow-elev">
+              <DropdownMenuLabel>Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/my-profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={onLogout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Logout — visible orange button with icon + text */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-accent hover:bg-accent/10 hover:text-accent"
+            onClick={onLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </Button>
         </div>
       </div>
     </header>
