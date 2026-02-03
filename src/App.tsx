@@ -35,6 +35,8 @@ import CheckoutPage from "./pages/enrichmentStore/checkout";
 import PaymentPage from "./pages/enrichmentStore/payment";
 import MyOrdersPage from "./pages/myOrders";
 import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
+import PayInvoice from "./pages/payInvoice";
+import SubscribetoLMS from "./pages/subscribetoLMS";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,8 @@ const App = () => (
             <Route path="/enrichment-store/payment" element={<PaymentPage />} />
             <Route path="/my-orders" element={<MyOrdersPage />} />
             <Route path="/my-orders/:id" element={<MyOrderDetails />} />
+            <Route path="/pay-invoice" element={<PayInvoice />} />
+            <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
 
 
             <Route path="/invite-student" element={<InviteStudent />} />

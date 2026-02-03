@@ -172,6 +172,21 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-elev);
   }
 
+  /* Sleek Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+
   /* Count numbers gradient (brand green progression) */
   .text-gradient-count {
     background: linear-gradient(to right, #97BE0E, #8DBA10, #73B016, #49A11F, #0E8B2D, #08892F);
