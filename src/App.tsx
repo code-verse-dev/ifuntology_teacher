@@ -50,6 +50,8 @@ import StoreFaqs from "./pages/supportTickets/StoreFaqs";
 import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
+import WriteToRead from "./pages/writeToRead";
+
 
 
 
@@ -109,6 +111,8 @@ const App = () => (
               <Route path="/support-tickets/faqs/lms" element={<LmsFaqs />} />
               <Route path="/support-tickets/faqs/booking" element={<BookingFaqs />} />
               <Route path="/support-tickets/faqs/write-to-read" element={<WriteToReadFaqs />} />
+              <Route path="/write-to-read" element={<WriteToRead />} />
+
 
 
 
