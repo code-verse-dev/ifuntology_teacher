@@ -104,7 +104,7 @@ export default function MyOrdersPage() {
 
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full max-w-7xl space-y-6">
+            <section className="mx-auto w-full  space-y-6">
                 <h1 className="text-2xl font-extrabold">My Orders</h1>
 
                 {/* Search and Filter */}

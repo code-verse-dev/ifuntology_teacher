@@ -1,13 +1,16 @@
 import {
   BadgeDollarSign,
   BookOpen,
+  Box,
   ClipboardList,
+  GraduationCap,
   LayoutDashboard,
   MessagesSquare,
   Package,
   Receipt,
   Store,
   Ticket,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,7 +46,7 @@ function MenuLink({ item }: { item: Item }) {
           to={item.url}
           end
           className="w-full"
-          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-normal"
         >
           <item.icon className="h-4 w-4" />
           {!collapsed && <span>{item.title}</span>}
@@ -67,12 +70,18 @@ export default function DashboardSidebar() {
     { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
-    { title: "Pay Invoice", icon: BadgeDollarSign },
+    { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
   ];
 
   const ecommerce: Item[] = [
     { title: "Enrichment Store", url: "/enrichment-store", icon: Store },
-    { title: "My Orders", url: "/my-orders", icon: BookOpen },
+    { title: "My Orders", url: "/my-orders", icon: Box },
+  ];
+
+  const learningManagement: Item[] = [
+    { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
+    { title: "My Courses", url: "/my-courses", icon: BookOpen },
+    { title: "My Students", icon: Users },
   ];
 
   const support: Item[] = [
@@ -86,12 +95,12 @@ export default function DashboardSidebar() {
         <div
           className="overflow-hidden rounded-2xl border-sidebar-border p-2">
           <div className="px-1">
-            <IfuntologyMark />
+            <IfuntologyMark logoOnly size="medium" />
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="custom-scrollbar">
         <SidebarGroup>
           <SidebarGroupLabel>MAIN</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -130,6 +139,21 @@ export default function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>LEARNING MANAGEMENT</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {learningManagement.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <MenuLink item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
 
         <SidebarGroup>
           <SidebarGroupLabel>SUPPORT</SidebarGroupLabel>

@@ -32,7 +32,7 @@ export default function PurchaseOrder() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <h1 className="text-2xl font-extrabold">Purchase Orders</h1>
 
         <Card className="rounded-2xl border border-border/60 p-4">
@@ -44,7 +44,7 @@ export default function PurchaseOrder() {
               <Button variant="outline">Filter By</Button>
             </div>
 
-           
+
           </div>
         </Card>
 

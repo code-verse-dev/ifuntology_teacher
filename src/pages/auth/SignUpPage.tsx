@@ -5,7 +5,6 @@ import { toast } from "sonner";
 
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
 import AuthLayout from "@/components/layout/AuthLayout";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -132,24 +131,30 @@ export default function SignUpPage() {
             encType="multipart/form-data"
           >
             <div>
-              <div className="text-sm font-semibold">Personal Information</div>
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="first">First Name *</Label>
+              <div className="text-sm font-medium text-foreground">Personal Information</div>
+              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="space-y-3">
+                  <Label htmlFor="first" className="text-sm font-normal text-foreground">
+                    First Name <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input id="first" required placeholder="Enter Name" className="h-11 rounded-full pl-10" value={firstName} onChange={e => setFirstName(e.target.value)} disabled={isLoading} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last">Last Name *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="last" className="text-sm font-normal text-foreground">
+                    Last Name <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input id="last" required placeholder="Enter Name" className="h-11 rounded-full pl-10" value={lastName} onChange={e => setLastName(e.target.value)} disabled={isLoading} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-sm font-normal text-foreground">
+                    Email Address <span className="text-accent">*</span>
+                  </Label>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full pl-10" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
@@ -180,8 +185,10 @@ export default function SignUpPage() {
                   <Label htmlFor="country">Country *</Label>
                   <Input id="country" required placeholder="Enter Name" className="h-11 rounded-full" value={country} onChange={e => setCountry(e.target.value)} disabled={isLoading} />
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="phone">Phone Number (optional)</Label>
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="phone" className="text-sm font-normal text-foreground">
+                    Phone Number (optional)
+                  </Label>
                   <div className="relative">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input id="phone" placeholder="+1 555 000 0000" className="h-11 rounded-full pl-10" value={phone} onChange={e => setPhone(e.target.value)} disabled={isLoading} />
@@ -215,15 +222,15 @@ export default function SignUpPage() {
               <Button type="submit" variant="brand" size="pill" className="w-full sm:w-auto" disabled={isLoading}>
                 {isLoading ? "Creating..." : "Create Teacher Account"}
               </Button>
-              <div className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground">
                 Already Have An Account?{" "}
-                <Link to="/login" className="text-accent hover:underline">
+                <Link to="/login" className="font-medium text-accent hover:underline">
                   Login
                 </Link>
-              </div>
+              </p>
             </div>
           </form>
-        </Card>
+        </div>
       </section>
     </AuthLayout>
   );

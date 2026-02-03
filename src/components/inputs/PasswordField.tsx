@@ -19,9 +19,13 @@ export default function PasswordField({ className, ...props }: Props) {
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full"
+        className="absolute right-2 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full"
         aria-label={show ? "Hide password" : "Show password"}
-        onClick={() => setShow((s) => !s)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShow((s) => !s);
+        }}
       >
         {show ? <EyeOff /> : <Eye />}
       </Button>
