@@ -124,7 +124,7 @@ export default function PayInvoice() {
 
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full max-w-7xl space-y-6">
+            <section className="mx-auto w-full  space-y-6">
                 <h1 className="text-2xl font-extrabold">Pay Invoice</h1>
 
                 {/* Header Card */}
@@ -246,7 +246,8 @@ export default function PayInvoice() {
                                             ) : (
                                                 <Button
                                                     size="sm"
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-full px-4 text-xs"
+                                                    variant="gradient-green"
+                                                    className="h-8 rounded-full px-4 text-xs"
                                                     onClick={() => handlePayClick(invoice)}
                                                 >
                                                     Pay ${invoice.balance > 0 ? invoice.balance.toLocaleString() : invoice.amount.toLocaleString()}
@@ -298,7 +299,8 @@ export default function PayInvoice() {
                                 Cancel
                             </Button>
                             <Button
-                                className="rounded-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white w-full sm:w-auto px-8"
+                                className="rounded-full w-full sm:w-auto px-8"
+                                variant="gradient-green"
                                 onClick={handleContinuePayment}
                             >
                                 Continue

@@ -60,7 +60,7 @@ export default function ProductDetails() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <Link to="/enrichment-store" className="text-sm text-muted-foreground">&lt; Back to Enrichment Store</Link>
 
         <h1 className="text-2xl font-extrabold">Product Details</h1>

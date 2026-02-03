@@ -29,7 +29,7 @@ export default function QutationTracking() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <h1 className="text-2xl font-extrabold">Quotations Tracking</h1>
 
         <Card className="rounded-2xl border border-border/60 p-4">
@@ -58,15 +58,14 @@ export default function QutationTracking() {
                     <div className="text-sm font-semibold">{q.title}</div>
                     <div>
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          q.status === "Approved"
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${q.status === "Approved"
                             ? "bg-emerald-100 text-emerald-700"
                             : q.status === "Rejected"
-                            ? "bg-red-100 text-red-700"
-                            : q.status === "Pending"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-gray-100 text-muted-foreground"
-                        }`}
+                              ? "bg-red-100 text-red-700"
+                              : q.status === "Pending"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-gray-100 text-muted-foreground"
+                          }`}
                       >
                         {q.status}
                       </span>

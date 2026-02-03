@@ -40,7 +40,7 @@ export default function EnrichmentStore() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <h1 className="text-2xl font-extrabold">E-commerce Enrichment Store</h1>
 
         <Card className="rounded-2xl border border-border/60 p-4">
@@ -144,21 +144,21 @@ export default function EnrichmentStore() {
                 <div className="text-sm text-muted-foreground">{p.measure}</div>
               </div>
 
-                <Button
-                  className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                  onClick={() => {
-                    const numeric = Number(String(p.price).replace(/[^0-9.]/g, "")) || 0;
-                    addItem({ id: p.id, title: p.title, price: numeric, image: images[i % images.length] });
-                    setLastAddedTitle(p.title);
-                    setAddedDialogOpen(true);
-                  }}
-                >
-                  Add to Cart
-                </Button>
+              <Button
+                className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
+                onClick={() => {
+                  const numeric = Number(String(p.price).replace(/[^0-9.]/g, "")) || 0;
+                  addItem({ id: p.id, title: p.title, price: numeric, image: images[i % images.length] });
+                  setLastAddedTitle(p.title);
+                  setAddedDialogOpen(true);
+                }}
+              >
+                Add to Cart
+              </Button>
             </Card>
           ))}
         </div>
-        
+
         <AddedToCartDialog
           open={addedDialogOpen}
           onOpenChange={setAddedDialogOpen}

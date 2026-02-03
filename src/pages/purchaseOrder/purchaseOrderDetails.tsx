@@ -16,10 +16,10 @@ export default function PurchaseOrderDetails() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-muted-foreground cursor-pointer"  onClick={() => navigate(-1)}>← Back to Purchase Orders</div>
+            <div className="text-sm text-muted-foreground cursor-pointer" onClick={() => navigate(-1)}>← Back to Purchase Orders</div>
             <h1 className="text-2xl font-extrabold mt-2">{id ?? "Purchase Order"}</h1>
             <div className="text-sm text-muted-foreground">Springfield Elementary School</div>
           </div>
@@ -106,21 +106,21 @@ export default function PurchaseOrderDetails() {
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="rounded-md border border-border/60 p-4">
                   <div className="text-sm font-semibold">Contact Information</div>
-                  <div className="mt-3 text-sm text-muted-foreground">Springfield Elementary School<br/>John Smith<br/>john@springfield.edu<br/>(555) 123-4567</div>
+                  <div className="mt-3 text-sm text-muted-foreground">Springfield Elementary School<br />John Smith<br />john@springfield.edu<br />(555) 123-4567</div>
                 </div>
 
                 <div className="rounded-md border border-border/60 p-4">
                   <div className="text-sm font-semibold">Order Information</div>
-                  <div className="mt-3 text-sm text-muted-foreground">PO Number: {id}<br/>Quote ID: QT-2024-001<br/>Created: 12/8/2024<br/>Approved: 12/10/2024</div>
+                  <div className="mt-3 text-sm text-muted-foreground">PO Number: {id}<br />Quote ID: QT-2024-001<br />Created: 12/8/2024<br />Approved: 12/10/2024</div>
                 </div>
               </div>
               {/* Financial Summary */}
               <div className="mt-6">
                 <Card className="p-4">
-                    <div><h4 className="text-sm font-semibold mb-3">Financial Summary</h4></div>
+                  <div><h4 className="text-sm font-semibold mb-3">Financial Summary</h4></div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-start">
                     <div>
-                      
+
                       <div className="space-y-2">
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Subtotal:</div>
@@ -290,10 +290,10 @@ export default function PurchaseOrderDetails() {
                 <Card className="p-4">
                   <div className="text-sm font-semibold text-card-foreground">Tracking Information</div>
                   <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Carrier<br/><span className="font-medium">FedEx</span></div>
-                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Estimated Delivery<br/><span className="font-medium">12/18/2024</span></div>
-                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Tracking Number<br/><span className="font-medium">TRK1234567890</span></div>
-                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Actual Delivery<br/><span className="font-medium text-card-foreground">12/17/2024</span></div>
+                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Carrier<br /><span className="font-medium">FedEx</span></div>
+                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Estimated Delivery<br /><span className="font-medium">12/18/2024</span></div>
+                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Tracking Number<br /><span className="font-medium">TRK1234567890</span></div>
+                    <div className="rounded-md surface-glass p-3 text-sm text-card-foreground">Actual Delivery<br /><span className="font-medium text-card-foreground">12/17/2024</span></div>
                   </div>
                 </Card>
 
@@ -336,17 +336,17 @@ export default function PurchaseOrderDetails() {
                   tag: "Quote",
                   size: "245 KB",
                   date: "12/10/2024"
-                },{
+                }, {
                   name: "Invoice-INV-2024-001.pdf",
                   tag: "Invoice",
                   size: "178 KB",
                   date: "12/10/2024"
-                },{
+                }, {
                   name: "Payment-Receipt-001.pdf",
                   tag: "Receipt",
                   size: "125 KB",
                   date: "12/20/2024"
-                },{
+                }, {
                   name: "Shipping-Label.pdf",
                   tag: "Shipping Label",
                   size: "89 KB",

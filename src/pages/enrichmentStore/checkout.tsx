@@ -48,7 +48,7 @@ export default function CheckoutPage() {
 
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full max-w-7xl space-y-6">
+            <section className="mx-auto w-full  space-y-6">
                 <Link to="/cart" className="text-sm text-muted-foreground">
                     &lt; Back to Cart
                 </Link>

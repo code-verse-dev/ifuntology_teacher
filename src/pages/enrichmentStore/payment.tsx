@@ -7,7 +7,7 @@ import { CreditCard } from "lucide-react";
 export default function PaymentPage() {
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full max-w-7xl space-y-6">
+            <section className="mx-auto w-full  space-y-6">
                 <Link to="/enrichment-store/checkout" className="text-sm text-muted-foreground">
                     &lt; Back to Checkout
                 </Link>

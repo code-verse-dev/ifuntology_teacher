@@ -219,7 +219,7 @@ export default function BookaSessionDashboard() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="mx-auto w-full  space-y-6">
         <h1 className="text-2xl font-extrabold">Book a Session</h1>
 
         <Card className="rounded-2xl border border-border/60 p-6">

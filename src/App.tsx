@@ -37,6 +37,7 @@ import MyOrdersPage from "./pages/myOrders";
 import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
 import PayInvoice from "./pages/payInvoice";
 import SubscribetoLMS from "./pages/subscribetoLMS";
+import MyCourses from "./pages/myCourses";
 
 const queryClient = new QueryClient();
 
@@ -48,47 +49,48 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/recover-password" element={<RecoverPasswordPage />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/recover-password" element={<RecoverPasswordPage />} />
+              <Route path="/sign-up" element={<SignUpPage />} />
 
-            <Route path="/dashboard" element={<DashboardHomePage />} />
-            <Route path="/welcome" element={<DashboardWelcomePage />} />
-            <Route path="/book-session" element={<BookSessionPage />} />
-            <Route path="/session-booked" element={<SessionBookedPage />} />
+              <Route path="/dashboard" element={<DashboardHomePage />} />
+              <Route path="/welcome" element={<DashboardWelcomePage />} />
+              <Route path="/book-session" element={<BookSessionPage />} />
+              <Route path="/session-booked" element={<SessionBookedPage />} />
 
-            <Route path="/book-a-session" element={<BookaSessionDashboard />} />
+              <Route path="/book-a-session" element={<BookaSessionDashboard />} />
 
-            <Route path="/quotes" element={<QutationTracking />} />
-            <Route path="/quotes/request" element={<RequestQuotation />} />
-            <Route path="/purchase-orders" element={<PurchaseOrder />} />
-            <Route path="/purchase-orders/:id" element={<PurchaseOrderDetails />} />
-            <Route path="/enrichment-store" element={<EnrichmentStore />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/enrichment-store/product/:id" element={<ProductDetails />} />
-            <Route path="/enrichment-store/checkout" element={<CheckoutPage />} />
-            <Route path="/enrichment-store/payment" element={<PaymentPage />} />
-            <Route path="/my-orders" element={<MyOrdersPage />} />
-            <Route path="/my-orders/:id" element={<MyOrderDetails />} />
-            <Route path="/pay-invoice" element={<PayInvoice />} />
-            <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
+              <Route path="/quotes" element={<QutationTracking />} />
+              <Route path="/quotes/request" element={<RequestQuotation />} />
+              <Route path="/purchase-orders" element={<PurchaseOrder />} />
+              <Route path="/purchase-orders/:id" element={<PurchaseOrderDetails />} />
+              <Route path="/enrichment-store" element={<EnrichmentStore />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/enrichment-store/product/:id" element={<ProductDetails />} />
+              <Route path="/enrichment-store/checkout" element={<CheckoutPage />} />
+              <Route path="/enrichment-store/payment" element={<PaymentPage />} />
+              <Route path="/my-orders" element={<MyOrdersPage />} />
+              <Route path="/my-orders/:id" element={<MyOrderDetails />} />
+              <Route path="/pay-invoice" element={<PayInvoice />} />
+              <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
+              <Route path="/my-courses" element={<MyCourses />} />
 
 
-            <Route path="/invite-student" element={<InviteStudent />} />
+              <Route path="/invite-student" element={<InviteStudent />} />
 
-            <Route path="/quotes/lms" element={<QuoteLmsPage />} />
-            <Route path="/quotes/write-to-read" element={<QuoteWriteToReadPage />} />
-            <Route path="/quotes/enrichment-store" element={<QuoteEnrichmentStorePage />} />
-            <Route path="/quotation-document" element={<QuotationDocumentPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </CartProvider>
+              <Route path="/quotes/lms" element={<QuoteLmsPage />} />
+              <Route path="/quotes/write-to-read" element={<QuoteWriteToReadPage />} />
+              <Route path="/quotes/enrichment-store" element={<QuoteEnrichmentStorePage />} />
+              <Route path="/quotation-document" element={<QuotationDocumentPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CartProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
