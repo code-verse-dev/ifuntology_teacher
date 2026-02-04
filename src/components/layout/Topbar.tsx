@@ -34,7 +34,7 @@ export default function Topbar({
   };
 
   return (
-    <header className="sticky top-0 z-50  border-b border-border/60 bg-background">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background">
       <div className="flex w-full items-center justify-between gap-3 px-4 py-3 md:gap-4 md:px-6">
         {/* Hamburger — mobile only, toggles sidebar (only when inside SidebarProvider) */}
         {sidebar && (
