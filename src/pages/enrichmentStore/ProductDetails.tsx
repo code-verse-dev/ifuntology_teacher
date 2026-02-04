@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageUrl } from "@/utils/Functions";
+import { buildCartItems } from "@/utils/Functions";
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
-import { useCart } from "@/context/cart.store";
 import {
   Carousel,
   CarouselContent,
@@ -15,15 +14,14 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
 import { useGetProductByIdQuery } from "@/redux/services/apiSlices/productSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import {
+  useGetCartQuery,
+  useCreateCartMutation,
+} from "@/redux/services/apiSlices/cartSlice";
 
 export default function ProductDetails() {
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const { addItem } = useCart();
-
-  type LocationState = { fromTab?: "categories" | "interactive" } | null;
-  const fromTab = (location.state as LocationState)?.fromTab ?? "categories";
 
   const {
     data: productData,
@@ -34,7 +32,6 @@ export default function ProductDetails() {
   const [heroSrc, setHeroSrc] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [thumbApi, setThumbApi] = useState<CarouselApi | null>(null);
-  const [qty, setQty] = useState(1);
   const [addedDialogOpen, setAddedDialogOpen] = useState(false);
   const [lastAddedTitle, setLastAddedTitle] = useState<string>();
 
@@ -62,6 +59,19 @@ export default function ProductDetails() {
     }
   }, [images, heroSrc]);
 
+  const { data: cartData } = useGetCartQuery();
+  const [createCart, { isLoading: cartLoading }] = useCreateCartMutation();
+    const updateQty = async (
+      productId: string,
+      action: "increment" | "decrement"
+    ) => {
+      const updatedItems = buildCartItems(productId, cartData, action);
+      try {
+        await createCart({ items: updatedItems }).unwrap();
+      } catch (err: any) {
+        console.error(err);
+      }
+    };
   /* ---------- Loading State ---------- */
   if (productLoading) {
     return (
@@ -186,27 +196,39 @@ export default function ProductDetails() {
 
               <div className="mt-6 flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => setQty((q) => Math.max(1, q - 1))}>
+                  <Button
+                    disabled={cartLoading}
+                    onClick={() => updateQty(product._id, "decrement")}
+                  >
                     -
                   </Button>
-                  <div className="w-10 text-center">{qty}</div>
-                  <Button onClick={() => setQty((q) => q + 1)}>+</Button>
+                  <div className="w-10 text-center">
+                    {cartData?.data?.items?.find((it : any) => it.product._id === product._id)
+                      ?.quantity ?? 1}
+                  </div>
+                  <Button
+                    disabled={cartLoading}
+                    onClick={() => updateQty(product._id, "increment")}
+                  >
+                    +
+                  </Button>
                 </div>
 
                 <Button
                   className="bg-emerald-600 text-white"
-                  onClick={() => {
-                    for (let i = 0; i < qty; i++) {
-                      addItem({
-                        id: product._id,
-                        title: product.name,
-                        price: product.price,
-                        image: product.image,
-                      });
+                  onClick={async () => {
+                    try {
+                      const items = buildCartItems(product._id, cartData);
+
+                      await createCart({ items }).unwrap();
+
+                      setLastAddedTitle(product.name);
+                      setAddedDialogOpen(true);
+                    } catch (err: any) {
+                      console.error(err);
                     }
-                    setLastAddedTitle(product.name);
-                    setAddedDialogOpen(true);
                   }}
+                  disabled={cartLoading}
                 >
                   Add to Cart
                 </Button>

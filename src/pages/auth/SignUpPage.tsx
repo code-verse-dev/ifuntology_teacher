@@ -71,9 +71,14 @@ export default function SignUpPage() {
     if (image) formData.append("image", image);
     formData.append("role", "teacher");
     try {
-      await register(formData).unwrap();
-      toast.success("Account created successfully");
-      navigate("/welcome");
+      const res: any = await register(formData).unwrap();
+      if(res?.status) {
+        toast.success("Account created successfully");
+        navigate("/welcome");
+      }
+      else{
+        toast.error(res?.message || "Failed to create account");
+      }
     } catch (err: any) {
       toast.error(err?.data?.message || "Failed to create account");
     }

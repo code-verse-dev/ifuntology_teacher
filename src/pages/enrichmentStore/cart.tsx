@@ -9,8 +9,12 @@ import {
   useCreateCartMutation,
   useClearCartMutation,
 } from "@/redux/services/apiSlices/cartSlice";
+import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { UPLOADS_URL } from "@/constants/api";
 import { toast } from "sonner";
+import { useState } from "react";
+import { Modal } from "antd";
+import swal from "sweetalert";
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -18,12 +22,23 @@ export default function CartPage() {
   const [createCart, { isLoading: updatingCart }] = useCreateCartMutation();
   const items = cartData?.data?.items || [];
 
+  const [couponCode, setCouponCode] = useState("");
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponPreview, setCouponPreview] = useState<any>(null);
+
+  const [checkCoupon, { isLoading: checkingCoupon }] = useCheckCouponMutation();
+
+  const appliedCoupon = cartData?.data?.coupon;
+  const isCouponApplied = Boolean(appliedCoupon);
+
   const subtotal = items.reduce((sum: number, i: any) => sum + i.total, 0);
   // const tax = +(subtotal * 0.08).toFixed(2); // example 8% tax
   const tax = 0; // example 8% tax
   // const shipping = items.length ? 99.95 : 0;
   const shipping = 0;
-  const total = +(subtotal + tax + shipping).toFixed(2);
+  const total = +(cartData?.data?.total + tax + shipping).toFixed(2);
+
+  const discount = subtotal > total ? subtotal - total : 0;
   const [clearCartMutation, { isLoading: clearingCart }] =
     useClearCartMutation();
 
@@ -51,6 +66,44 @@ export default function CartPage() {
     }
   };
 
+  const handleCheckCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+
+    try {
+      const res: any = await checkCoupon({
+        code: couponCode,
+        amount: subtotal.toFixed(2),
+      }).unwrap();
+      if (res?.status) {
+        setCouponPreview(res.data);
+        setShowCouponModal(true);
+      } else {
+        swal(res?.message || "The coupon code is invalid.", "error");
+      }
+    } catch (err: any) {
+      const message = err?.data?.message || "Invalid coupon";
+      swal("Error", message, "error");
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    try {
+      const res: any = await createCart({ couponCode, items: [] }).unwrap();
+      if (res?.status) {
+        toast.success("Coupon applied successfully");
+        setShowCouponModal(false);
+      } else {
+        swal("Oops", res.message, "error");
+      }
+    } catch (err: any) {
+      const message = err?.data?.message || "Failed to apply coupon";
+      swal("Error", message, "error");
+    }
+  };
+
   return (
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full space-y-6">
@@ -62,12 +115,41 @@ export default function CartPage() {
 
         <Card className="rounded-2xl border border-border/60 p-6">
           <div className="space-y-6">
-            <div className="rounded-lg border border-border/60 p-4">
+            {/* <div className="rounded-lg border border-border/60 p-4">
               <div className="mb-4 text-sm text-emerald-600">Coupon Code</div>
               <div className="flex gap-3">
                 <Input placeholder="Enter Code" />
                 <Button variant="brand">Apply Coupon</Button>
               </div>
+            </div> */}
+            <div className="rounded-lg border border-border/60 p-4">
+              <div className="mb-4 text-sm text-emerald-600">Coupon Code</div>
+
+              {isCouponApplied ? (
+                <div className="flex items-center justify-between text-black rounded-md bg-emerald-50 p-3 text-sm">
+                  <span>
+                    Coupon <strong>{appliedCoupon.code}</strong> applied
+                  </span>
+                  <span className="text-emerald-600 font-semibold">
+                    −${(subtotal - cartData.data.total).toFixed(2)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="Enter Code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                  />
+                  <Button
+                    variant="brand"
+                    onClick={handleCheckCoupon}
+                    disabled={checkingCoupon}
+                  >
+                    Apply Coupon
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="rounded-lg border border-border/60 p-4">
@@ -136,7 +218,7 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-border/60 p-4">
+            {/* <div className="rounded-lg border border-border/60 p-4">
               <div className="text-lg font-semibold">Cart Totals</div>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <div className="flex justify-between">
@@ -172,10 +254,107 @@ export default function CartPage() {
                   Clear Cart
                 </Button>
               </div>
+            </div> */}
+            <div className="rounded-lg border border-border/60 p-4">
+              <div className="text-lg font-semibold">Cart Totals</div>
+
+              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Coupon Discount:</span>
+                    <span>- ${discount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>${tax.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span>${shipping.toFixed(2)}</span>
+                </div>
+
+                <div className="mt-3 rounded-md bg-secondary/10 p-3 flex justify-between font-semibold text-accent">
+                  <span>Total Amount:</span>
+                  <span>${(total + tax + shipping).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Button
+                  className="bg-emerald-600 text-white"
+                  onClick={() => navigate("/enrichment-store/checkout")}
+                >
+                  Proceed to Checkout
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={clearCart}
+                  disabled={updatingCart || isLoading || clearingCart}
+                >
+                  Clear Cart
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
       </section>
+      <Modal
+        open={showCouponModal}
+        onCancel={() => setShowCouponModal(false)}
+        footer={null}
+        centered
+        destroyOnClose
+        title="Apply Coupon?"
+      >
+        {couponPreview && (
+          <div className="space-y-4">
+            <div className="text-sm space-y-2">
+              <div className="flex justify-between">
+                <span>Original Amount</span>
+                <span>${couponPreview.amount}</span>
+              </div>
+
+              <div className="flex justify-between text-emerald-600 font-semibold">
+                <span>Discounted Amount</span>
+                <span>${couponPreview.discountedAmount}</span>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                You save $
+                {(
+                  couponPreview.amount - couponPreview.discountedAmount
+                ).toFixed(2)}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowCouponModal(false)}
+                className="text-white"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                className="bg-emerald-600 text-white"
+                onClick={handleApplyCoupon}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </DashboardWithSidebarLayout>
   );
 }

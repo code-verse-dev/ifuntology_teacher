@@ -11,6 +11,20 @@ interface CreateCartPayload {
   couponCode?: string;
 }
 
+export interface OrderDetailsPayload {
+  firstName: string;
+  lastName: string;
+  country: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  email: string;
+  apartment?: string;
+  organizationName?: string;
+  notes?: string;
+}
+
 export const cartSlice = createApi({
   reducerPath: "cartApi",
   baseQuery: baseQueryWithReauth,
@@ -43,7 +57,22 @@ export const cartSlice = createApi({
       }),
       invalidatesTags: ["Cart"], // refetch cart after clearing
     }),
+
+    // ADD ORDER DETAILS
+    addOrderDetails: builder.mutation<any, OrderDetailsPayload>({
+      query: (body) => ({
+        url: "/cart/order-details",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Cart"], // so cart refetches with orderDetails attached
+    }),
   }),
 });
 
-export const { useGetCartQuery, useCreateCartMutation, useClearCartMutation } = cartSlice;
+export const {
+  useGetCartQuery,
+  useCreateCartMutation,
+  useClearCartMutation,
+  useAddOrderDetailsMutation,
+} = cartSlice;

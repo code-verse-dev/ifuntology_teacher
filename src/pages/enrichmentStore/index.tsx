@@ -238,16 +238,6 @@ export default function EnrichmentStore() {
 
                 <Button
                   className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                  // onClick={() => {
-                  // addItem({
-                  //   id: p._id,
-                  //   title: p.name, // ⚠️ you had p.title before
-                  //   price: p.price,
-                  //   image: p.image,
-                  // });
-                  //   setLastAddedTitle(p.name);
-                  //   setAddedDialogOpen(true);
-                  // }}
                   onClick={async () => {
                     try {
                       const items = buildCartItems(p._id, cartData);

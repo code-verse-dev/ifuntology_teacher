@@ -34,6 +34,7 @@ import CartPage from "./pages/enrichmentStore/cart";
 import ProductDetails from "./pages/enrichmentStore/ProductDetails";
 import CheckoutPage from "./pages/enrichmentStore/checkout";
 import PaymentPage from "./pages/enrichmentStore/payment";
+import StripePayment from "./pages/stripePayment/index";
 import MyOrdersPage from "./pages/myOrders";
 import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
 import PayInvoice from "./pages/payInvoice";
@@ -115,11 +116,23 @@ const App = () => (
               />
               <Route
                 path="/enrichment-store/checkout"
-                element={<CheckoutPage />}
+                element={
+                  <ProtectedRoute>
+                    <CheckoutPage />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/enrichment-store/payment"
                 element={<PaymentPage />}
+              />
+              <Route
+                path="/payment"
+                element={
+                  <ProtectedRoute>
+                    <StripePayment />
+                  </ProtectedRoute>
+                }
               />
               <Route path="/my-orders" element={<MyOrdersPage />} />
               <Route path="/my-orders/:id" element={<MyOrderDetails />} />

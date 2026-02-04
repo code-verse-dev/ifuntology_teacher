@@ -7,6 +7,8 @@ import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import { categorySlice } from "./services/apiSlices/categorySlice";
 import { cartSlice } from "./services/apiSlices/cartSlice";
+import { paymentSlice } from "./services/apiSlices/paymentSlice";
+import { couponSlice } from "./services/apiSlices/couponSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -14,6 +16,8 @@ const rootReducer = combineReducers({
   [productSlice.reducerPath]: productSlice.reducer,
   [categorySlice.reducerPath]: categorySlice.reducer,
   [cartSlice.reducerPath]: cartSlice.reducer,
+  [paymentSlice.reducerPath]: paymentSlice.reducer,
+  [couponSlice.reducerPath]: couponSlice.reducer,
 });
 
 const persistConfig = {
@@ -24,6 +28,8 @@ const persistConfig = {
     productSlice.reducerPath,
     categorySlice.reducerPath,
     cartSlice.reducerPath,
+    paymentSlice.reducerPath,
+    couponSlice.reducerPath,
   ],
 };
 
@@ -39,6 +45,8 @@ export const store = configureStore({
       .concat(productSlice.middleware)
       .concat(categorySlice.middleware)
       .concat(cartSlice.middleware)
+      .concat(paymentSlice.middleware)
+      .concat(couponSlice.middleware)
       ,
 });
 

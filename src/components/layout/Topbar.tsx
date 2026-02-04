@@ -97,7 +97,7 @@ export default function Topbar() {
           {/* Cart — circular white/background with thin border + red badge */}
           <Sheet>
             <SheetTrigger asChild>
-              <div className="relative">
+              <div className="relative cursor-pointer">
                 <Button
                   variant="ghost"
                   size="icon"
