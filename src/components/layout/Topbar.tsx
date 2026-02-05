@@ -57,7 +57,7 @@ export default function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border/60 bg-background">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background">
       <div className="flex w-full items-center justify-between gap-3 px-4 py-3 md:gap-4 md:px-6">
         {/* Hamburger — mobile only, toggles sidebar (only when inside SidebarProvider) */}
         {sidebar && (
@@ -78,20 +78,10 @@ export default function Topbar() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 rounded-full border border-border bg-background"
-            aria-label={
-              (theme ?? "dark") === "dark"
-                ? "Switch to light mode"
-                : "Switch to dark mode"
-            }
-            onClick={() =>
-              setTheme((theme ?? "dark") === "dark" ? "light" : "dark")
-            }
+            aria-label={(theme ?? "dark") === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setTheme((theme ?? "dark") === "dark" ? "light" : "dark")}
           >
-            {(theme ?? "dark") === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
+            {(theme ?? "dark") === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
           {/* Cart — circular white/background with thin border + red badge */}
@@ -117,55 +107,55 @@ export default function Topbar() {
             </SheetContent>
           </Sheet>
 
-          {/* Notifications — circular with thin border + red dot */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-full border border-border bg-background"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-4 w-4" />
-                </Button>
-                <span
+            {/* Notifications — circular with thin border + red dot */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-full border border-border bg-background"
+                    aria-label="Notifications"
+                  >
+                    <Bell className="h-4 w-4" />
+                  </Button>
+                  <span
                   className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500"
                   aria-hidden
                 />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
               align="end"
               className="z-50 w-80 bg-popover p-2 shadow-elev"
             >
-              <DropdownMenuLabel className="px-2">
+                <DropdownMenuLabel className="px-2">
                 Notifications
               </DropdownMenuLabel>
-              <div className="px-2 pb-2 text-xs text-muted-foreground">
+                <div className="px-2 pb-2 text-xs text-muted-foreground">
                 Latest updates and reminders.
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                <div className="text-sm font-semibold">New booking request</div>
-                <div className="text-xs text-muted-foreground">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
+                  <div className="text-sm font-semibold">New booking request</div>
+                  <div className="text-xs text-muted-foreground">
                   A student requested a session for next week.
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                <div className="text-sm font-semibold">Calendar updated</div>
-                <div className="text-xs text-muted-foreground">
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
+                  <div className="text-sm font-semibold">Calendar updated</div>
+                  <div className="text-xs text-muted-foreground">
                   Availability synced successfully.
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="rounded-md">
-                <Link to="/book-session" className="w-full">
-                  View all
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="rounded-md">
+                  <Link to="/notifications" className="w-full">
+                    View all
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
           {/* Profile — avatar + Hi, name! + role in green (no dropdown chevron) */}
           <DropdownMenu>

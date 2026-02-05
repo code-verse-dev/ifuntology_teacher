@@ -18,7 +18,7 @@ export default function InviteStudent() {
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-4xl space-y-6">
+      <section className="mx-auto w-full space-y-6">
         <h1 className="text-2xl font-extrabold">Invite Students</h1>
 
         <Card className="rounded-2xl border border-border/60 p-6">

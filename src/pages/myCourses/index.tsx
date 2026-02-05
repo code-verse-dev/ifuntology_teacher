@@ -1,9 +1,10 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Award, Users, Clock } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+
 
 type Course = {
     id: string;
@@ -105,6 +106,8 @@ const courses: Course[] = [
 ];
 
 export default function MyCourses() {
+    const navigate = useNavigate();
+
     useEffect(() => {
         document.title = "My Courses • iFuntology Teacher";
     }, []);
@@ -188,7 +191,10 @@ export default function MyCourses() {
                             </div>
 
                             {/* View Course Button */}
-                            <Button className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-sm shadow-md">
+                            <Button
+                                className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-sm shadow-md"
+                                onClick={() => navigate(`/my-courses/${course.id}`)}
+                            >
                                 View Course
                             </Button>
                         </Card>

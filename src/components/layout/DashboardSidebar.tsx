@@ -3,13 +3,16 @@ import {
   BookOpen,
   Box,
   ClipboardList,
+  Gift,
   GraduationCap,
   LayoutDashboard,
   MessagesSquare,
   Package,
+  PenTool,
   Receipt,
   Store,
   Ticket,
+  UserCog,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,12 +84,28 @@ export default function DashboardSidebar() {
   const learningManagement: Item[] = [
     { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
-    { title: "My Students", icon: Users },
+    { title: "My Students", url: "/my-students", icon: Users },
+  ];
+
+  const readToWrite: Item[] = [
+    { title: "Write to Read", url: "/write-to-read", icon: PenTool },
+  ];
+
+  const affiliateProgram: Item[] = [
+    { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
+  ];
+
+  const communication: Item[] = [
+    { title: "Chat", icon: MessagesSquare },
   ];
 
   const support: Item[] = [
-    { title: "Support Tickets", icon: Ticket },
-    { title: "Chat", icon: MessagesSquare },
+    { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
+
+  ];
+
+  const account: Item[] = [
+    { title: "Settings / Account", url: "/my-profile", icon: UserCog },
   ];
 
   return (
@@ -153,7 +172,45 @@ export default function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarGroup>
+          <SidebarGroupLabel>READ TO WRITE</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {readToWrite.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <MenuLink item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
+        <SidebarGroup>
+          <SidebarGroupLabel>ADDITIONAL</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {affiliateProgram.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <MenuLink item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
+        <SidebarGroup>
+          <SidebarGroupLabel>COMMUNICATION</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {communication.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <MenuLink item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>SUPPORT</SidebarGroupLabel>
@@ -167,6 +224,22 @@ export default function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>ACCOUNT</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {account.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <MenuLink item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
+
       </SidebarContent>
     </Sidebar>
   );

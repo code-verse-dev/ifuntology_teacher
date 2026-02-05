@@ -40,7 +40,30 @@ import MyOrderDetails from "./pages/myOrders/MyOrderDetails";
 import PayInvoice from "./pages/payInvoice";
 import SubscribetoLMS from "./pages/subscribetoLMS";
 import MyCourses from "./pages/myCourses";
-import ProtectedRoute from "./pages/protectedRoute";
+import CourseDetails from "./pages/myCourses/CourseDetails";
+import MyStudents from "./pages/myStudents";
+import AffiliateProgram from "./pages/affiliateProgram";
+import Notifications from "./pages/notifications";
+import MyProfile from "./pages/myProfile";
+import SupportTickets from "./pages/supportTickets";
+import CreateTicket from "./pages/supportTickets/CreateTicket";
+import AffiliateFaqs from "./pages/supportTickets/AffiliateFaqs";
+import StoreFaqs from "./pages/supportTickets/StoreFaqs";
+import LmsFaqs from "./pages/supportTickets/LmsFaqs";
+import BookingFaqs from "./pages/supportTickets/BookingFaqs";
+import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
+import WriteToRead from "./pages/writeToRead";
+
+
+
+
+
+
+
+
+
+
+const queryClient = new QueryClient();
 
 const App = () => (
   <Provider store={store}>
@@ -153,6 +176,28 @@ const App = () => (
               <Route path="/pay-invoice" element={<PayInvoice />} />
               <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
               <Route path="/my-courses" element={<MyCourses />} />
+              <Route path="/my-courses/:id" element={<CourseDetails />} />
+              <Route path="/my-students" element={<MyStudents />} />
+              <Route path="/affiliate-program" element={<AffiliateProgram />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="/support-tickets" element={<SupportTickets />} />
+              <Route path="/support-tickets/create" element={<CreateTicket />} />
+              <Route path="/support-tickets/faqs/affiliate" element={<AffiliateFaqs />} />
+              <Route path="/support-tickets/faqs/store" element={<StoreFaqs />} />
+              <Route path="/support-tickets/faqs/lms" element={<LmsFaqs />} />
+              <Route path="/support-tickets/faqs/booking" element={<BookingFaqs />} />
+              <Route path="/support-tickets/faqs/write-to-read" element={<WriteToReadFaqs />} />
+              <Route path="/write-to-read" element={<WriteToRead />} />
+
+
+
+
+
+
+
+
+
 
               <Route path="/invite-student" element={<InviteStudent />} />
 
