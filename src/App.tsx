@@ -53,17 +53,7 @@ import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToRead from "./pages/writeToRead";
-
-
-
-
-
-
-
-
-
-
-const queryClient = new QueryClient();
+import ProtectedRoute from "./pages/protectedRoute";
 
 const App = () => (
   <Provider store={store}>
@@ -182,22 +172,28 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-profile" element={<MyProfile />} />
               <Route path="/support-tickets" element={<SupportTickets />} />
-              <Route path="/support-tickets/create" element={<CreateTicket />} />
-              <Route path="/support-tickets/faqs/affiliate" element={<AffiliateFaqs />} />
-              <Route path="/support-tickets/faqs/store" element={<StoreFaqs />} />
+              <Route
+                path="/support-tickets/create"
+                element={<CreateTicket />}
+              />
+              <Route
+                path="/support-tickets/faqs/affiliate"
+                element={<AffiliateFaqs />}
+              />
+              <Route
+                path="/support-tickets/faqs/store"
+                element={<StoreFaqs />}
+              />
               <Route path="/support-tickets/faqs/lms" element={<LmsFaqs />} />
-              <Route path="/support-tickets/faqs/booking" element={<BookingFaqs />} />
-              <Route path="/support-tickets/faqs/write-to-read" element={<WriteToReadFaqs />} />
+              <Route
+                path="/support-tickets/faqs/booking"
+                element={<BookingFaqs />}
+              />
+              <Route
+                path="/support-tickets/faqs/write-to-read"
+                element={<WriteToReadFaqs />}
+              />
               <Route path="/write-to-read" element={<WriteToRead />} />
-
-
-
-
-
-
-
-
-
 
               <Route path="/invite-student" element={<InviteStudent />} />
 
