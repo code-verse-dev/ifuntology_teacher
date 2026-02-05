@@ -9,6 +9,7 @@ import { categorySlice } from "./services/apiSlices/categorySlice";
 import { cartSlice } from "./services/apiSlices/cartSlice";
 import { paymentSlice } from "./services/apiSlices/paymentSlice";
 import { couponSlice } from "./services/apiSlices/couponSlice";
+import { orderSlice } from "./services/apiSlices/orderSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   [cartSlice.reducerPath]: cartSlice.reducer,
   [paymentSlice.reducerPath]: paymentSlice.reducer,
   [couponSlice.reducerPath]: couponSlice.reducer,
+  [orderSlice.reducerPath]: orderSlice.reducer,
 });
 
 const persistConfig = {
@@ -30,6 +32,7 @@ const persistConfig = {
     cartSlice.reducerPath,
     paymentSlice.reducerPath,
     couponSlice.reducerPath,
+    orderSlice.reducerPath,
   ],
 };
 
@@ -47,6 +50,7 @@ export const store = configureStore({
       .concat(cartSlice.middleware)
       .concat(paymentSlice.middleware)
       .concat(couponSlice.middleware)
+      .concat(orderSlice.middleware)
       ,
 });
 

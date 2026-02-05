@@ -134,8 +134,22 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="/my-orders" element={<MyOrdersPage />} />
-              <Route path="/my-orders/:id" element={<MyOrderDetails />} />
+              <Route
+                path="/my-orders"
+                element={
+                  <ProtectedRoute>
+                    <MyOrdersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-orders/:id"
+                element={
+                  <ProtectedRoute>
+                    <MyOrderDetails />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/pay-invoice" element={<PayInvoice />} />
               <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
               <Route path="/my-courses" element={<MyCourses />} />

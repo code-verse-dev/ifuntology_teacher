@@ -5,16 +5,27 @@ export const orderSlice = createApi({
   reducerPath: "orderApi",
   baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
-    getProducts: builder.query({
-      query: () => ({
-        url: "/order",
+    getOrders: builder.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        keyword?: string;
+      }
+    >({
+      query: ({page, limit, keyword}) => ({
+        url: "/order/myorders",
+        method: "GET",
+        params: { page, limit, keyword },
+      }),
+    }),
+    getOrderById: builder.query<any, string>({
+      query: (id) => ({
+        url: `/order/${id}`,
         method: "GET",
       }),
     }),
-
   }),
 });
 
-export const {
-    useGetProductsQuery,
-} = orderSlice;
+export const { useGetOrdersQuery, useGetOrderByIdQuery } = orderSlice;
