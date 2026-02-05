@@ -188,7 +188,7 @@ export default function Topbar() {
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/dashboard" className="flex items-center gap-2">
+                <Link to="/my-profile" className="flex items-center gap-2 cursor-pointer">
                   <User className="h-4 w-4" />
                   Profile
                 </Link>

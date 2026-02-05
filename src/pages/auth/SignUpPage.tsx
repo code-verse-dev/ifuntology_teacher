@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
-
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
 import AuthLayout from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,7 @@ export default function SignUpPage() {
       const res: any = await register(formData).unwrap();
       if(res?.status) {
         toast.success("Account created successfully");
-        navigate("/welcome");
+        navigate("/login");
       }
       else{
         toast.error(res?.message || "Failed to create account");

@@ -10,6 +10,8 @@ import { cartSlice } from "./services/apiSlices/cartSlice";
 import { paymentSlice } from "./services/apiSlices/paymentSlice";
 import { couponSlice } from "./services/apiSlices/couponSlice";
 import { orderSlice } from "./services/apiSlices/orderSlice";
+import { availabilitySlice } from "./services/apiSlices/availabilitySlice";
+import { sessionSlice } from "./services/apiSlices/sessionSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -20,6 +22,8 @@ const rootReducer = combineReducers({
   [paymentSlice.reducerPath]: paymentSlice.reducer,
   [couponSlice.reducerPath]: couponSlice.reducer,
   [orderSlice.reducerPath]: orderSlice.reducer,
+  [availabilitySlice.reducerPath]: availabilitySlice.reducer,
+  [sessionSlice.reducerPath]: sessionSlice.reducer,
 });
 
 const persistConfig = {
@@ -33,6 +37,8 @@ const persistConfig = {
     paymentSlice.reducerPath,
     couponSlice.reducerPath,
     orderSlice.reducerPath,
+    availabilitySlice.reducerPath,
+    sessionSlice.reducerPath,
   ],
 };
 
@@ -51,6 +57,8 @@ export const store = configureStore({
       .concat(paymentSlice.middleware)
       .concat(couponSlice.middleware)
       .concat(orderSlice.middleware)
+      .concat(availabilitySlice.middleware)
+      .concat(sessionSlice.middleware)
       ,
 });
 

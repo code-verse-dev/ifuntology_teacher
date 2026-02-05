@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/context/cart";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { store } from "./redux/store";
@@ -13,13 +13,11 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RecoverPasswordPage from "./pages/auth/RecoverPasswordPage";
 import VerifyOtp from "./pages/auth/VerifyOtp";
 import SignUpPage from "./pages/auth/SignUpPage";
-
 import DashboardWelcomePage from "./pages/dashboard/DashboardWelcomePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
 import BookSessionPage from "./pages/dashboard/BookSessionPage";
 import BookaSessionDashboard from "./pages/BookaSessionDashboard";
 import SessionBookedPage from "./pages/dashboard/SessionBookedPage";
-
 import QuoteLmsPage from "./pages/dashboard/quotes/QuoteLmsPage";
 import QuoteWriteToReadPage from "./pages/dashboard/quotes/QuoteWriteToReadPage";
 import QuoteEnrichmentStorePage from "./pages/dashboard/quotes/QuoteEnrichmentStorePage";
@@ -170,7 +168,14 @@ const App = () => (
               <Route path="/my-students" element={<MyStudents />} />
               <Route path="/affiliate-program" element={<AffiliateProgram />} />
               <Route path="/notifications" element={<Notifications />} />
-              <Route path="/my-profile" element={<MyProfile />} />
+              <Route
+                path="/my-profile"
+                element={
+                  <ProtectedRoute>
+                    <MyProfile />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/support-tickets" element={<SupportTickets />} />
               <Route
                 path="/support-tickets/create"
