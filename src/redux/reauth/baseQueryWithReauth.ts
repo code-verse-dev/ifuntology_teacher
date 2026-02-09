@@ -12,8 +12,6 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   if (result?.error?.status === 401 || result?.error?.status === "FETCH_ERROR") {
 
     // remove location from redux and local storage
-    localStorage.removeItem("persist:location");
-
     localStorage.removeItem("user");
     api.dispatch({ type: "/user/logout" });
 
