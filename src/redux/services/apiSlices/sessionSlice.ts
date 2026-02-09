@@ -14,9 +14,18 @@ export const sessionSlice = createApi({
       }),
       invalidatesTags: ["Session"],
     }),
+    getMySessions: builder.query<
+      any,
+      { from?: string; to?: string; status?: string; page?: number; limit?: number; keyword?: string }
+    >({
+      query: ({ from, to, status, page, limit, keyword }) => ({
+        url: "/session/my",
+        method: "GET",
+        params: { from, to, status, page, limit, keyword },
+      }),
+      providesTags: ["Session"],
+    }),
   }),
 });
 
-export const {
-  useCreateSessionMutation,
-} = sessionSlice;
+export const { useCreateSessionMutation, useGetMySessionsQuery } = sessionSlice;

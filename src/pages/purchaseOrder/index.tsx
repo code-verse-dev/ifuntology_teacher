@@ -19,10 +19,50 @@ type PO = {
 };
 
 const samplePOs: PO[] = [
-  { id: "PO-2024-001", quote: "QT-2024-001", organization: "Springfield Elementary School", contact: "John Smith", items: 3, amount: "$9,060", status: "Approved", payment: "Partial", date: "12/8/2024" },
-  { id: "PO-2024-002", quote: "QT-2024-002", organization: "Riverside Academy", contact: "Sarah Johnson", items: 2, amount: "$4,150", status: "Delivered", payment: "Paid", date: "12/14/2024" },
-  { id: "PO-2024-003", quote: "QT-2024-003", organization: "Greenwood School", contact: "Mike Davis", items: 2, amount: "$4,872", status: "Processing", payment: "Partial", date: "12/15/2024" },
-  { id: "PO-2024-007", quote: "QT-2024-007", organization: "Central Academy", contact: "Robert Chen", items: 4, amount: "$7,890", status: "Shipped", payment: "Paid", date: "12/11/2024" },
+  {
+    id: "PO-2024-001",
+    quote: "QT-2024-001",
+    organization: "Springfield Elementary School",
+    contact: "John Smith",
+    items: 3,
+    amount: "$9,060",
+    status: "Approved",
+    payment: "Partial",
+    date: "12/8/2024",
+  },
+  {
+    id: "PO-2024-002",
+    quote: "QT-2024-002",
+    organization: "Riverside Academy",
+    contact: "Sarah Johnson",
+    items: 2,
+    amount: "$4,150",
+    status: "Pending",
+    payment: "Paid",
+    date: "12/14/2024",
+  },
+  {
+    id: "PO-2024-003",
+    quote: "QT-2024-003",
+    organization: "Greenwood School",
+    contact: "Mike Davis",
+    items: 2,
+    amount: "$4,872",
+    status: "Revision",
+    payment: "Partial",
+    date: "12/15/2024",
+  },
+  {
+    id: "PO-2024-007",
+    quote: "QT-2024-007",
+    organization: "Central Academy",
+    contact: "Robert Chen",
+    items: 4,
+    amount: "$7,890",
+    status: "Rejected",
+    payment: "Paid",
+    date: "12/11/2024",
+  },
 ];
 
 export default function PurchaseOrder() {
@@ -43,8 +83,6 @@ export default function PurchaseOrder() {
               </div>
               <Button variant="outline">Filter By</Button>
             </div>
-
-
           </div>
         </Card>
 
@@ -52,10 +90,14 @@ export default function PurchaseOrder() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Total Orders</div>
-            <div className="mt-2 text-2xl font-semibold">{samplePOs.length}</div>
+            <div className="mt-2 text-2xl font-semibold">
+              {samplePOs.length}
+            </div>
           </Card>
           <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Pending Approval</div>
+            <div className="text-sm text-muted-foreground">
+              Pending Approval
+            </div>
             <div className="mt-2 text-2xl font-semibold">1</div>
           </Card>
           <Card className="p-4">
@@ -90,19 +132,28 @@ export default function PurchaseOrder() {
                   <tr key={po.id} className="align-top">
                     <td className="py-3">
                       <div className="font-medium">{po.id}</div>
-                      {po.quote && <div className="text-xs text-muted-foreground">Quote: {po.quote}</div>}
+                      {po.quote && (
+                        <div className="text-xs text-muted-foreground">
+                          Quote: {po.quote}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3">{po.organization}</td>
                     <td className="py-3">{po.contact}</td>
                     <td className="py-3">{po.items}</td>
                     <td className="py-3">{po.amount}</td>
                     <td className="py-3">
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700">{po.status}</span>
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700">
+                        {po.status}
+                      </span>
                     </td>
                     <td className="py-3">{po.payment}</td>
                     <td className="py-3">{po.date}</td>
                     <td className="py-3">
-                      <NavLink to={`/purchase-orders/${po.id}`} className="inline-block">
+                      <NavLink
+                        to={`/purchase-orders/${po.id}`}
+                        className="inline-block"
+                      >
                         <Button variant="ghost">View</Button>
                       </NavLink>
                     </td>

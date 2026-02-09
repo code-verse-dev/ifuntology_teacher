@@ -51,6 +51,7 @@ import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToRead from "./pages/writeToRead";
+import AllSessions from "./pages/allSessions";
 import ProtectedRoute from "./pages/protectedRoute";
 
 const App = () => (
@@ -91,7 +92,19 @@ const App = () => (
 
               <Route
                 path="/book-a-session"
-                element={<BookaSessionDashboard />}
+                element={
+                  <ProtectedRoute>
+                    <BookaSessionDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/all-sessions"
+                element={
+                  <ProtectedRoute>
+                    <AllSessions />
+                  </ProtectedRoute>
+                }
               />
 
               <Route path="/quotes" element={<QutationTracking />} />

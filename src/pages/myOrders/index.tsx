@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Eye, CreditCard, FileText } from "lucide-react";
+import { MoreVertical, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useGetOrdersQuery } from "@/redux/services/apiSlices/orderSlice";
 

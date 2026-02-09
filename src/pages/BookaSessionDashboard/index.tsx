@@ -30,9 +30,13 @@ import {
 } from "lucide-react";
 import "./calendar-custom.css";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
-import { useCreateSessionMutation } from "@/redux/services/apiSlices/sessionSlice";
+import {
+  useCreateSessionMutation,
+  useGetMySessionsQuery,
+} from "@/redux/services/apiSlices/sessionSlice";
 import { toast } from "sonner";
 import swal from "sweetalert";
+import { useNavigate } from "react-router-dom";
 
 const locales = {
   "en-US": enUS,
@@ -58,6 +62,12 @@ interface MyEvent {
   color?: string; // We'll use this for day background
 }
 
+interface Query {
+  from?: string;
+  to?: string;
+  status: string;
+}
+
 export default function BookaSessionDashboard() {
   const [createSession, { isLoading: bookingLoading, error, isSuccess }] =
     useCreateSessionMutation();
@@ -65,7 +75,23 @@ export default function BookaSessionDashboard() {
   const [platform, setPlatform] = useState("");
   const [subject, setSubject] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const today = new Date();
+  const todayStr = format(today, "yyyy-MM-dd");
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const lastDayStr = format(lastDayOfMonth, "yyyy-MM-dd");
+
   const [purpose, setPurpose] = useState("");
+  const [queryOptions, setQueryOptions] = useState<Query>({
+    from: todayStr,
+    to: lastDayStr,
+    status: "approved",
+  });
+  const navigate = useNavigate();
+
+  const EVENT_COLORS = ["#fce7f3", "#fef3c7", "#dcfce7"];
+
+  const getRandomColor = () =>
+    EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)];
 
   const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null);
 
@@ -81,40 +107,82 @@ export default function BookaSessionDashboard() {
   );
   const slots = data?.data || [];
 
+  const {
+    data: mySessionsData,
+    error: mySessionsError,
+    isLoading: mySessionsLoading,
+  } = useGetMySessionsQuery(queryOptions);
+
+  console.log("My sessions response:", mySessionsData);
+  const upcomingSession =
+    mySessionsData?.data?.docs && mySessionsData.data.docs.length > 0
+      ? mySessionsData.data.docs[0]
+      : null;
   useEffect(() => {
     document.title = "Book a Session • iFuntology Teacher";
   }, []);
 
-  const events: any[] = useMemo(
-    () =>
-      [
-        {
-          id: 1,
-          title: "Zoom Meeting",
-          start: "2026-02-10", // YYYY-MM-DD
-          end: "2026-02-10",
-          platform: "Zoom Meeting",
-          available: true,
-          timeRange: "10:00-10:30",
-          color: "#dcfce7",
-        },
-        {
-          id: 2,
-          title: "Google Meet",
-          start: "2026-02-20",
-          end: "2026-02-20",
-          platform: "Google Meet",
-          available: true,
-          timeRange: "09:00-09:30",
-          color: "#fce7f3",
-        },
-      ].map((ev) => ({
-        ...ev,
-        start: new Date(ev.start + "T00:00:00"), // normalize to midnight
-        end: new Date(ev.end + "T00:00:00"),
-      })),
-    []
-  );
+  // const events: any[] = useMemo(
+  //   () =>
+  //     [
+  //       {
+  //         id: 1,
+  //         title: "Zoom Meeting",
+  //         start: "2026-02-10", // YYYY-MM-DD
+  //         end: "2026-02-10",
+  //         platform: "Zoom Meeting",
+  //         available: true,
+  //         timeRange: "10:00-10:30",
+  //         color: "#dcfce7",
+  //       },
+  //       {
+  //         id: 2,
+  //         title: "Google Meet",
+  //         start: "2026-02-20",
+  //         end: "2026-02-20",
+  //         platform: "Google Meet",
+  //         available: true,
+  //         timeRange: "09:00-09:30",
+  //         color: "#fce7f3", // #fef3c7
+  //       },
+  //     ].map((ev) => ({
+  //       ...ev,
+  //       start: new Date(ev.start + "T00:00:00"), // normalize to midnight
+  //       end: new Date(ev.end + "T00:00:00"),
+  //     })),
+  //   []
+  // );
+  const to12Hour = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    const hour = h % 12 || 12;
+    const ampm = h >= 12 ? "PM" : "AM";
+    return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
+
+  const events: MyEvent[] = useMemo(() => {
+    if (!mySessionsData?.data?.docs) return [];
+
+    return mySessionsData.data.docs.map((session: any) => {
+      const sessionDate = new Date(session.date);
+
+      return {
+        id: session._id,
+        title: session.platform, // shown in calendar cell
+        start: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
+        end: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
+        platform: session.platform,
+        available: false,
+        color: getRandomColor(),
+        timeRange: session.slots
+          .map((slot: any) => {
+            const start = to12Hour(slot.startTime);
+            const end = to12Hour(slot.endTime);
+            return `${start} - ${end}`;
+          })
+          .join(", "),
+      };
+    });
+  }, [mySessionsData]);
   const handleSelectSlot = ({ start }: { start: Date }) => {
     setSelectedDate(format(start, "yyyy-MM-dd"));
   };
@@ -181,7 +249,7 @@ export default function BookaSessionDashboard() {
         <div className="flex items-start gap-1 text-[10px] leading-tight text-gray-700">
           <Check className="h-3 w-3 text-green-600 mt-[1px]" />
           <span>
-            Available: {event.platform.split(" ")[0]} with <br />
+            Confirmed: {event.platform.split(" ")[0]} with <br />
             Admin ({event.timeRange})
           </span>
         </div>
@@ -408,15 +476,6 @@ export default function BookaSessionDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  {/* {slots.map((slot: any, index: number) => (
-                    <button
-                      key={index}
-                      className="flex items-center justify-center gap-2 rounded-full border border-border/50 bg-transparent px-3 py-2 text-xs font-medium hover:bg-orange-600 hover:text-white transition-colors"
-                    >
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatTimeRange(slot.startTime, slot.endTime)}
-                    </button>
-                  ))} */}
                   {slots.map((slot: any, i: number) => {
                     const active =
                       selectedSlot?.startTime === slot.startTime &&
@@ -447,7 +506,7 @@ export default function BookaSessionDashboard() {
               <h3 className="text-sm font-bold text-foreground mb-4">
                 Upcoming Sessions
               </h3>
-              <div className="rounded-xl bg-background p-4 shadow-sm border border-border/40">
+              {/* <div className="rounded-xl bg-background p-4 shadow-sm border border-border/40">
                 <div className="flex items-start justify-between mb-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -475,28 +534,63 @@ export default function BookaSessionDashboard() {
                 <div className="pt-3 border-t border-border/30 text-xs text-muted-foreground">
                   Discuss LMS implementation
                 </div>
-              </div>
+              </div> */}
+              {mySessionsLoading ? (
+                <div className="text-sm text-muted-foreground">
+                  Loading upcoming sessions...
+                </div>
+              ) : upcomingSession ? (
+                <div className="rounded-xl bg-background p-4 shadow-sm border border-border/40">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {format(new Date(upcomingSession.date), "yyyy-MM-dd")}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <Clock className="h-3.5 w-3.5" />
+                        {to12Hour(upcomingSession.slots[0].startTime)}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-medium text-blue-600 mt-1">
+                        <Video className="h-3.5 w-3.5" />
+                        {upcomingSession.platform}
+                      </div>
+                    </div>
+
+                    <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
+                      confirmed
+                    </span>
+                  </div>
+
+                  <Button className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3">
+                    Join Meeting
+                  </Button>
+
+                  <div className="pt-3 border-t border-border/30 text-xs text-muted-foreground">
+                    {upcomingSession.title}
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/all-sessions")}
+                    >
+                      View All
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground text-center py-6">
+                  No upcoming sessions
+                </div>
+              )}
             </div>
           </div>
 
-          {/* The Calendar */}
           <div className="rounded-md border border-border/60 bg-white/50 dark:bg-card/30 p-4 h-[800px]">
-            {/* Note: height is important for react-big-calendar */}
-            {/* <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: "100%" }}
-              views={["month"]}
-              defaultDate={new Date(2025, 11, 1)} // Setting to Dec 2025 to match screenshot/data
-              dayPropGetter={dayPropGetter}
-              components={{
-                event: EventComponent,
-                toolbar: CustomToolbar,
-              }}
-              onSelectEvent={(event) => setSelectedEvent(event)}
-            /> */}
             <Calendar
               localizer={localizer}
               events={events}
