@@ -53,6 +53,7 @@ import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToRead from "./pages/writeToRead";
 import AllSessions from "./pages/allSessions";
 import ProtectedRoute from "./pages/protectedRoute";
+import { getBasename } from "./utils/Functions";
 
 const App = () => (
   <Provider store={store}>
@@ -66,7 +67,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename={getBasename()}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
