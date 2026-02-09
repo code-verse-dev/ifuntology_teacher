@@ -1,0 +1,38 @@
+on:
+  push:
+    branches:
+      - customdev
+
+name: 🚀 Deploy website on push
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v2
+        with:
+          node-version: "22"
+
+      - name: 🔨 Build Project
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
+          CI: false
+
+      - name: 📂 Sync files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: react.customdev.solutions
+          username: customdev@react.customdev.solutions
+          password: ${{ secrets.FTP_PASSWORD_CUSTOMDEV }}
+          protocol: ftp
+          port: 21
+          local-dir: ./dist/
+          server-dir: /ifuntology/teacher/
