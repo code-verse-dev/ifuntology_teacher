@@ -15,7 +15,7 @@ import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
 import { useNavigate } from "react-router-dom";
 import { buildCartItems, ImageUrl } from "@/utils/Functions";
 import { Link } from "react-router-dom";
-import { useGetProductsQuery as useGetCategoryProductsQuery } from "@/redux/services/apiSlices/categorySlice";
+import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
 import {
   useGetCartQuery,
@@ -47,7 +47,7 @@ export default function EnrichmentStore() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: categoriesData } = useGetCategoryProductsQuery({});
+  const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: productsData, isLoading: productsLoading } =
     useGetProductsQuery(queryOptions);
 

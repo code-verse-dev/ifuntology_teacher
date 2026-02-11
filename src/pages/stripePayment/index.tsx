@@ -99,10 +99,3 @@ const Payment = () => {
 };
 
 export default Payment;
-
-/* Add this CSS to your global styles (e.g., index.css):
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-*/

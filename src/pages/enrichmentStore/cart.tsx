@@ -115,13 +115,7 @@ export default function CartPage() {
 
         <Card className="rounded-2xl border border-border/60 p-6">
           <div className="space-y-6">
-            {/* <div className="rounded-lg border border-border/60 p-4">
-              <div className="mb-4 text-sm text-emerald-600">Coupon Code</div>
-              <div className="flex gap-3">
-                <Input placeholder="Enter Code" />
-                <Button variant="brand">Apply Coupon</Button>
-              </div>
-            </div> */}
+   
             <div className="rounded-lg border border-border/60 p-4">
               <div className="mb-4 text-sm text-emerald-600">Coupon Code</div>
 
@@ -218,43 +212,6 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* <div className="rounded-lg border border-border/60 p-4">
-              <div className="text-lg font-semibold">Cart Totals</div>
-              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax:</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span>${shipping.toFixed(2)}</span>
-                </div>
-                <div className="mt-3 rounded-md bg-secondary/10 p-3 flex justify-between font-semibold text-accent">
-                  <span>Total Amount:</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <Button
-                  className="bg-emerald-600 text-white"
-                  onClick={() => navigate("/enrichment-store/checkout")}
-                >
-                  Proceed to Checkout
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={clearCart}
-                  disabled={updatingCart || isLoading || clearingCart}
-                >
-                  Clear Cart
-                </Button>
-              </div>
-            </div> */}
             <div className="rounded-lg border border-border/60 p-4">
               <div className="text-lg font-semibold">Cart Totals</div>
 

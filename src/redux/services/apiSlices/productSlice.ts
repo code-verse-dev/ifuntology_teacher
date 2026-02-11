@@ -19,7 +19,7 @@ export const productSlice = createApi({
       query: ({ page, limit, keyword, from, to, category }) => ({
         url: "/product",
         method: "GET",
-        params: { keyword, page, limit, from, to , category},
+        params: { keyword, page, limit, from, to, category },
       }),
     }),
     getProductById: builder.query<any, string>({
@@ -28,10 +28,18 @@ export const productSlice = createApi({
         method: "GET",
       }),
     }),
+    getProductsByCategory: builder.query<any, { categoryId: string }>({
+      query: ({ categoryId }) => ({
+        url: "/product",
+        method: "GET",
+        params: { categoryId },
+      }),
+    }),
   }),
 });
 
 export const {
-    useGetProductsQuery,
-    useGetProductByIdQuery,
+  useGetProductsQuery,
+  useGetProductByIdQuery,
+  useGetProductsByCategoryQuery,
 } = productSlice;

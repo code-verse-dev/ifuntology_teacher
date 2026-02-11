@@ -5,7 +5,7 @@ export const categorySlice = createApi({
   reducerPath: "categoryApi",
   baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
-    getProducts: builder.query({
+    getCategories: builder.query({
       query: () => ({
         url: "/categories",
         method: "GET",
@@ -16,5 +16,5 @@ export const categorySlice = createApi({
 });
 
 export const {
-    useGetProductsQuery,
+    useGetCategoriesQuery,
 } = categorySlice;

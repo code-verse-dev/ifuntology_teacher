@@ -109,11 +109,29 @@ const App = () => (
               />
 
               <Route path="/quotes" element={<QutationTracking />} />
-              <Route path="/quotes/request" element={<RequestQuotation />} />
-              <Route path="/purchase-orders" element={<PurchaseOrder />} />
+              <Route
+                path="/quotes/request"
+                element={
+                  <ProtectedRoute>
+                    <RequestQuotation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/purchase-orders"
+                element={
+                  <ProtectedRoute>
+                    <PurchaseOrder />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/purchase-orders/:id"
-                element={<PurchaseOrderDetails />}
+                element={
+                  <ProtectedRoute>
+                    <PurchaseOrderDetails />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/enrichment-store"
