@@ -50,10 +50,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useDispatch();
-
-
-
-  // Add state for email and password only
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<typeof roleCards[number]["key"]>("teacher");
@@ -149,7 +145,7 @@ export default function LoginPage() {
                   }
                   onClick={() => {
                     setSelectedRole(r.key);
-                    toast.message(`${r.label} selected`);
+                    // toast.message(`${r.label} selected`);
                   }}
                 >
                   <span

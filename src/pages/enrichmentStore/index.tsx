@@ -15,8 +15,11 @@ import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
 import { useNavigate } from "react-router-dom";
 import { buildCartItems, ImageUrl } from "@/utils/Functions";
 import { Link } from "react-router-dom";
-import { useGetProductsQuery as useGetCategoryProductsQuery } from "@/redux/services/apiSlices/categorySlice";
-import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
+import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
+import {
+  useGetProductsQuery,
+  useGetInteractiveProductsQuery,
+} from "@/redux/services/apiSlices/productSlice";
 import {
   useGetCartQuery,
   useCreateCartMutation,
@@ -47,27 +50,43 @@ export default function EnrichmentStore() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: categoriesData } = useGetCategoryProductsQuery({});
+  const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: productsData, isLoading: productsLoading } =
     useGetProductsQuery(queryOptions);
+
+  const [tab, setTab] = useState<"categories" | "interactive">("categories");
+
+  const {
+    data: interactiveProductsData,
+    isLoading: interactiveProductsLoading,
+  } = useGetInteractiveProductsQuery(
+    tab === "interactive" ? queryOptions : undefined
+  );
+
+  const productsList =
+    tab === "interactive" ? interactiveProductsData : productsData;
+  const productsLoadingState =
+    tab === "interactive" ? interactiveProductsLoading : productsLoading;
 
   const navigate = useNavigate();
   const [addedDialogOpen, setAddedDialogOpen] = useState(false);
   const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>(
     undefined
   );
-  const [tab, setTab] = useState<"categories" | "interactive">("categories");
 
   useEffect(() => {
-    if (productsData?.data) {
+    const activeData =
+      tab === "interactive" ? interactiveProductsData : productsData;
+
+    if (activeData?.data) {
       setPaginationConfig({
-        pageNumber: productsData.data.page,
-        limit: productsData.data.limit,
-        totalDocs: productsData.data.totalDocs,
-        totalPages: productsData.data.totalPages,
+        pageNumber: activeData.data.page,
+        limit: activeData.data.limit,
+        totalDocs: activeData.data.totalDocs,
+        totalPages: activeData.data.totalPages,
       });
     }
-  }, [productsData]);
+  }, [productsData, interactiveProductsData, tab]);
 
   useEffect(() => {
     setQueryOptions((prev) => ({
@@ -192,7 +211,7 @@ export default function EnrichmentStore() {
           </div>
         </Card>
 
-        {productsLoading && (
+        {productsLoadingState && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="p-4 animate-pulse">
@@ -206,9 +225,9 @@ export default function EnrichmentStore() {
         )}
 
         {/* Products */}
-        {!productsLoading && productsData?.data?.docs?.length > 0 && (
+        {!productsLoadingState && productsList?.data?.docs?.length > 0 && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            {productsData.data.docs.map((p: any) => (
+            {productsList.data.docs.map((p: any) => (
               <Card key={p._id} className="p-4 flex flex-col">
                 <Link
                   to={`/enrichment-store/product/${p._id}`}
@@ -232,6 +251,11 @@ export default function EnrichmentStore() {
                   {p.name}
                 </Link>
 
+                {p.courseType && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-lg font-semibold">{p.courseType}</div>
+                  </div>
+                )}
                 <div className="mt-2 flex items-center justify-between">
                   <div className="text-lg font-semibold">${p.price}</div>
                 </div>
@@ -260,7 +284,7 @@ export default function EnrichmentStore() {
         )}
 
         {/* Empty state */}
-        {!productsLoading && productsData?.data?.docs?.length === 0 && (
+        {!productsLoadingState && productsList?.data?.docs?.length === 0 && (
           <div className="py-16 text-center text-muted-foreground">
             <p className="text-lg font-medium">No products found</p>
             <p className="text-sm mt-1">
@@ -269,7 +293,7 @@ export default function EnrichmentStore() {
           </div>
         )}
 
-        {productsData?.data?.docs?.length && (
+        {productsList?.data?.docs?.length && (
           <div className="flex justify-end mt-6">
             <Pagination
               current={paginationConfig.pageNumber}
