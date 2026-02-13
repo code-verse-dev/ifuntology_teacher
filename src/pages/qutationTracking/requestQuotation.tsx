@@ -18,6 +18,7 @@ import {
   useGetProductByCourseTypeQuery,
 } from "@/redux/services/apiSlices/productSlice";
 import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
+import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import swal from "sweetalert";
 
 export default function RequestQuotation() {
@@ -72,6 +73,7 @@ export default function RequestQuotation() {
   // Enrichment store fields
   const [products, setProducts] = useState([
     {
+      id: "",
       category: "",
       product: "",
       quantity: "",
@@ -82,11 +84,19 @@ export default function RequestQuotation() {
   const [country, setCountry] = useState("");
   const [zip, setZip] = useState("");
   const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+  } | null>(null);
+  const [checkCoupon, { isLoading: checkingCoupon }] =
+    useCheckCouponMutation();
 
   const [taxPercent, setTaxPercent] = useState<number>(0);
   const [monthlyFee, setMonthlyFee] = useState<number>(0);
   const [yearlyFee, setYearlyFee] = useState<number>(0);
-
+  const [categoryProducts, setCategoryProducts] = useState<{
+    [key: string]: any[];
+  }>({});
   // price calc
   const lmsUnitPrice = subscriptionType === "yearly" ? yearlyFee : monthlyFee;
   const lmsUnitLabel = subscriptionType === "yearly" ? "Yearly" : "Monthly";
@@ -96,11 +106,46 @@ export default function RequestQuotation() {
 
   const lmsTax = lmsSubtotal * (taxPercent / 100);
   const lmsTotal = lmsSubtotal + lmsTax;
+
+  // Enrichment store live price: line items from categoryProducts (price per product)
+  const enrichmentLineItems = products
+    .filter(
+      (p) =>
+        p.category &&
+        p.product &&
+        (() => {
+          const q = Number(p.quantity);
+          return !isNaN(q) && q > 0;
+        })()
+    )
+    .map((p) => {
+      const list = categoryProducts[p.category] || [];
+      const prod = list.find((x: any) => x._id === p.product);
+      const unitPrice = typeof prod?.price === "number" ? prod.price : 0;
+      const qty = Number(p.quantity) || 0;
+      const lineTotal = unitPrice * qty;
+      return {
+        name: prod?.name ?? "—",
+        quantity: qty,
+        unitPrice,
+        lineTotal,
+      };
+    });
+  const enrichmentSubtotal = enrichmentLineItems.reduce(
+    (sum, item) => sum + item.lineTotal,
+    0
+  );
+  const enrichmentDiscount = appliedCoupon?.discountAmount ?? 0;
+  const enrichmentAfterDiscount = Math.max(
+    0,
+    enrichmentSubtotal - enrichmentDiscount
+  );
+  const enrichmentTax = enrichmentAfterDiscount * (taxPercent / 100);
+  const enrichmentTotal = enrichmentAfterDiscount + enrichmentTax;
+
   const [submitOpen, setSubmitOpen] = useState(false);
 
-  const [categoryProducts, setCategoryProducts] = useState<{
-    [key: string]: any[];
-  }>({});
+
 
   const handleProductChange = async (
     index: number,
@@ -112,6 +157,7 @@ export default function RequestQuotation() {
 
     if (field === "category") {
       updatedProducts[index].product = ""; // reset product
+      updatedProducts[index].id = ""; // reset id
 
       // If products not already cached
       if (!categoryProducts[value]) {
@@ -130,14 +176,57 @@ export default function RequestQuotation() {
       }
     }
 
+    if (field === "product") {
+      updatedProducts[index].id = value; // store product._id as id
+    }
+
     setProducts(updatedProducts);
   };
   const addProduct = () => {
-    setProducts([...products, { category: "", product: "", quantity: "" }]);
+    setProducts([
+      ...products,
+      { id: "", category: "", product: "", quantity: "" },
+    ]);
   };
   const removeProduct = (index: number) => {
     const updatedProducts = products.filter((_, i) => i !== index);
     setProducts(updatedProducts);
+  };
+
+  const isEnrichmentCurrentProductFilled = (() => {
+    const last = products[products.length - 1];
+    if (!last) return false;
+    const hasCategory = Boolean(last.category?.toString().trim());
+    const hasProduct = Boolean(last.product?.toString().trim());
+    const q = Number(last.quantity);
+    const hasValidQuantity = !isNaN(q) && q > 0;
+    return hasCategory && hasProduct && hasValidQuantity;
+  })();
+
+  const handleApplyCoupon = async () => {
+    const code = coupon?.toString().trim();
+    if (!code) {
+      swal("Error", "Please enter a coupon code", "error");
+      return;
+    }
+    try {
+      const res: any = await checkCoupon({
+        code,
+        amount: enrichmentSubtotal.toFixed(2),
+      }).unwrap();
+      if (res?.status && res?.data) {
+        const amount = Number(res.data.amount) || 0;
+        const discountedAmount = Number(res.data.discountedAmount) ?? amount;
+        const discountAmount = Math.max(0, amount - discountedAmount);
+        setAppliedCoupon({ code, discountAmount });
+      } else {
+        swal("Error", res?.message || "Invalid coupon code", "error");
+      }
+    } catch (err: any) {
+      const message =
+        err?.data?.message || err?.message || "Invalid or expired coupon";
+      swal("Error", message, "error");
+    }
   };
 
   const handleSubmitQuote = async () => {
@@ -166,22 +255,13 @@ export default function RequestQuotation() {
       //     return "Number of Students in Batch must be greater than 0";
       // }
 
-      // if (serviceType === "enrichment_store") {
-      //   if (!products || products.length === 0) return "At least one product is required";
-      //   for (let i = 0; i < products.length; i++) {
-      //     const p = products[i];
-      //     if (!p.category || !p.category.toString().trim())
-      //       return `Category is required for product #${i + 1}`;
-      //     if (!p.product || !p.product.toString().trim())
-      //       return `Product is required for product #${i + 1}`;
-      //     const q = Number(p.quantity);
-      //     if (isNaN(q) || q <= 0) return `Quantity must be greater than 0 for product #${i + 1}`;
-      //   }
-      //   if (!city || !city.toString().trim()) return "City is required";
-      //   if (!stateVal || !stateVal.toString().trim()) return "State is required";
-      //   if (!country || !country.toString().trim()) return "Country is required";
-      //   if (!zip || !zip.toString().trim()) return "Zip Code is required";
-      // }
+      if (serviceType === "enrichment_store") {
+        if (!products || products.length === 0) return "At least one product is required";
+        if (!city || !city.toString().trim()) return "City is required";
+        if (!stateVal || !stateVal.toString().trim()) return "State is required";
+        if (!country || !country.toString().trim()) return "Country is required";
+        if (!zip || !zip.toString().trim()) return "Zip Code is required";
+      }
 
       return null;
     };
@@ -219,15 +299,14 @@ export default function RequestQuotation() {
       data = {
         ...data,
         products: products.map((p: any) => ({
-          category: p.category,
-          product: p.product,
+          product: p.id,
           quantity: Number(p.quantity),
         })),
         city,
         state: stateVal,
         country,
-        zip,
-        coupon: coupon || undefined,
+        zipCode: zip,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
       };
     }
 
@@ -266,12 +345,13 @@ export default function RequestQuotation() {
       setBatchStudents(0);
     } else if (serviceType === "enrichment_store") {
       setOrgName("");
-      setProducts([{ category: "", product: "", quantity: "" }]);
+      setProducts([{ id: "", category: "", product: "", quantity: "" }]);
       setCity("");
       setStateVal("");
       setCountry("");
       setZip("");
       setCoupon("");
+      setAppliedCoupon(null);
     }
   };
 
@@ -574,11 +654,12 @@ export default function RequestQuotation() {
                         </div>
                       ))}
 
-                      {/* Add Button */}
+                      {/* Add Button - disabled until current row has category, product, and quantity filled */}
                       <button
                         type="button"
                         onClick={addProduct}
-                        className="rounded-md bg-primary px-4 py-2 text-sm text-white"
+                        disabled={!isEnrichmentCurrentProductFilled}
+                        className="rounded-md bg-primary px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         + Add Another Product
                       </button>
@@ -629,15 +710,37 @@ export default function RequestQuotation() {
                         placeholder="Enter Zip Code"
                       />
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-2">
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
                         Coupon / Discount Code (optional)
                       </label>
-                      <Input
-                        value={coupon}
-                        onChange={(e) => setCoupon(e.target.value)}
-                        placeholder="Enter Coupon / Discount Code"
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          value={coupon}
+                          onChange={(e) => {
+                            setCoupon(e.target.value);
+                            setAppliedCoupon(null);
+                          }}
+                          placeholder="Enter Coupon / Discount Code"
+                          className="flex-1"
+                        />
+                        {coupon?.toString().trim() && isEnrichmentCurrentProductFilled && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleApplyCoupon}
+                            disabled={checkingCoupon}
+                          >
+                            {checkingCoupon ? "Applying..." : "Apply"}
+                          </Button>
+                        )}
+                      </div>
+                      {appliedCoupon && (
+                        <span className="text-xs text-emerald-600">
+                          Coupon {appliedCoupon.code} applied (−$
+                          {appliedCoupon.discountAmount.toFixed(2)})
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -666,6 +769,48 @@ export default function RequestQuotation() {
               <div className="mt-3 text-lg font-semibold">
                 Estimated Total: ${lmsTotal.toFixed(2)}
               </div>
+            </div>
+          )}
+
+          {serviceType === "enrichment_store" && (
+            <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+              <div className="text-sm font-semibold">Live Price Calculator</div>
+              {enrichmentLineItems.length > 0 ? (
+                <>
+                  <div className="mt-2 space-y-1">
+                    {enrichmentLineItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="text-sm text-muted-foreground"
+                      >
+                        {item.name}: ({item.quantity} x $
+                        {item.unitPrice.toFixed(2)}) = $
+                        {item.lineTotal.toFixed(2)}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Subtotal: ${enrichmentSubtotal.toFixed(2)}
+                  </div>
+                  {appliedCoupon && enrichmentDiscount > 0 && (
+                    <div className="text-sm text-emerald-600">
+                      Discount ({appliedCoupon.code}): −$
+                      {enrichmentDiscount.toFixed(2)}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Tax ({taxPercent}%): ${enrichmentTax.toFixed(2)}
+                  </div>
+                  <div className="mt-3 text-lg font-semibold">
+                    Estimated Total: ${enrichmentTotal.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Add products with category, product, and quantity to see
+                  estimated price.
+                </div>
+              )}
             </div>
           )}
 

@@ -108,7 +108,11 @@ const App = () => (
                 }
               />
 
-              <Route path="/quotes" element={<QutationTracking />} />
+              <Route path="/quotes" element={
+                <ProtectedRoute>
+                  <QutationTracking />
+                </ProtectedRoute>
+              } />
               <Route
                 path="/quotes/request"
                 element={

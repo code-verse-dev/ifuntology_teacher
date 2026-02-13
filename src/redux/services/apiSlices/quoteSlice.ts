@@ -15,9 +15,32 @@ export const quoteSlice = createApi({
       }),
       invalidatesTags: ["Quotes"],
     }),
+    getMyQuotes: builder.query<
+      any,
+      {
+        page: number;
+        limit: number;
+        keyword?: string;
+      }
+    >({
+      query: ({ page, limit, keyword }) => ({
+        url: "/quotes/my",
+        method: "GET",
+        params: { keyword, page, limit },
+      }),
+    }),
+    getMyQuoteStats: builder.query<any, void>({
+      query: () => ({
+        url: "/quotes/my-stats",
+        method: "GET",
+      }),
+    }),
   }),
+
 });
 
 export const {
   useRequestQuoteMutation,
+  useGetMyQuotesQuery,
+  useGetMyQuoteStatsQuery,
 } = quoteSlice;
