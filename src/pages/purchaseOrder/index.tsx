@@ -5,7 +5,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useGetMyQuotesQuery, useGetMyQuoteStatsQuery } from "@/redux/services/apiSlices/quoteSlice";
+import { useGetMyPuchaseOrdersQuery, useGetMyPurchaseOrderStatsQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
 
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
@@ -39,6 +39,14 @@ const getStatusBadgeClass = (status: string) => {
   return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
 };
 
+const getPaymentStatusBadgeClass = (paymentStatus: string) => {
+  const s = (paymentStatus || "").toLowerCase();
+  if (s === "paid") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
+  if (s === "partial") return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
+  if (s === "unpaid" || s === "pending") return "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400";
+  return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+};
+
 export default function PurchaseOrder() {
   useEffect(() => {
     document.title = "Purchase Orders • iFuntology Teacher";
@@ -61,11 +69,11 @@ export default function PurchaseOrder() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const { data, error, isLoading } = useGetMyQuotesQuery(queryOptions);
+  const { data, error, isLoading } = useGetMyPuchaseOrdersQuery(queryOptions);
   const res = data?.data;
   const docs = Array.isArray(res?.docs) ? res.docs : [];
   
-  const { data: statsData , isLoading: statsLoading } = useGetMyQuoteStatsQuery();
+  const { data: statsData , isLoading: statsLoading } = useGetMyPurchaseOrderStatsQuery();
   const stats = statsData?.data;
   const totalOrders = stats?.totalPos ?? 0;
   const pendingApproval = stats?.pendingCount ?? 0;
@@ -150,6 +158,7 @@ export default function PurchaseOrder() {
                   <th className="pb-2">Items</th>
                   <th className="pb-2">Amount</th>
                   <th className="pb-2">Status</th>
+                  <th className="pb-2">Payment</th>
                   <th className="pb-2">Date</th>
                   <th className="pb-2">Actions</th>
                 </tr>
@@ -190,34 +199,29 @@ export default function PurchaseOrder() {
               ) : (
                 <tbody className="divide-y">
                   {docs.map((po: any) => {
-                    const id = po.poNumber ?? po.poNumber  ?? "—";
-                    const quoteRef = po.quoteNumber ?? po.quoteId ?? po.quote ?? "";
+                    const id = po.poNumber || "-"
                     const organization =
-                      po.organizationName ?? po.organization ?? "—";
+                      po.quote.organizationName ?? po.quote.organizationName ?? "—";
                     const contact =
-                      po.email ?? po.contactName ?? po.contact ?? "—";
-                    const itemsCount = Array.isArray(po.products)
-                      ? po.products.length
-                      : Array.isArray(po.items)
-                        ? po.items.length
+                      po.quote.email ?? po.quote.contactName ?? po.quote.contact ?? "—";
+                    const itemsCount = Array.isArray(po.quote.products)
+                      ? po.quote.products.length
+                      : Array.isArray(po.quote.items)
+                        ? po.quote.items.length
                         : po.items ?? "—";
-                    const amountVal = po.subTotal;
+                    const amountVal = po.quote.subTotal;
                     const amount = formatAmount(amountVal);
                     const status = po.status ?? "—";
+                    const payment = po.paymentStatus ?? "—";
                     const date = formatDate(po.createdAt ?? po.date);
                     return (
                       <tr key={id} className="align-top">
                         <td className="py-3">
                           <div className="font-medium">{id}</div>
-                          {quoteRef && (
-                            <div className="text-xs text-muted-foreground">
-                              Quote: {quoteRef}
-                            </div>
-                          )}
                         </td>
                         <td className="py-3">{organization}</td>
-                        <td className="py-3">{contact}</td>
-                        <td className="py-3">{itemsCount}</td>
+                     <td className="py-3">{contact}</td>
+                           <td className="py-3">{itemsCount}</td>
                         <td className="py-3">{amount}</td>
                         <td className="py-3">
                           <span
@@ -226,6 +230,15 @@ export default function PurchaseOrder() {
                             )}`}
                           >
                             {status}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${getPaymentStatusBadgeClass(
+                              payment
+                            )}`}
+                          >
+                            {payment}
                           </span>
                         </td>
                         <td className="py-3">{date}</td>

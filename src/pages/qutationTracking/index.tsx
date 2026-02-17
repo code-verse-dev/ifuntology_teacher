@@ -189,7 +189,13 @@ export default function QutationTracking() {
                         </div>
                       )}
                       <div className="mt-3 flex gap-2">
-                        <NavLink to={`/purchase-orders/${q._id}`}>
+                        <NavLink
+                          to={
+                            (q.status ?? "").toLowerCase() === "approved"
+                              ? `/purchase-orders/${q._id}`
+                              : `/quotes/${q._id}`
+                          }
+                        >
                           <Button variant="outline">View Details</Button>
                         </NavLink>
                       </div>

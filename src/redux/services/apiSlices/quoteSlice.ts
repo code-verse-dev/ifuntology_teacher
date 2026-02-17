@@ -35,6 +35,13 @@ export const quoteSlice = createApi({
         method: "GET",
       }),
     }),
+    getQuoteById: builder.query<any, string>({
+      query: (id) => ({
+        url: `/quotes/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_result, _error, id) => [{ type: "Quotes", id }],
+    }),
   }),
 
 });
@@ -43,4 +50,5 @@ export const {
   useRequestQuoteMutation,
   useGetMyQuotesQuery,
   useGetMyQuoteStatsQuery,
+  useGetQuoteByIdQuery,
 } = quoteSlice;
