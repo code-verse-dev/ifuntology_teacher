@@ -25,6 +25,7 @@ import QuotationDocumentPage from "./pages/dashboard/quotes/QuotationDocumentPag
 import InviteStudent from "./pages/inviteStudent";
 import QutationTracking from "./pages/qutationTracking";
 import RequestQuotation from "./pages/qutationTracking/requestQuotation";
+import QuoteDetails from "./pages/qutationTracking/quoteDetails";
 import PurchaseOrder from "./pages/purchaseOrder";
 import PurchaseOrderDetails from "./pages/purchaseOrder/purchaseOrderDetails";
 import EnrichmentStore from "./pages/enrichmentStore";
@@ -108,12 +109,24 @@ const App = () => (
                 }
               />
 
-              <Route path="/quotes" element={<QutationTracking />} />
+              <Route path="/quotes" element={
+                <ProtectedRoute>
+                  <QutationTracking />
+                </ProtectedRoute>
+              } />
               <Route
                 path="/quotes/request"
                 element={
                   <ProtectedRoute>
                     <RequestQuotation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quotes/:id"
+                element={
+                  <ProtectedRoute>
+                    <QuoteDetails />
                   </ProtectedRoute>
                 }
               />

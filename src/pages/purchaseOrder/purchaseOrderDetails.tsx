@@ -4,6 +4,8 @@ import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebar
 import { Info, Box, Truck, CheckCircle, MapPin, Download, ExternalLink, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useGetPurchaseOrderByQuoteIdQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import { formatDate } from "@/lib/utils";
 
 export default function PurchaseOrderDetails() {
   const { id } = useParams();
@@ -11,8 +13,11 @@ export default function PurchaseOrderDetails() {
   const [tab, setTab] = useState("overview");
 
   useEffect(() => {
-    document.title = `${id ?? "Purchase Order"} • Purchase Order Details`;
+    document.title = `${purchaseOrderData?.poNumber ?? "Purchase Order"} • Purchase Order Details`;
   }, [id]);
+  const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
+  let purchaseOrderData = purchaseOrder?.data;
+  // console.log("purchaseOrderData", purchaseOrderData);
 
   return (
     <DashboardWithSidebarLayout>
@@ -20,12 +25,12 @@ export default function PurchaseOrderDetails() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm text-muted-foreground cursor-pointer" onClick={() => navigate(-1)}>← Back to Purchase Orders</div>
-            <h1 className="text-2xl font-extrabold mt-2">{id ?? "Purchase Order"}</h1>
-            <div className="text-sm text-muted-foreground">Springfield Elementary School</div>
+            <h1 className="text-2xl font-extrabold mt-2">{purchaseOrderData?.poNumber ?? "Purchase Order"}</h1>
+            <div className="text-sm text-muted-foreground">{purchaseOrderData?.quote?.organizationName ?? "-"}</div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="accent">Pay Invoice</Button>
+            {/* <Button variant="accent">Pay Invoice</Button> */}
             <Button variant="ghost">Download</Button>
             <Button variant="ghost">Copy PO</Button>
             <Button variant="outline" onClick={() => navigate(-1)}>Close</Button>
@@ -35,23 +40,23 @@ export default function PurchaseOrderDetails() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Total Amount</div>
-            <div className="mt-2 text-2xl font-semibold">$9,060</div>
+            <div className="mt-2 text-2xl font-semibold">${purchaseOrderData?.amount ?? "-"}</div>
           </Card>
 
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Paid</div>
-            <div className="mt-2 text-2xl font-semibold">4,530</div>
+            <div className="mt-2 text-2xl font-semibold">${purchaseOrderData?.paidAmount ?? "-"}</div>
           </Card>
 
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Balance Due</div>
-            <div className="mt-2 text-2xl font-semibold">$4,530</div>
+            <div className="mt-2 text-2xl font-semibold">${purchaseOrderData?.amount - purchaseOrderData?.paidAmount}</div>
           </Card>
 
-          <Card className="p-4">
+          {purchaseOrderData?.quote?.products?.length > 0 && <Card className="p-4">
             <div className="text-sm text-muted-foreground">Items</div>
-            <div className="mt-2 text-2xl font-semibold">3</div>
-          </Card>
+            <div className="mt-2 text-2xl font-semibold">{purchaseOrderData?.quote?.products?.length ?? "-"}</div>
+          </Card>}
         </div>
 
         {/* Info / CTA box */}
@@ -60,19 +65,20 @@ export default function PurchaseOrderDetails() {
             <div className="flex items-start gap-4">
               <div className="flex-1">
                 <div className="text-sm font-semibold">Your PO Number is Ready to Use</div>
-                <div className="mt-2 text-sm text-white">Your PO Number ({id}) can now be used to access the following services:</div>
+                <div className="mt-2 text-sm text-white">Your PO Number ({purchaseOrderData?.poNumber ?? "-"}) can now be used to access the following services:</div>
                 <ul className="mt-3 ml-4 list-disc text-sm text-white">
-                  <li>LMS Subscriptions: Use this PO number during checkout for course subscriptions</li>
-                  <li>Write to Read: Activate student accounts using this PO number</li>
-                  <li>E-commerce: Physical kits will be shipped automatically</li>
+                  {purchaseOrderData?.quote?.serviceType === "lms" && <li>LMS Subscriptions: Use this PO number during checkout for course subscriptions</li>}
+                  {purchaseOrderData?.quote?.serviceType === "write_to_read" && <li>Write to Read: Activate student accounts using this PO number</li>}
+                  {purchaseOrderData?.quote?.serviceType === "enrichment_store" && <li>E-commerce: Physical kits will be shipped automatically</li>}
                 </ul>
                 <div className="mt-3 text-sm text-white">IMPORTANT: This PO number is valid only for the exact quantities and items listed in this order. Any changes require a new purchase order.</div>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline">Go to LMS Subscriptions</Button>
-              <Button variant="accent">Go to Write to Read</Button>
+              {purchaseOrderData?.quote?.serviceType === "lms" && <Button variant="outline">Go to LMS Subscriptions</Button>}
+              {purchaseOrderData?.quote?.serviceType === "write_to_read" && <Button variant="outline">Go to Write to Read</Button>}
+              {purchaseOrderData?.quote?.serviceType === "enrichment_store" && <Button variant="outline">Go to Ecommerce Store</Button>}
             </div>
           </div>
         </div>
@@ -82,9 +88,9 @@ export default function PurchaseOrderDetails() {
             {[
               { key: "overview", label: "Overview" },
               { key: "items", label: "Items" },
-              { key: "payment", label: "Payment" },
+              // { key: "payment", label: "Payment" },
               { key: "shipping", label: "Shipping" },
-              { key: "documents", label: "Documents" },
+              // { key: "documents", label: "Documents" },
             ].map((t) => (
               <button
                 key={t.key}
@@ -101,17 +107,22 @@ export default function PurchaseOrderDetails() {
           {tab === "overview" && (
             <div>
               <h3 className="text-lg font-semibold">Overview</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Summary and order information for {id}.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Summary and order information for {purchaseOrderData?.poNumber ?? "-"}.</p>
 
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="rounded-md border border-border/60 p-4">
                   <div className="text-sm font-semibold">Contact Information</div>
-                  <div className="mt-3 text-sm text-muted-foreground">Springfield Elementary School<br />John Smith<br />john@springfield.edu<br />(555) 123-4567</div>
+                  <div className="mt-3 text-sm text-muted-foreground">{purchaseOrderData?.quote?.organizationName}<br />
+                    {purchaseOrderData?.quote?.user?.firstName} {purchaseOrderData?.quote?.user?.lastName}<br />
+                    {purchaseOrderData?.quote?.user?.email}<br />
+                    {purchaseOrderData?.quote?.user?.phoneNumber}</div>
                 </div>
 
                 <div className="rounded-md border border-border/60 p-4">
                   <div className="text-sm font-semibold">Order Information</div>
-                  <div className="mt-3 text-sm text-muted-foreground">PO Number: {id}<br />Quote ID: QT-2024-001<br />Created: 12/8/2024<br />Approved: 12/10/2024</div>
+                  <div className="mt-3 text-sm text-muted-foreground">PO Number: {purchaseOrderData?.poNumber ?? "-"}<br />Quote ID: #{
+                    purchaseOrderData?.quote?._id ?? "-"
+                  }<br />Created: {formatDate(purchaseOrderData?.quote?.createdAt)}<br />Approved: {formatDate(purchaseOrderData?.createdAt)}</div>
                 </div>
               </div>
               {/* Financial Summary */}
@@ -124,15 +135,15 @@ export default function PurchaseOrderDetails() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Subtotal:</div>
-                          <div className="text-sm font-medium">$8,250</div>
+                          <div className="text-sm font-medium">${purchaseOrderData?.quote?.total ?? "-"}</div>
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
-                          <div className="text-sm text-muted-foreground">Tax (8%):</div>
-                          <div className="text-sm font-medium">$660</div>
+                          <div className="text-sm text-muted-foreground">Tax:</div>
+                          <div className="text-sm font-medium">${purchaseOrderData?.quote?.taxAmount ?? "-"}</div>
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Shipping:</div>
-                          <div className="text-sm font-medium">$150</div>
+                          <div className="text-sm font-medium">$0</div>
                         </div>
                       </div>
                     </div>
@@ -140,17 +151,17 @@ export default function PurchaseOrderDetails() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between rounded-lg bg-sky-100 py-1 px-3 text-sky-800">
                         <div className="text-sm">Total Amount:</div>
-                        <div className="mt-1 text-lg font-semibold">$9,060</div>
+                        <div className="mt-1 text-lg font-semibold">${purchaseOrderData?.amount ?? "-"}</div>
                       </div>
 
                       <div className=" flex items-center justify-between rounded-lg bg-emerald-100 py-1 px-3 text-emerald-800">
                         <div className="text-sm">Paid Amount:</div>
-                        <div className="mt-1 text-lg font-semibold">$4,530</div>
+                        <div className="mt-1 text-lg font-semibold">${purchaseOrderData?.paidAmount ?? "-"}</div>
                       </div>
 
                       <div className="flex items-center justify-between rounded-lg bg-orange-100 py-1 px-3 text-orange-800">
                         <div className="text-sm">Balance Due:</div>
-                        <div className="mt-1 text-lg font-semibold">$4,530</div>
+                        <div className="mt-1 text-lg font-semibold">${purchaseOrderData?.amount - purchaseOrderData?.paidAmount}</div>
                       </div>
                     </div>
                   </div>
@@ -223,7 +234,7 @@ export default function PurchaseOrderDetails() {
             </div>
           )}
 
-          {tab === "payment" && (
+          {/* {tab === "payment" && (
             <div>
               <h3 className="text-lg font-semibold">Payment Information</h3>
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -276,7 +287,7 @@ export default function PurchaseOrderDetails() {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {tab === "shipping" && (
             <div>
@@ -327,7 +338,7 @@ export default function PurchaseOrderDetails() {
             </div>
           )}
 
-          {tab === "documents" && (
+          {/* {tab === "documents" && (
             <div>
               <h3 className="text-lg font-semibold">Documents (4)</h3>
               <div className="mt-4 space-y-3">
@@ -369,15 +380,15 @@ export default function PurchaseOrderDetails() {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
         </Card>
         {/* Admin Comments */}
-        <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+        {purchaseOrderData?.status === "approved" && <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-emerald-700 mt-1" />
             <div className="text-sm text-emerald-800">Approved. All items are in stock and ready for processing. LMS access will be activated upon payment confirmation.</div>
           </div>
-        </div>
+        </div>}
       </section>
     </DashboardWithSidebarLayout>
   );
