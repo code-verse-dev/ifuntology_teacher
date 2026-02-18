@@ -37,6 +37,13 @@ const getStatusColor = (
   }
 };
 
+const getPaymentTypeLabel = (paymentType: string) => {
+  const t = (paymentType ?? "").toLowerCase();
+  if (t === "card") return "Card";
+  if (t === "purchaseorder" || t === "purchase_order") return "Purchase Order";
+  return paymentType || "—";
+};
+
 export default function MyOrdersPage() {
   const navigate = useNavigate();
   const [paginationConfig, setPaginationConfig] = useState({
@@ -62,13 +69,9 @@ export default function MyOrdersPage() {
       });
     }
   }, [data]);
-
   useEffect(() => {
     document.title = "My Orders • iFuntology Teacher";
-    if (data) {
-      console.log("Orders response:", data);
-    }
-  }, [data]);
+  }, []);
 
   const handleViewOrder = (orderNumber: string) => {
     // Navigate to order details page (to be created later)
@@ -129,6 +132,7 @@ export default function MyOrdersPage() {
                   <th className="pb-2">Date</th>
                   <th className="pb-2">Qty</th>
                   <th className="pb-2">Total Price</th>
+                  <th className="pb-2">Payment</th>
                   <th className="pb-2">Status</th>
                   <th className="pb-2">Actions</th>
                 </tr>
@@ -137,7 +141,7 @@ export default function MyOrdersPage() {
                 <tbody>
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
                       Loading orders...
@@ -189,6 +193,11 @@ export default function MyOrdersPage() {
                           ) : (
                             <>${order?.cart?.total.toFixed(2)}</>
                           )}
+                        </td>
+                        <td className="py-3">
+                          <span className="text-muted-foreground">
+                            {getPaymentTypeLabel(order?.paymentType ?? "")}
+                          </span>
                         </td>
                         <td className="py-3">
                           <Badge

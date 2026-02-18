@@ -244,7 +244,7 @@ export default function PurchaseOrder() {
                         <td className="py-3">{date}</td>
                         <td className="py-3">
                           <NavLink
-                            to={`/purchase-orders/${id}`}
+                            to={`/purchase-orders/${po?.quote?._id}`}
                             className="inline-block"
                           >
                             <Button variant="ghost">View</Button>

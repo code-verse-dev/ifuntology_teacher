@@ -207,7 +207,11 @@ const App = () => (
                 }
               />
               <Route path="/pay-invoice" element={<PayInvoice />} />
-              <Route path="/subscribe-to-lms" element={<SubscribetoLMS />} />
+              <Route path="/subscribe-to-lms" element={
+                <ProtectedRoute>
+                  <SubscribetoLMS />
+                </ProtectedRoute>
+              } />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/my-courses/:id" element={<CourseDetails />} />
               <Route path="/my-students" element={<MyStudents />} />

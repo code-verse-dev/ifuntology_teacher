@@ -113,7 +113,6 @@ export default function BookaSessionDashboard() {
     isLoading: mySessionsLoading,
   } = useGetMySessionsQuery(queryOptions);
 
-  console.log("My sessions response:", mySessionsData);
   const upcomingSession =
     mySessionsData?.data?.docs && mySessionsData.data.docs.length > 0
       ? mySessionsData.data.docs[0]
