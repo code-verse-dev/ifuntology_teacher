@@ -73,7 +73,7 @@ export default function DashboardSidebar() {
     { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
-    { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
+    // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
   ];
 
   const ecommerce: Item[] = [

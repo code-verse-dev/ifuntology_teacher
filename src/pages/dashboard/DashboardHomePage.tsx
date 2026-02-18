@@ -15,10 +15,13 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-
+import { addDays, format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  useGetMySessionsQuery,
+} from "@/redux/services/apiSlices/sessionSlice";
 
 function StatCard({
   icon,
@@ -162,6 +165,28 @@ function AssignmentCard({
 }
 
 export default function DashboardHomePage() {
+  const {
+    data: mySessionsData,
+    isLoading: mySessionsLoading,
+  } = useGetMySessionsQuery({
+    from: format(new Date(), "yyyy-MM-dd"),
+    to: format(addDays(new Date(), 30), "yyyy-MM-dd"),
+    status: "approved",
+  });
+
+  const docs = mySessionsData?.data?.docs ?? [];
+  const upcomingSessions = docs.slice(0, 2);
+
+  const to12Hour = (time: string) => {
+    if (!time) return "—";
+    const [h, m] = time.split(":").map(Number);
+    const hour = typeof h === "number" && !isNaN(h) ? h % 24 : 0;
+    const min = typeof m === "number" && !isNaN(m) ? m : 0;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${min.toString().padStart(2, "0")} ${ampm}`;
+  };
+
   useEffect(() => {
     document.title = "Dashboard • iFuntology Teacher";
   }, []);
@@ -330,20 +355,43 @@ export default function DashboardHomePage() {
           <Card className="surface-glass rounded-3xl border border-border/60 p-6 shadow-elev">
             <h2 className="text-lg font-extrabold tracking-tight">Upcoming Sessions</h2>
             <div className="mt-4 space-y-3">
-              <UpcomingCard
-                date="2024-12-18"
-                time="10:00 AM"
-                platform="Zoom"
-                status="confirmed"
-                title="Discuss LMS implementation"
-              />
-              <UpcomingCard
-                date="2024-12-19"
-                time="2:00 PM"
-                platform="Google Meet"
-                status="pending"
-                title="Write to Read onboarding"
-              />
+              {mySessionsLoading ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  Loading upcoming sessions...
+                </div>
+              ) : upcomingSessions.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No upcoming sessions
+                </div>
+              ) : (
+                upcomingSessions.map((session: any) => {
+                  const sessionDate = session?.date
+                    ? format(new Date(session.date), "yyyy-MM-dd")
+                    : "—";
+                  const timeStr =
+                    session?.slots?.[0]?.startTime != null
+                      ? to12Hour(
+                        String(session.slots[0].startTime).slice(0, 5)
+                      )
+                      : "—";
+                  const platform = session?.platform ?? "—";
+                  const status =
+                    (session?.status ?? "approved").toLowerCase() === "approved"
+                      ? "confirmed"
+                      : "pending";
+                  const title = session?.title ?? session?.subject ?? "Session";
+                  return (
+                    <UpcomingCard
+                      key={session._id}
+                      date={sessionDate}
+                      time={timeStr}
+                      platform={platform}
+                      status={status}
+                      title={title}
+                    />
+                  );
+                })
+              )}
             </div>
           </Card>
         </div>

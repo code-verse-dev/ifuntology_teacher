@@ -15,18 +15,23 @@ import {
 } from "@/components/ui/select";
 import { ImageUrl } from "@/utils/Functions";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { Info } from "lucide-react";
 import { Modal } from "antd";
 import {
   useGetCartQuery,
   useAddOrderDetailsMutation,
   useCreateCartMutation,
+  cartSlice,
 } from "@/redux/services/apiSlices/cartSlice";
 import { UPLOADS_URL } from "@/constants/api";
 import { toast } from "sonner";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
+import { useUtilizePurchaseOrderMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import swal from "sweetalert";
 
 export default function CheckoutPage() {
+  const dispatch = useDispatch();
   const { data: cartData, isLoading } = useGetCartQuery();
   const items = cartData?.data?.items || [];
   const [addOrderDetails, { isLoading: isSavingOrder }] =
@@ -80,8 +85,16 @@ export default function CheckoutPage() {
   const [couponPreview, setCouponPreview] = useState<any>(null);
 
   const [checkCoupon, { isLoading: checkingCoupon }] = useCheckCouponMutation();
+  const [utilizePurchaseOrder, { isLoading: isUtilizingPO }] =
+    useUtilizePurchaseOrderMutation();
   const appliedCoupon = cartData?.data?.coupon;
   const isCouponApplied = Boolean(appliedCoupon);
+
+  const [showPaymentChoiceModal, setShowPaymentChoiceModal] = useState(false);
+  const [paymentChoiceStep, setPaymentChoiceStep] = useState<
+    "choice" | "po"
+  >("choice");
+  const [poNumber, setPoNumber] = useState("");
 
   useEffect(() => {
     if (!orderDetails) return;
@@ -103,6 +116,7 @@ export default function CheckoutPage() {
   }, [orderDetails]);
 
   const handlePlaceOrder = async () => {
+    setShowPaymentChoiceModal(false);
     try {
       const res: any = await addOrderDetails({
         firstName: formData.firstName,
@@ -118,22 +132,60 @@ export default function CheckoutPage() {
         notes: formData.orderNotes || undefined,
       }).unwrap();
       if (res?.status) {
-        // Order details saved successfully
-
         navigate("/payment", {
           state: { type: "ORDER", total },
         });
       } else {
         toast.error(res?.message || "Failed to save order details");
       }
-
-      // After saving order details, go to payment
     } catch (error) {
       console.error("Failed to save order details", error);
       const message =
         error?.data?.message ||
         error?.message ||
         "Failed to save order details";
+      toast.error(message);
+    }
+  };
+
+  const openPaymentChoiceModal = () => {
+    setPaymentChoiceStep("choice");
+    setPoNumber("");
+    setShowPaymentChoiceModal(true);
+  };
+
+  const handlePayWithCard = () => {
+    handlePlaceOrder();
+  };
+
+  const handleRequestViaPO = () => {
+    setPaymentChoiceStep("po");
+  };
+
+  const handleSubmitPO = async () => {
+    const trimmed = poNumber?.trim();
+    if (!trimmed) {
+      toast.error("Please enter a PO number");
+      return;
+    }
+    try {
+      const res: any = await utilizePurchaseOrder({
+        serviceType: "enrichment_store",
+        poNumber: trimmed,
+      }).unwrap();
+      if (res?.status) {
+        setShowPaymentChoiceModal(false);
+        setPaymentChoiceStep("choice");
+        setPoNumber("");
+        dispatch(cartSlice.util.invalidateTags(["Cart"]));
+        toast.success("Order submitted with Purchase Order successfully");
+        navigate("/my-orders");
+      } else {
+        toast.error(res?.message || "Failed to utilize purchase order");
+      }
+    } catch (err: any) {
+      const message =
+        err?.data?.message || err?.message || "Failed to utilize purchase order";
       toast.error(message);
     }
   };
@@ -528,7 +580,7 @@ export default function CheckoutPage() {
               {/* Place Order Button */}
               <Button
                 className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={handlePlaceOrder}
+                onClick={openPaymentChoiceModal}
                 disabled={!isFormValid || items.length === 0 || isSavingOrder}
               >
                 {isSavingOrder ? "Processing..." : "Place Order"}
@@ -536,6 +588,76 @@ export default function CheckoutPage() {
             </Card>
           </div>
         </div>
+        <Modal
+          open={showPaymentChoiceModal}
+          onCancel={() => {
+            setShowPaymentChoiceModal(false);
+            setPaymentChoiceStep("choice");
+            setPoNumber("");
+          }}
+          footer={null}
+          centered
+          destroyOnClose
+          title={
+            paymentChoiceStep === "choice"
+              ? "How would you like to pay?"
+              : "Request Via Purchase Order"
+          }
+        >
+          {paymentChoiceStep === "choice" ? (
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-col gap-3">
+                <Button
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handlePayWithCard}
+                  disabled={isSavingOrder}
+                >
+                  Pay with card
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full text-white"
+                  onClick={handleRequestViaPO}
+                >
+                  Request Via Purchase Order
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="poNumber">PO Number</Label>
+                <Input
+                  id="poNumber"
+                  placeholder="Enter PO number"
+                  value={poNumber}
+                  className="text-white"
+                  onChange={(e) => setPoNumber(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPaymentChoiceStep("choice");
+                    setPoNumber("");
+                  }}
+                  className="text-white"
+                >
+                  Back
+                </Button>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleSubmitPO}
+                  disabled={!poNumber?.trim() || isUtilizingPO}
+                >
+                  {isUtilizingPO ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
+
         <Modal
                 open={showCouponModal}
                 onCancel={() => setShowCouponModal(false)}

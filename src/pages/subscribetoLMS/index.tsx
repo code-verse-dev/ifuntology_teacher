@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GraduationCap, Check } from "lucide-react";
+import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
 
 type SubscriptionPlan = {
     id: string;
@@ -119,6 +120,35 @@ const plans: SubscriptionPlan[] = [
 export default function SubscribetoLMS() {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
+    const [subscriptionType, setSubscriptionType] = useState<string>("monthly");
+    const { data: settingData } = useGetAllSettingsQuery({});
+    const [monthlyFee, setMonthlyFee] = useState<number>(0);
+    const [yearlyFee, setYearlyFee] = useState<number>(0);
+    const [taxPercent, setTaxPercent] = useState<number>(0);
+
+    useEffect(() => {
+        if (settingData && Array.isArray(settingData.data)) {
+            const taxSetting = settingData.data.find(
+                (item: any) => item.type === "tax"
+            );
+            if (
+                taxSetting &&
+                taxSetting.data &&
+                typeof taxSetting.data.percentage === "number"
+            ) {
+                setTaxPercent(taxSetting.data.percentage);
+            }
+            const lmsSetting = settingData.data.find(
+                (item: any) => item.type === "lms"
+            );
+            if (lmsSetting && lmsSetting.data) {
+                if (typeof lmsSetting.data.monthlySubscriptionFee === "number")
+                    setMonthlyFee(lmsSetting.data.monthlySubscriptionFee);
+                if (typeof lmsSetting.data.yearlySubscriptionFee === "number")
+                    setYearlyFee(lmsSetting.data.yearlySubscriptionFee);
+            }
+        }
+    }, [settingData]);
 
     useEffect(() => {
         document.title = "Subscribe to LMS • iFuntology Teacher";

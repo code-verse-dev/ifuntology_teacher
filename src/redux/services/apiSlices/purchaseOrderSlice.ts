@@ -4,6 +4,7 @@ import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 export const purchaseOrderSlice = createApi({
   reducerPath: "purchaseOrderApi",
   baseQuery: baseQueryWithReauth,
+  tagTypes: ["Cart"],
   endpoints: (builder) => ({
    
     getMyPuchaseOrders: builder.query<
@@ -32,12 +33,24 @@ export const purchaseOrderSlice = createApi({
         method: "GET",
       }),
     }),
+    utilizePurchaseOrder: builder.mutation<
+      any,
+      { serviceType: string; poNumber: string }
+    >({
+      query: (body) => ({
+        url: "/porder/utilize",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Cart"],
+    }),
   }),
 
 });
 
 export const {
-    useGetMyPuchaseOrdersQuery,
-    useGetMyPurchaseOrderStatsQuery,
-    useGetPurchaseOrderByQuoteIdQuery,
+  useGetMyPuchaseOrdersQuery,
+  useGetMyPurchaseOrderStatsQuery,
+  useGetPurchaseOrderByQuoteIdQuery,
+  useUtilizePurchaseOrderMutation,
 } = purchaseOrderSlice;
