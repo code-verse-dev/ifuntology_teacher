@@ -15,6 +15,7 @@ import { sessionSlice } from "./services/apiSlices/sessionSlice";
 import { settingSlice } from "./services/apiSlices/settingSlice";
 import { quoteSlice } from "./services/apiSlices/quoteSlice";
 import { purchaseOrderSlice } from "./services/apiSlices/purchaseOrderSlice";
+import { courseSlice } from "./services/apiSlices/courseSlice";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -30,6 +31,7 @@ const rootReducer = combineReducers({
   [settingSlice.reducerPath]: settingSlice.reducer,
   [quoteSlice.reducerPath]: quoteSlice.reducer,
   [purchaseOrderSlice.reducerPath]: purchaseOrderSlice.reducer,
+  [courseSlice.reducerPath]: courseSlice.reducer,
 });
 
 const persistConfig = {
@@ -48,6 +50,7 @@ const persistConfig = {
     settingSlice.reducerPath,
     quoteSlice.reducerPath,
     purchaseOrderSlice.reducerPath,
+    courseSlice.reducerPath,
   ],
 };
 
@@ -71,7 +74,7 @@ export const store = configureStore({
       .concat(settingSlice.middleware)
       .concat(quoteSlice.middleware)
       .concat(purchaseOrderSlice.middleware)
-      ,
+      .concat(courseSlice.middleware),
 });
 
 setupListeners(store.dispatch);
