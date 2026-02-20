@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { PaymentIntentResult } from "@stripe/stripe-js";
 import { useNavigate } from "react-router";
-import { useOrderPaymentMutation } from "../../redux/services/apiSlices/paymentSlice";
+import { useOrderPaymentMutation, useSubscriptionPaymentMutation } from "../../redux/services/apiSlices/paymentSlice";
 import swal from "sweetalert";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +14,9 @@ interface CheckoutFormProps {
   type?: string;
   amount?: number;
   clientSecret?: string;
+  subscriptionType?: string;
+  numberOfSeats?: number;
+  courseType?: string;
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -21,6 +24,9 @@ interface CheckoutFormProps {
 const CheckoutForm = ({
   type,
   amount,
+  subscriptionType,
+  numberOfSeats,
+  courseType,
   isProcessing,
   setIsProcessing,
 }: CheckoutFormProps) => {
@@ -29,6 +35,7 @@ const CheckoutForm = ({
   const token = useSelector((state: RootState) => state.user.userToken);
   const [message, setMessage] = useState("");
   const [bookOrder] = useOrderPaymentMutation();
+  const [bookSubscription] = useSubscriptionPaymentMutation();
 
   const navigate = useNavigate();
   const savePayment = async (paymentIntent: any) => {
@@ -54,6 +61,34 @@ const CheckoutForm = ({
           }
         } catch (error: any) {
           console.error("Error updating business status:", error);
+          let message = error?.data?.message || error?.message;
+          if (message) swal("Error", message, "error");
+        }
+      }
+      else if (type === "SUBSCRIPTION") {
+        let data: any = {
+          paymentIntentId: paymentIntent.id,
+          type,
+          courseType,
+          numberOfSeats,
+          subscriptionType,
+        };
+        try {
+          const res: any = await bookSubscription({
+            data: data,
+          }).unwrap();
+          if (res?.status) {
+            swal("Success", "Payment completed successfully", "success");
+            navigate("/my-courses");
+          } else {
+            const message =
+              res?.data?.error?.message ||
+              res?.error?.message ||
+              "Something went wrong";
+            swal("Error", message, "error");
+          }
+        } catch (error: any) {
+          console.error("Error booking subscription:", error);
           let message = error?.data?.message || error?.message;
           if (message) swal("Error", message, "error");
         }

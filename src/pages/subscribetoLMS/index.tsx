@@ -9,6 +9,7 @@ import { GraduationCap, Check, Loader2 } from "lucide-react";
 import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
 import { useGetCoursesQuery } from "@/redux/services/apiSlices/courseSlice";
 import { useGetProductByCourseTypeQuery } from "@/redux/services/apiSlices/productSlice";
+import { useNavigate } from "react-router-dom";
 
 type SubscriptionPlan = {
     id: string;
@@ -167,9 +168,10 @@ function CourseCard({
 }
 
 export default function SubscribetoLMS() {
+    const navigate = useNavigate();
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
-    const [subscriptionType, setSubscriptionType] = useState<string>("monthly");
+    const [subscriptionType, setSubscriptionType] = useState<string>("MONTHLY");
     const { data: settingData } = useGetAllSettingsQuery({});
     const [monthlyFee, setMonthlyFee] = useState<number>(0);
     const [yearlyFee, setYearlyFee] = useState<number>(0);
@@ -216,8 +218,8 @@ export default function SubscribetoLMS() {
     }, []);
 
     // LMS price calc (same logic as requestQuotation when type is lms)
-    const lmsUnitPrice = subscriptionType === "yearly" ? yearlyFee : monthlyFee;
-    const lmsUnitLabel = subscriptionType === "yearly" ? "Yearly" : "Monthly";
+    const lmsUnitPrice = subscriptionType === "YEARLY" ? yearlyFee : monthlyFee;
+    const lmsUnitLabel = subscriptionType === "YEARLY" ? "YEARLY" : "MONTHLY";
     const lmsQty = Math.max(0, Number(numStudents) || 0);
     const kitPrice = Number(productByCourse?.data?.price) || 0;
     const lmsSubtotal = lmsQty * lmsUnitPrice + lmsQty * kitPrice;
@@ -233,6 +235,17 @@ export default function SubscribetoLMS() {
             duration: HARDCODED_DURATION,
             features: Array.isArray(course.features) ? course.features : [],
             theme: getThemeForCourseType(course.courseType ?? ""),
+        });
+    };
+    const handlePayWithCreditCard = () => {
+        navigate("/payment", {
+            state: {
+                total: lmsTotal,
+                subscriptionType: subscriptionType,
+                numberOfSeats: numStudents,
+                courseType: courseTypeForPrice,
+                type: "SUBSCRIPTION"
+            },
         });
     };
 
@@ -287,8 +300,8 @@ export default function SubscribetoLMS() {
                                     value={subscriptionType}
                                     onChange={(e) => setSubscriptionType(e.target.value)}
                                 >
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
+                                    <option value="MONTHLY">Monthly</option>
+                                    <option value="YEARLY">Yearly</option>
                                 </select>
                             </div>
 
@@ -342,6 +355,7 @@ export default function SubscribetoLMS() {
                             <Button
                                 variant="gradient-green"
                                 className="w-full rounded-full"
+                                onClick={handlePayWithCreditCard}
                             >
                                 Pay with Credit Card
                             </Button>

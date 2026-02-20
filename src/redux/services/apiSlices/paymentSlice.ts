@@ -42,6 +42,13 @@ export const paymentSlice = createApi({
       }),
       invalidatesTags: ["Cart"],
     }),
+    SubscriptionPayment: builder.mutation<any, { data: any }>({
+      query: ({ data }) => ({
+        url: "/payment/subscription-payment",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -49,4 +56,5 @@ export const {
   usePaymentConfigQuery,
   usePaymentIntentMutation,
   useOrderPaymentMutation,
+  useSubscriptionPaymentMutation,
 } = paymentSlice;
