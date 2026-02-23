@@ -9,6 +9,8 @@ import { GraduationCap, Check, Loader2 } from "lucide-react";
 import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
 import { useGetCoursesQuery } from "@/redux/services/apiSlices/courseSlice";
 import { useGetProductByCourseTypeQuery } from "@/redux/services/apiSlices/productSlice";
+import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+import { useNavigate } from "react-router-dom";
 
 type SubscriptionPlan = {
     id: string;
@@ -105,11 +107,15 @@ function CourseCard({
     monthlyFee,
     taxPercent,
     onSelect,
+    activeSubscriptionId,
+    onViewCourse,
 }: {
     course: any;
     monthlyFee: number;
     taxPercent: number;
     onSelect: (course: any) => void;
+    activeSubscriptionId: string | null;
+    onViewCourse: (subscriptionId: string) => void;
 }) {
     const courseType = course?.courseType ?? "Funtology";
     const { data: productByCourse } = useGetProductByCourseTypeQuery({
@@ -157,9 +163,13 @@ function CourseCard({
 
                 <Button
                     className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-base shadow-lg"
-                    onClick={() => onSelect(course)}
+                    onClick={() =>
+                        activeSubscriptionId
+                            ? onViewCourse(activeSubscriptionId)
+                            : onSelect(course)
+                    }
                 >
-                    Subscribe Now
+                    {activeSubscriptionId ? "View Course" : "Subscribe Now"}
                 </Button>
             </div>
         </Card>
@@ -167,14 +177,23 @@ function CourseCard({
 }
 
 export default function SubscribetoLMS() {
+    const navigate = useNavigate();
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
-    const [subscriptionType, setSubscriptionType] = useState<string>("monthly");
+    const [subscriptionType, setSubscriptionType] = useState<string>("MONTHLY");
     const { data: settingData } = useGetAllSettingsQuery({});
     const [monthlyFee, setMonthlyFee] = useState<number>(0);
     const [yearlyFee, setYearlyFee] = useState<number>(0);
     const [taxPercent, setTaxPercent] = useState<number>(0);
     const { data: coursesResponse, isLoading: coursesLoading } = useGetCoursesQuery();
+    const { data: mySubscriptions } = useGetMySubscriptionsQuery({ status: "ACTIVE" });
+    const subscriptionsDocs = mySubscriptions?.data?.docs ?? [];
+    const activeSubscriptionByCourseType: Record<string, { _id: string }> = {};
+    subscriptionsDocs.forEach((sub: any) => {
+        const ct = sub?.courseType ?? sub?.course?.courseType;
+        if (ct) activeSubscriptionByCourseType[ct] = { _id: sub._id };
+    });
+
     const courseList = Array.isArray(coursesResponse?.data)
         ? [...coursesResponse.data].sort(
               (a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
@@ -216,8 +235,8 @@ export default function SubscribetoLMS() {
     }, []);
 
     // LMS price calc (same logic as requestQuotation when type is lms)
-    const lmsUnitPrice = subscriptionType === "yearly" ? yearlyFee : monthlyFee;
-    const lmsUnitLabel = subscriptionType === "yearly" ? "Yearly" : "Monthly";
+    const lmsUnitPrice = subscriptionType === "YEARLY" ? yearlyFee : monthlyFee;
+    const lmsUnitLabel = subscriptionType === "YEARLY" ? "YEARLY" : "MONTHLY";
     const lmsQty = Math.max(0, Number(numStudents) || 0);
     const kitPrice = Number(productByCourse?.data?.price) || 0;
     const lmsSubtotal = lmsQty * lmsUnitPrice + lmsQty * kitPrice;
@@ -235,6 +254,18 @@ export default function SubscribetoLMS() {
             theme: getThemeForCourseType(course.courseType ?? ""),
         });
     };
+    const handlePayWithCreditCard = () => {
+        navigate("/payment", {
+            state: {
+                total: lmsTotal,
+                subscriptionType: subscriptionType,
+                numberOfSeats: numStudents,
+                courseType: courseTypeForPrice,
+                type: "SUBSCRIPTION"
+            },
+        });
+    };
+
 
     return (
         <DashboardWithSidebarLayout>
@@ -261,6 +292,10 @@ export default function SubscribetoLMS() {
                                     monthlyFee={monthlyFee}
                                     taxPercent={taxPercent}
                                     onSelect={handleSelectCourse}
+                                    activeSubscriptionId={
+                                        activeSubscriptionByCourseType[course?.courseType]?._id ?? null
+                                    }
+                                    onViewCourse={(id) => navigate(`/my-courses/${course?.courseType}`)}
                                 />
                             ))}
                         </div>
@@ -287,8 +322,8 @@ export default function SubscribetoLMS() {
                                     value={subscriptionType}
                                     onChange={(e) => setSubscriptionType(e.target.value)}
                                 >
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
+                                    <option value="MONTHLY">Monthly</option>
+                                    <option value="YEARLY">Yearly</option>
                                 </select>
                             </div>
 
@@ -342,6 +377,7 @@ export default function SubscribetoLMS() {
                             <Button
                                 variant="gradient-green"
                                 className="w-full rounded-full"
+                                onClick={handlePayWithCreditCard}
                             >
                                 Pay with Credit Card
                             </Button>

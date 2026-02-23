@@ -13,7 +13,7 @@ interface PaymentParams {
 export const paymentSlice = createApi({
   reducerPath: "paymentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Payment", "Cart"],
+  tagTypes: ["Payment", "Cart", "Subscription"],
   endpoints: (builder) => ({
     paymentConfig: builder.query<any, any>({
       query: () => ({
@@ -42,6 +42,14 @@ export const paymentSlice = createApi({
       }),
       invalidatesTags: ["Cart"],
     }),
+    SubscriptionPayment: builder.mutation<any, { data: any }>({
+      query: ({ data }) => ({
+        url: "/payment/subscription-payment",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Subscription"],
+    }),
   }),
 });
 
@@ -49,4 +57,5 @@ export const {
   usePaymentConfigQuery,
   usePaymentIntentMutation,
   useOrderPaymentMutation,
+  useSubscriptionPaymentMutation,
 } = paymentSlice;

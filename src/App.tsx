@@ -212,8 +212,16 @@ const App = () => (
                   <SubscribetoLMS />
                 </ProtectedRoute>
               } />
-              <Route path="/my-courses" element={<MyCourses />} />
-              <Route path="/my-courses/:id" element={<CourseDetails />} />
+              <Route path="/my-courses" element={
+                <ProtectedRoute>
+                  <MyCourses />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType" element={
+                <ProtectedRoute>
+                  <CourseDetails />
+                </ProtectedRoute>
+                } />
               <Route path="/my-students" element={<MyStudents />} />
               <Route path="/affiliate-program" element={<AffiliateProgram />} />
               <Route path="/notifications" element={<Notifications />} />
