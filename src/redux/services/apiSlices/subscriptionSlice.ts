@@ -14,11 +14,12 @@ export const subscriptionSlice = createApi({
         status?: string;
       }
     >({
-      query: ({page, limit, status}) => ({
-        url: "/subscription/my",
+      query: ( {page, limit, status}) => ({
+        url: "/teacher-subscription/my",
         method: "GET",
         params: { page, limit, status },
       }),
+      providesTags: ["Subscription"],
     }),
   }),
 });

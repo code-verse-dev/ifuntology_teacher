@@ -70,8 +70,8 @@ export default function InviteStudent() {
                 <div className="mb-2 font-semibold">What happens next:</div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
                   <li>System creates student account</li>
-                  <li>Email sent with activation link</li>
-                  <li>Student clicks link to set password</li>
+                  <li>Email sent with credentials</li>
+                  <li>Student clicks link of site url</li>
                   <li>Student can login immediately</li>
                 </ol>
               </div>

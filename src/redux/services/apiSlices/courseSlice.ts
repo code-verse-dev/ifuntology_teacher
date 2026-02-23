@@ -11,6 +11,7 @@ export const courseSlice = createApi({
         method: "GET",
       }),
     }),
+   
   }),
 });
 

@@ -14,6 +14,9 @@ const Payment = () => {
   const location = useLocation();
   const total = location.state?.total;
   const type = location.state?.type;
+  const courseType = location.state?.courseType;
+  const numberOfSeats = location.state?.numberOfSeats;
+  const subscriptionType = location.state?.subscriptionType;
   const [stripePromise, setStripePromise] =
     useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState("");
@@ -72,6 +75,9 @@ const Payment = () => {
               clientSecret={clientSecret}
               isProcessing={isProcessing}
               setIsProcessing={setIsProcessing}
+              courseType={courseType}
+              numberOfSeats={numberOfSeats}
+              subscriptionType={subscriptionType}
             />
           </Elements>
         ) : (

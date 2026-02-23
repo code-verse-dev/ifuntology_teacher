@@ -62,7 +62,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res: any = await login({ email, password, role: "teacher" }).unwrap();
+      const res: any = await login({ identifier: email, password, role: "teacher" }).unwrap();
       if (res?.status) {
         toast.success("Signed in successfully");
         dispatch(addUser({ user: res?.data?.user }));
