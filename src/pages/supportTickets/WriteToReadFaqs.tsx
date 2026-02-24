@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -16,48 +16,27 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useGetFaqsQuery } from "@/redux/services/apiSlices/faqSlice";
 
 export default function WriteToReadFaqs() {
     const navigate = useNavigate();
+    const [search, setSearch] = useState("");
+    const [keyword, setKeyword] = useState("");
 
     useEffect(() => {
         document.title = "Write to Read FAQs • iFuntology Teacher";
     }, []);
 
-    const faqs = [
-        {
-            q: "How do I get started as a teacher with Write to Read?",
-            a: "Subscribe to Write to Read and then invite students by providing their first names, last names, and email addresses. You need a minimum of 10 students for your first batch. You can also generate usernames and passwords to share manually."
-        },
-        {
-            q: "What is the minimum number of students required?",
-            a: "A minimum of 10 students is required for the initial batch registration to get started with the Write to Read program."
-        },
-        {
-            q: "How do I activate or deactivate students?",
-            a: "You can manage student statuses (active/inactive) directly from your student roster in the Write to Read management section."
-        },
-        {
-            q: "How do I grade student books?",
-            a: "Grading tools are available directly within the Write to Read module. You can review student progress, provide feedback, and assign grades as they complete chapters."
-        },
-        {
-            q: "Can I view the books authored by my students?",
-            a: "Yes, all draft and published student books are accessible through your teacher dashboard. You can monitor their writing journey in real-time."
-        },
-        {
-            q: "How does subscription payment work?",
-            a: "Subscriptions are typically annual or per-batch. Payments can be handled via credit card or purchase orders through the Enrichment Store."
-        },
-        {
-            q: "Who pays for book printing?",
-            a: "Printing and fulfillment costs can be covered by the school's organization or individual parents, depending on how you've set up your program."
-        },
-        {
-            q: "What are ISBNs and how do I manage them?",
-            a: "ISBNs are unique identifiers for published books. Our system handles the assignment of ISBNs for eligible published works, which you can track in your publication history."
-        }
-    ];
+    useEffect(() => {
+        const t = setTimeout(() => setKeyword(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const { data: faqsData } = useGetFaqsQuery({
+        module: "write_to_read",
+        keyword: keyword || undefined,
+    });
+    const faqs = faqsData?.data?.docs ?? [];
 
     return (
         <DashboardWithSidebarLayout>
@@ -84,28 +63,30 @@ export default function WriteToReadFaqs() {
                         <Input
                             placeholder="Search FAQs..."
                             className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl ring-offset-background placeholder:text-slate-400 focus-visible:ring-lime-500 transition-all font-medium"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
 
                     {/* FAQs Accordion */}
                     <Accordion type="single" collapsible className="space-y-4">
-                        {faqs.map((faq, i) => (
+                        {faqs.map((faq: any, i: number) => (
                             <AccordionItem
-                                key={i}
+                                key={faq._id ?? i}
                                 value={`item-${i}`}
                                 className="border border-slate-100 dark:border-slate-800 rounded-2xl px-5 transition-all data-[state=open]:border-lime-200 dark:data-[state=open]:border-lime-900/30 overflow-hidden"
                             >
                                 <AccordionTrigger className="hover:no-underline py-5 text-left text-sm font-bold text-slate-900 dark:text-white group">
                                     <div className="flex gap-4 items-center w-full">
                                         <div className="h-6 w-6 rounded-full bg-lime-500 flex items-center justify-center text-[10px] text-white shrink-0">Q</div>
-                                        <span className="flex-1">{faq.q}</span>
+                                        <span className="flex-1">{faq.question}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-5 pt-0">
                                     <div className="flex gap-4 items-start pl-0">
                                         <div className="h-6 w-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white shrink-0 mt-0.5 font-bold">A</div>
                                         <p className="text-xs text-slate-500 font-medium leading-relaxed flex-1">
-                                            {faq.a}
+                                            {faq.answer}
                                         </p>
                                     </div>
                                 </AccordionContent>

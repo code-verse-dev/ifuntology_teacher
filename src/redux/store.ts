@@ -18,6 +18,10 @@ import { purchaseOrderSlice } from "./services/apiSlices/purchaseOrderSlice";
 import { courseSlice } from "./services/apiSlices/courseSlice";
 import { subscriptionSlice } from "./services/apiSlices/subscriptionSlice";
 import { courseModuleSlice } from "./services/apiSlices/courseModuleSlice";
+import { invitationSlice } from "./services/apiSlices/invitationSlice";
+import { ticketSlice } from "./services/apiSlices/ticketSlice";
+import { faqSlice } from "./services/apiSlices/faqSlice";
+
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -36,6 +40,9 @@ const rootReducer = combineReducers({
   [courseSlice.reducerPath]: courseSlice.reducer,
   [subscriptionSlice.reducerPath]: subscriptionSlice.reducer,
   [courseModuleSlice.reducerPath]: courseModuleSlice.reducer,
+  [invitationSlice.reducerPath]: invitationSlice.reducer,
+  [ticketSlice.reducerPath]: ticketSlice.reducer,
+  [faqSlice.reducerPath]: faqSlice.reducer,
 });
 
 const persistConfig = {
@@ -57,6 +64,9 @@ const persistConfig = {
     courseSlice.reducerPath,
     subscriptionSlice.reducerPath,
     courseModuleSlice.reducerPath,
+    invitationSlice.reducerPath,
+    ticketSlice.reducerPath,
+    faqSlice.reducerPath,
   ],
 };
 
@@ -82,7 +92,10 @@ export const store = configureStore({
       .concat(purchaseOrderSlice.middleware)
       .concat(courseSlice.middleware)
       .concat(subscriptionSlice.middleware)
-      .concat(courseModuleSlice.middleware),
+      .concat(courseModuleSlice.middleware)
+      .concat(invitationSlice.middleware)
+      .concat(ticketSlice.middleware)
+      .concat(faqSlice.middleware),
 });
 
 setupListeners(store.dispatch);
