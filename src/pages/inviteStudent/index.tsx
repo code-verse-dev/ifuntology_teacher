@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useInviteStudentMutation } from "@/redux/services/apiSlices/invitationSlice";
 
 export default function InviteStudent() {
   useEffect(() => {
@@ -15,6 +16,73 @@ export default function InviteStudent() {
 
   const [sendOpen, setSendOpen] = useState(false);
   const [createdOpen, setCreatedOpen] = useState(false);
+
+  // Form 1: Email invitation
+  const [firstNameEmail, setFirstNameEmail] = useState("");
+  const [lastNameEmail, setLastNameEmail] = useState("");
+  const [emailEmail, setEmailEmail] = useState("");
+  const [courseEmail, setCourseEmail] = useState("Funtology");
+
+  // Form 2: Manual credentials
+  const [firstNameGen, setFirstNameGen] = useState("");
+  const [lastNameGen, setLastNameGen] = useState("");
+  const [courseGen, setCourseGen] = useState("Funtology");
+
+  // Credentials from MANUAL response (if API returns them)
+  const [createdCredentials, setCreatedCredentials] = useState<{ username?: string; password?: string } | null>(null);
+
+  const [inviteStudent] = useInviteStudentMutation();
+  const [submittingType, setSubmittingType] = useState<"EMAIL" | "MANUAL" | null>(null);
+
+  const handleInvitation = async (type: "EMAIL" | "MANUAL") => {
+    setSubmittingType(type);
+    const isEmail = type === "EMAIL";
+    const body = isEmail
+      ? {
+          firstName: firstNameEmail.trim(),
+          lastName: lastNameEmail.trim(),
+          email: emailEmail.trim(),
+          courseType: courseEmail,
+          type: "EMAIL" as const,
+        }
+      : {
+          firstName: firstNameGen.trim(),
+          lastName: lastNameGen.trim(),
+          courseType: courseGen,
+          type: "MANUAL" as const,
+        };
+
+    try {
+      const res: any = await inviteStudent(body).unwrap();
+      console.log(res, 'res');
+      if(res.status){
+          toast.message(res.message);
+          if (isEmail) {
+            setSendOpen(true);
+            setFirstNameEmail("");
+            setLastNameEmail("");
+            setEmailEmail("");
+          } else {
+            setCreatedCredentials({
+              username: res?.data?.username ?? res?.username,
+              password: res?.data?.password ?? res?.password,
+            });
+            setCreatedOpen(true);
+            setFirstNameGen("");
+            setLastNameGen("");
+          }
+      }
+      else{
+        toast.error(res?.message || "Failed to create student account");
+      }
+    } catch (err: any) {
+      toast.error(
+        err?.data?.message || err?.message || (isEmail ? "Failed to send invitation" : "Failed to generate credentials")
+      );
+    } finally {
+      setSubmittingType(null);
+    }
+  };
 
   return (
     <DashboardWithSidebarLayout>
@@ -39,29 +107,53 @@ export default function InviteStudent() {
                   <label htmlFor="firstNameEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
                     First Name
                   </label>
-                  <Input id="firstNameEmail" placeholder="First Name" />
+                  <Input
+                    id="firstNameEmail"
+                    placeholder="First Name"
+                    value={firstNameEmail}
+                    onChange={(e) => setFirstNameEmail(e.target.value)}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="lastNameEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
                     Last Name
                   </label>
-                  <Input id="lastNameEmail" placeholder="Last Name" />
+                  <Input
+                    id="lastNameEmail"
+                    placeholder="Last Name"
+                    value={lastNameEmail}
+                    onChange={(e) => setLastNameEmail(e.target.value)}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="emailEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
                     Email
                   </label>
-                  <Input id="emailEmail" placeholder="Email" />
+                  <Input
+                    id="emailEmail"
+                    placeholder="Email"
+                    type="email"
+                    value={emailEmail}
+                    onChange={(e) => setEmailEmail(e.target.value)}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="courseEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
                     Select Course
                   </label>
-                  <select id="courseEmail" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm">
-                    <option>Funtology</option>
+                  <select
+                    id="courseEmail"
+                    className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                    value={courseEmail}
+                    onChange={(e) => setCourseEmail(e.target.value)}
+                  >
+                    <option value="Funtology">Funtology</option>
+                    <option value="Barbertology">Barbertology</option>
+                    <option value="Nailtology">Nailtology</option>
+                    <option value="Skintology">Skintology</option>
                   </select>
                 </div>
               </div>
@@ -79,11 +171,10 @@ export default function InviteStudent() {
               <div className="mt-3">
                 <Button
                   variant="brand"
-                  onClick={() => {
-                    setSendOpen(true);
-                  }}
+                  disabled={submittingType !== null || !firstNameEmail.trim() || !lastNameEmail.trim() || !emailEmail.trim()}
+                  onClick={() => handleInvitation("EMAIL")}
                 >
-                  Send Email Invitation
+                  {submittingType === "EMAIL" ? "Sending…" : "Send Email Invitation"}
                 </Button>
               </div>
             </div>
@@ -104,29 +195,40 @@ export default function InviteStudent() {
                   <label htmlFor="firstNameGen" className="mb-1 block text-xs font-medium text-muted-foreground">
                     First Name
                   </label>
-                  <Input id="firstNameGen" placeholder="First Name" />
+                  <Input
+                    id="firstNameGen"
+                    placeholder="First Name"
+                    value={firstNameGen}
+                    onChange={(e) => setFirstNameGen(e.target.value)}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="lastNameGen" className="mb-1 block text-xs font-medium text-muted-foreground">
                     Last Name
                   </label>
-                  <Input id="lastNameGen" placeholder="Last Name" />
-                </div>
-
-                <div>
-                  <label htmlFor="emailGen" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Email (Optional)
-                  </label>
-                  <Input id="emailGen" placeholder="Email (Optional)" />
+                  <Input
+                    id="lastNameGen"
+                    placeholder="Last Name"
+                    value={lastNameGen}
+                    onChange={(e) => setLastNameGen(e.target.value)}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="courseGen" className="mb-1 block text-xs font-medium text-muted-foreground">
                     Select Course
                   </label>
-                  <select id="courseGen" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm">
-                    <option>Funtology</option>
+                  <select
+                    id="courseGen"
+                    className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                    value={courseGen}
+                    onChange={(e) => setCourseGen(e.target.value)}
+                  >
+                    <option value="Funtology">Funtology</option>
+                    <option value="Barbertology">Barbertology</option>
+                    <option value="Nailtology">Nailtology</option>
+                    <option value="Skintology">Skintology</option>
                   </select>
                 </div>
               </div>
@@ -145,17 +247,16 @@ export default function InviteStudent() {
               <div className="mt-3">
                 <Button
                   variant="brand"
-                  onClick={() => {
-                    setCreatedOpen(true);
-                  }}
+                  disabled={submittingType !== null || !firstNameGen.trim() || !lastNameGen.trim()}
+                  onClick={() => handleInvitation("MANUAL")}
                 >
-                  Generate Credentials
+                  {submittingType === "MANUAL" ? "Generating…" : "Generate Credentials"}
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+          {/* <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold">Bulk Invitation</div>
@@ -172,7 +273,7 @@ export default function InviteStudent() {
                 </Button>
               </div>
             </div>
-          </div>
+          </div> */}
         </Card>
 
         {/* Dialog: Invitation Sent (screen 17) */}
@@ -194,9 +295,8 @@ export default function InviteStudent() {
             </div>
           </DialogContent>
         </Dialog>
-
         {/* Dialog: Student Account Created (screen 18) */}
-        <Dialog open={createdOpen} onOpenChange={setCreatedOpen}>
+        <Dialog open={createdOpen} onOpenChange={(open) => { setCreatedOpen(open); if (!open) setCreatedCredentials(null); }}>
           <DialogContent>
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-full bg-green-500/10 p-4">
@@ -215,7 +315,7 @@ export default function InviteStudent() {
                     </svg>
                     <div>Username</div>
                   </div>
-                  <div className="font-mono">student_user</div>
+                  <div className="font-mono">{createdCredentials?.username ?? "—"}</div>
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-2">
@@ -224,15 +324,23 @@ export default function InviteStudent() {
                     </svg>
                     <div>Password</div>
                   </div>
-                  <div className="font-mono">GEQVERPAD</div>
+                  <div className="font-mono">{createdCredentials?.password ?? "—"}</div>
                 </div>
               </div>
 
               <div className="w-full">
-                <Button className="w-full" onClick={() => {
-                  navigator.clipboard?.writeText("student_user:GEQVERPAD");
-                  toast.message("Credentials copied to clipboard");
-                }}>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    const text = createdCredentials?.username && createdCredentials?.password
+                      ? `${createdCredentials.username}:${createdCredentials.password}`
+                      : "";
+                    if (text && navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(text);
+                      toast.success("Credentials copied to clipboard");
+                    }
+                  }}
+                >
                   Copy Credentials
                 </Button>
               </div>

@@ -1,15 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 
-interface PaymentParams {
-  date?: Date;
-  adId?: string;
-  fromAddress?: string;
-  toAddress?: string;
-  pickupTime?: string;
-  returnTime?: string;
-}
-
 export const paymentSlice = createApi({
   reducerPath: "paymentApi",
   baseQuery: baseQueryWithReauth,
@@ -50,7 +41,14 @@ export const paymentSlice = createApi({
       }),
       invalidatesTags: ["Subscription"],
     }),
+    getSavedPaymentMethods: builder.query<any, void>({
+      query: () => ({
+        url: "/payment/payment-methods",
+        method: "GET",
+      }),
+    }),
   }),
+
 });
 
 export const {
@@ -58,4 +56,5 @@ export const {
   usePaymentIntentMutation,
   useOrderPaymentMutation,
   useSubscriptionPaymentMutation,
+  useGetSavedPaymentMethodsQuery,
 } = paymentSlice;

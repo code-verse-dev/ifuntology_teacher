@@ -12,6 +12,7 @@ import {
   Plus,
   CreditCard,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,12 +21,15 @@ import { Label } from "@/components/ui/label";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { UPLOADS_URL } from "@/constants/api";
+import { useGetSavedPaymentMethodsQuery } from "@/redux/services/apiSlices/paymentSlice";
 
 export default function MyProfile() {
   useEffect(() => {
     document.title = "My Profile • iFuntology Teacher";
   }, []);
   const user = useSelector((state: RootState) => state.user.userData);
+  const { data: paymentData, isLoading: cardsLoading } = useGetSavedPaymentMethodsQuery();
+  const savedCards: any[] = paymentData?.data?.data ?? [];
 
   return (
     <DashboardWithSidebarLayout>
@@ -385,59 +389,60 @@ export default function MyProfile() {
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                       Payment Methods
                     </h3>
-                    <Button className="rounded-full bg-lime-600 hover:bg-lime-700 text-white h-10 px-6 gap-2 border-none">
+                    {/* <Button className="rounded-full bg-lime-600 hover:bg-lime-700 text-white h-10 px-6 gap-2 border-none">
                       <Plus className="h-4 w-4" />
                       New Card
-                    </Button>
+                    </Button> */}
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      {
-                        type: "Visa",
-                        last4: "4242",
-                        expiry: "12/25",
-                        default: true,
-                      },
-                      {
-                        type: "Mastercard",
-                        last4: "8888",
-                        expiry: "06/26",
-                        default: false,
-                      },
-                    ].map((card, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 p-4"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-lg">
-                            <CreditCard className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">
-                              {card.type} ****{card.last4}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Expires {card.expiry}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {!card.default && (
-                            <Button className="rounded-full bg-lime-500 hover:bg-lime-600 text-white h-9 px-4 text-xs font-bold border-none">
-                              Set as Default
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            className="rounded-full bg-red-500 text-white hover:bg-red-600 hover:text-white h-9 px-4 text-xs font-bold border-none"
-                          >
-                            Remove
-                          </Button>
-                        </div>
+                    {cardsLoading ? (
+                      <div className="flex items-center justify-center py-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                       </div>
-                    ))}
+                    ) : savedCards.length === 0 ? (
+                      <p className="text-sm text-center text-muted-foreground py-10">
+                        No saved cards found.
+                      </p>
+                    ) : (
+                      savedCards.map((pm: any) => {
+                        const brand = pm?.card?.brand ?? "card";
+                        const last4 = pm?.card?.last4 ?? "****";
+                        const expMonth = String(pm?.card?.exp_month ?? "").padStart(2, "0");
+                        const expYear = String(pm?.card?.exp_year ?? "").slice(-2);
+                        const expiry = `${expMonth}/${expYear}`;
+                        const label = `${brand.charAt(0).toUpperCase() + brand.slice(1)} ****${last4}`;
+
+                        return (
+                          <div
+                            key={pm.id}
+                            className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 p-4"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-lg">
+                                <CreditCard className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                  {label}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Expires {expiry}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Button
+                                variant="ghost"
+                                className="rounded-full bg-red-500 text-white hover:bg-red-600 hover:text-white h-9 px-4 text-xs font-bold border-none"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </TabsContent>
 

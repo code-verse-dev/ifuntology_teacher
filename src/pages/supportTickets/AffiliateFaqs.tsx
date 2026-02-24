@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -18,36 +18,27 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useGetFaqsQuery } from "@/redux/services/apiSlices/faqSlice";
 
 export default function AffiliateFaqs() {
     const navigate = useNavigate();
+    const [search, setSearch] = useState("");
+    const [keyword, setKeyword] = useState("");
 
     useEffect(() => {
         document.title = "Affiliate Partnership FAQs • iFuntology Teacher";
     }, []);
 
-    const faqs = [
-        {
-            q: "What is the iFuntology Affiliate Program?",
-            a: "A program that allows registered users to earn commissions by referring new users to iFuntology products and services using a unique referral link."
-        },
-        {
-            q: "Who can join the Affiliate Program?",
-            a: "Anyone who is a registered user on our platform can join the affiliate program. Simply navigate to the Affiliate Program section in your dashboard to get started."
-        },
-        {
-            q: "What products and services are eligible for commission?",
-            a: "Most products in the Enrichment Store and LMS subscriptions are eligible for commission. Specific rates may vary by category."
-        },
-        {
-            q: "When do commissions become withdrawable?",
-            a: "Commissions are typically eligible for withdrawal 30 days after the referred purchase to account for any potential returns or cancellations."
-        },
-        {
-            q: "How do I request a withdrawal of my commission?",
-            a: "Go to the Affiliate Program page, click on 'Request Withdrawal', fill out the compliance form, and our team will process your request."
-        }
-    ];
+    useEffect(() => {
+        const t = setTimeout(() => setKeyword(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const { data: faqsData } = useGetFaqsQuery({
+        module: "affiliate_partnership",
+        keyword: keyword || undefined,
+    });
+    const faqs = faqsData?.data?.docs || [];
 
     return (
         <DashboardWithSidebarLayout>
@@ -74,12 +65,14 @@ export default function AffiliateFaqs() {
                         <Input
                             placeholder="Search FAQs..."
                             className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl ring-offset-background placeholder:text-slate-400 focus-visible:ring-lime-500 transition-all font-medium"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
 
                     {/* FAQs Accordion */}
                     <Accordion type="single" collapsible className="space-y-4">
-                        {faqs.map((faq, i) => (
+                        {faqs.map((faq: any, i: number) => (
                             <AccordionItem
                                 key={i}
                                 value={`item-${i}`}
@@ -88,14 +81,14 @@ export default function AffiliateFaqs() {
                                 <AccordionTrigger className="hover:no-underline py-5 text-left text-sm font-bold text-slate-900 dark:text-white group">
                                     <div className="flex gap-4 items-center w-full">
                                         <div className="h-6 w-6 rounded-full bg-lime-500 flex items-center justify-center text-[10px] text-white shrink-0">Q</div>
-                                        <span className="flex-1">{faq.q}</span>
+                                        <span className="flex-1">{faq.question}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-5 pt-0">
                                     <div className="flex gap-4 items-start pl-0">
                                         <div className="h-6 w-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white shrink-0 mt-0.5 font-bold">A</div>
                                         <p className="text-xs text-slate-500 font-medium leading-relaxed flex-1">
-                                            {faq.a}
+                                            {faq.answer}
                                         </p>
                                     </div>
                                 </AccordionContent>

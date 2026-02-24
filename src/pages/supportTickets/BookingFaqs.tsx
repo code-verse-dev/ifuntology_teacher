@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -16,48 +16,27 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useGetFaqsQuery } from "@/redux/services/apiSlices/faqSlice";
 
 export default function BookingFaqs() {
     const navigate = useNavigate();
+    const [search, setSearch] = useState("");
+    const [keyword, setKeyword] = useState("");
 
     useEffect(() => {
         document.title = "Booking & Quotations FAQs • iFuntology Teacher";
     }, []);
 
-    const faqs = [
-        {
-            q: "How do I book a Zoom/Google Meet session with the admin?",
-            a: "After registration on the ERP, navigate to the 'Book Session' section under Booking & Quotes in the sidebar. Select an available date from the calendar (booked dates will be grayed out), choose your preferred time slot, and submit your booking. Both you and the admin will receive notifications about the session."
-        },
-        {
-            q: "How do I request a quotation for services?",
-            a: "Go to the 'Quotes' section and click on 'Request Quotation'. Fill out the required details about your needs, and our team will generate a customized quote for you."
-        },
-        {
-            q: "What happens after I submit a quotation request?",
-            a: "Our administration team reviews your request and provides a formal quotation document. You'll be notified once it's available for review and conversion to a purchase order."
-        },
-        {
-            q: "How do I use my purchase order number?",
-            a: "When checking out in the Enrichment Store, you can select 'Purchase Order' as your payment method and enter the authorized PO number provided by your organization."
-        },
-        {
-            q: "Can I view my previous purchase orders?",
-            a: "Yes, visit the 'Purchase Orders' section to see a history of all submitted POs along with their current processing status."
-        },
-        {
-            q: "How do I pay an invoice if I didn't pay through the ERP?",
-            a: "If you have an outstanding invoice, you can visit the 'Pay Invoice' section to settle it using a credit card or other accepted direct payment methods."
-        },
-        {
-            q: "Why can't I see certain dates on the booking calendar?",
-            a: "Dates that are fully booked, holidays, or outside of standard administrative hours will appear grayed out and cannot be selected."
-        },
-        {
-            q: "Can I cancel or reschedule a booked session?",
-            a: "Yes, you can manage your bookings through the 'Book Session' history. Note that cancellations should be made at least 24 hours in advance."
-        }
-    ];
+    useEffect(() => {
+        const t = setTimeout(() => setKeyword(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const { data: faqsData } = useGetFaqsQuery({
+        module: "booking_quotation",
+        keyword: keyword || undefined,
+    });
+    const faqs = faqsData?.data?.docs ?? [];
 
     return (
         <DashboardWithSidebarLayout>
@@ -84,28 +63,30 @@ export default function BookingFaqs() {
                         <Input
                             placeholder="Search FAQs..."
                             className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl ring-offset-background placeholder:text-slate-400 focus-visible:ring-lime-500 transition-all font-medium"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
 
                     {/* FAQs Accordion */}
                     <Accordion type="single" collapsible className="space-y-4">
-                        {faqs.map((faq, i) => (
+                        {faqs.map((faq: any, i: number) => (
                             <AccordionItem
-                                key={i}
+                                key={faq._id ?? i}
                                 value={`item-${i}`}
                                 className="border border-slate-100 dark:border-slate-800 rounded-2xl px-5 transition-all data-[state=open]:border-lime-200 dark:data-[state=open]:border-lime-900/30 overflow-hidden"
                             >
                                 <AccordionTrigger className="hover:no-underline py-5 text-left text-sm font-bold text-slate-900 dark:text-white group">
                                     <div className="flex gap-4 items-center w-full">
                                         <div className="h-6 w-6 rounded-full bg-lime-500 flex items-center justify-center text-[10px] text-white shrink-0">Q</div>
-                                        <span className="flex-1">{faq.q}</span>
+                                        <span className="flex-1">{faq.question}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-5 pt-0">
                                     <div className="flex gap-4 items-start pl-0">
                                         <div className="h-6 w-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white shrink-0 mt-0.5 font-bold">A</div>
                                         <p className="text-xs text-slate-500 font-medium leading-relaxed flex-1">
-                                            {faq.a}
+                                            {faq.answer}
                                         </p>
                                     </div>
                                 </AccordionContent>

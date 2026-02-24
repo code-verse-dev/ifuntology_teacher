@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -16,48 +16,27 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useGetFaqsQuery } from "@/redux/services/apiSlices/faqSlice";
 
 export default function LmsFaqs() {
     const navigate = useNavigate();
+    const [search, setSearch] = useState("");
+    const [keyword, setKeyword] = useState("");
 
     useEffect(() => {
         document.title = "Learning Management System FAQs • iFuntology Teacher";
     }, []);
 
-    const faqs = [
-        {
-            q: "How do I subscribe to web-based courses?",
-            a: "First, you must purchase or confirm you have the physical kits for the course (Funtology, Barberology, Nailtology, or Skintology). Then, go to 'Subscribe to LMS' and select the courses you want. You can pay via credit/debit card through the e-commerce store or request via purchase order."
-        },
-        {
-            q: "Can I subscribe without purchasing physical kits?",
-            a: "Our LMS is designed to complement the hands-on learning kits. Subscribing typically requires the associated physical kit to ensure the best learning experience."
-        },
-        {
-            q: "How do I invite students to my course?",
-            a: "Navigate to the 'Invite Student' section in your dashboard. You can send individual invitations via email or share a batch registration link."
-        },
-        {
-            q: "How many students can I add?",
-            a: "The number of students you can add depends on your subscription tier. You can check your current limits in the 'My Profile' or 'Subscribe to LMS' section."
-        },
-        {
-            q: "Can I create multiple classes or batches?",
-            a: "Yes, once you invite students, you can organize them into different batches or groups from the 'My Students' page."
-        },
-        {
-            q: "How do I access quizzes and tests?",
-            a: "Quizzes are embedded within each module. You can view student progress and quiz results directly from the 'My Courses' details page."
-        },
-        {
-            q: "Can I download course materials?",
-            a: "Certain supplemental materials like PDFs and worksheets are downloadable from within the course modules. Videos and interactive content are for online streaming only."
-        },
-        {
-            q: "How do I reset a student's credentials?",
-            a: "If a student loses access, you can trigger a password reset for them from the student management portal in 'My Students'."
-        }
-    ];
+    useEffect(() => {
+        const t = setTimeout(() => setKeyword(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const { data: faqsData } = useGetFaqsQuery({
+        module: "lms",
+        keyword: keyword || undefined,
+    });
+    const faqs = faqsData?.data?.docs ?? [];
 
     return (
         <DashboardWithSidebarLayout>
@@ -84,28 +63,30 @@ export default function LmsFaqs() {
                         <Input
                             placeholder="Search FAQs..."
                             className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl ring-offset-background placeholder:text-slate-400 focus-visible:ring-lime-500 transition-all font-medium"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
 
                     {/* FAQs Accordion */}
                     <Accordion type="single" collapsible className="space-y-4">
-                        {faqs.map((faq, i) => (
+                        {faqs.map((faq: any, i: number) => (
                             <AccordionItem
-                                key={i}
+                                key={faq._id ?? i}
                                 value={`item-${i}`}
                                 className="border border-slate-100 dark:border-slate-800 rounded-2xl px-5 transition-all data-[state=open]:border-lime-200 dark:data-[state=open]:border-lime-900/30 overflow-hidden"
                             >
                                 <AccordionTrigger className="hover:no-underline py-5 text-left text-sm font-bold text-slate-900 dark:text-white group">
                                     <div className="flex gap-4 items-center w-full">
                                         <div className="h-6 w-6 rounded-full bg-lime-500 flex items-center justify-center text-[10px] text-white shrink-0">Q</div>
-                                        <span className="flex-1">{faq.q}</span>
+                                        <span className="flex-1">{faq.question}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-5 pt-0">
                                     <div className="flex gap-4 items-start pl-0">
                                         <div className="h-6 w-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white shrink-0 mt-0.5 font-bold">A</div>
                                         <p className="text-xs text-slate-500 font-medium leading-relaxed flex-1">
-                                            {faq.a}
+                                            {faq.answer}
                                         </p>
                                     </div>
                                 </AccordionContent>

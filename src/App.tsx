@@ -221,8 +221,12 @@ const App = () => (
                 <ProtectedRoute>
                   <CourseDetails />
                 </ProtectedRoute>
-                } />
-              <Route path="/my-students" element={<MyStudents />} />
+              } />
+              <Route path="/my-students" element={
+                <ProtectedRoute>
+                  <MyStudents />
+                </ProtectedRoute>
+              } />
               <Route path="/affiliate-program" element={<AffiliateProgram />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route
@@ -233,10 +237,18 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="/support-tickets" element={<SupportTickets />} />
+              <Route path="/support-tickets" element={
+                <ProtectedRoute>
+                  <SupportTickets />
+                </ProtectedRoute>
+              } />
               <Route
                 path="/support-tickets/create"
-                element={<CreateTicket />}
+                element={
+                  <ProtectedRoute>
+                    <CreateTicket />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/support-tickets/faqs/affiliate"
@@ -257,7 +269,11 @@ const App = () => (
               />
               <Route path="/write-to-read" element={<WriteToRead />} />
 
-              <Route path="/invite-student" element={<InviteStudent />} />
+              <Route path="/invite-student" element={
+                <ProtectedRoute>
+                  <InviteStudent />
+                </ProtectedRoute>
+              } />
 
               <Route path="/quotes/lms" element={<QuoteLmsPage />} />
               <Route

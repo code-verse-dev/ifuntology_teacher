@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { UPLOADS_URL } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
+import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
 
 export default function CourseDetails() {
     const { courseType } = useParams();
@@ -29,6 +30,9 @@ export default function CourseDetails() {
     const courseModules = data?.data;
     const { data: courseData } = useGetCourseModuleByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
     const course = courseData?.data;
+    const { data: averageProgress } = useGetAverageProgressQuery({ courseType: courseType ?? "" }, { skip: !courseType });
+    const averageProgressPercentage = averageProgress?.data?.averageProgress ?? 0;
+    
     useEffect(() => {
         document.title = "Course Details • iFuntology Teacher";
     }, []);
@@ -99,18 +103,18 @@ export default function CourseDetails() {
 
                             <div className="mb-2 flex justify-between text-sm">
                                 <span className="text-slate-400">Avg Student Progress</span>
-                                <span className="font-bold">68%</span>
+                                <span className="font-bold">{averageProgressPercentage}%</span>
                             </div>
-                            <Progress value={68} className="h-2 bg-slate-700" indicatorClassName="bg-lime-500" />
+                            <Progress value={averageProgressPercentage} className="h-2 bg-slate-700" indicatorClassName="bg-lime-500" />
 
                             <div className="mt-6 space-y-3">
                                 <div className="flex justify-between text-sm py-2 border-b border-slate-800">
-                                    <span className="text-slate-400">Modules Completed</span>
-                                    <span className="font-medium">12/18</span>
+                                    <span className="text-slate-400">Modules</span>
+                                    <span className="font-medium">{courseModules?.length ?? 0}</span>
                                 </div>
                                 <div className="flex justify-between text-sm py-2">
                                     <span className="text-slate-400">Student Certificates Issued</span>
-                                    <span className="font-medium">2</span>
+                                    <span className="font-medium">{averageProgress?.data?.subscription?.certificatesIssued ?? 0}</span>
                                 </div>
                             </div>
                         </Card>
@@ -121,7 +125,7 @@ export default function CourseDetails() {
 
                             <div className="flex justify-between items-center mb-6">
                                 <span className="text-slate-400 text-sm">Enrolled Students</span>
-                                <span className="text-2xl font-bold">24</span>
+                                <span className="text-2xl font-bold">{averageProgress?.data?.subscription?.usedSeats ?? 0}</span>
                             </div>
 
                             <Button className="w-full rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white font-semibold py-6 shadow-lg shadow-lime-900/20">

@@ -21,9 +21,20 @@ export const subscriptionSlice = createApi({
       }),
       providesTags: ["Subscription"],
     }),
+    getSubscriptionStats: builder.query<
+      any,
+      void
+    >({
+      query: () => ({
+        url: "/teacher-subscription/stats",
+        method: "GET",
+      }),
+    }),
   }),
+  
 });
 
 export const { 
     useGetMySubscriptionsQuery,
+    useGetSubscriptionStatsQuery,
  } = subscriptionSlice;

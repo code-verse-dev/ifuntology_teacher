@@ -66,7 +66,6 @@ export default function MyCourses() {
         status: "ACTIVE",
     });
     const subscriptionsData = subscriptions?.data?.docs ?? [];
-    console.log(subscriptionsData, 'subscriptionsData');
 
     if (isLoading) {
         return (
