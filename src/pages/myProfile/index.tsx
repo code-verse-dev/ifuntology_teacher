@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { UPLOADS_URL } from "@/constants/api";
 import { useGetSavedPaymentMethodsQuery } from "@/redux/services/apiSlices/paymentSlice";
+import { useGetMySubscriptionsQuery, useToggleAutoRenewalMutation, useCancelSubscriptionMutation } from "@/redux/services/apiSlices/subscriptionSlice";
+import { toast } from "sonner";
 
 export default function MyProfile() {
   useEffect(() => {
@@ -30,7 +32,50 @@ export default function MyProfile() {
   const user = useSelector((state: RootState) => state.user.userData);
   const { data: paymentData, isLoading: cardsLoading } = useGetSavedPaymentMethodsQuery();
   const savedCards: any[] = paymentData?.data?.data ?? [];
+  const { data: subscriptions, isLoading } = useGetMySubscriptionsQuery(
+    { status: "ACTIVE" }
+  );
+  const subscriptionsData = subscriptions?.data?.docs ?? [];
+  const totalStudents = subscriptionsData.reduce((acc: number, s: any) => acc + (s?.usedSeats ?? 0), 0);
+  const [toggleAutoRenewal] = useToggleAutoRenewalMutation();
+  const [togglingSubscriptionId, setTogglingSubscriptionId] = useState<string | null>(null);
+  const [cancelSubscription] = useCancelSubscriptionMutation();
+  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<string | null>(null);
 
+  const handleToggleAutoRenewal = async (subscriptionId: string, checked: boolean) => {
+    setTogglingSubscriptionId(subscriptionId);
+    try {
+      const res: any = await toggleAutoRenewal({ subscriptionId, autoRenew: checked }).unwrap();
+      if (res.status) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } catch (error) {
+      toast.error("Failed to toggle auto-renewal.");
+      console.error("Failed to toggle auto-renewal:", error);
+    } finally {
+      setTogglingSubscriptionId(null);
+    }
+  };
+
+  const handleCancelSubscription = async (subscriptionId: string) => {
+    setCancellingSubscriptionId(subscriptionId);
+    try {
+      const res: any = await cancelSubscription({ subscriptionId }).unwrap();
+      if (res.status) {
+        toast.success(res.message ?? "Subscription cancelled successfully.");
+      } else {
+        toast.error(res.message ?? "Failed to cancel subscription.");
+      }
+    } catch (error) {
+      toast.error("Failed to cancel subscription.");
+      console.error("Failed to cancel subscription:", error);
+    } finally {
+      setCancellingSubscriptionId(null);
+    }
+  };
+  
   return (
     <DashboardWithSidebarLayout>
       <div className="mx-auto w-full space-y-6">
@@ -126,19 +171,19 @@ export default function MyProfile() {
                   <span className="text-slate-500 font-medium">
                     Active Subscriptions
                   </span>
-                  <span className="font-bold text-orange-500">02</span>
+                  <span className="font-bold text-orange-500">{subscriptionsData.length}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">
                     Total Students
                   </span>
-                  <span className="font-bold text-orange-500">42</span>
+                  <span className="font-bold text-orange-500">{totalStudents}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">
                     Payment Methods
                   </span>
-                  <span className="font-bold text-orange-500">02</span>
+                  <span className="font-bold text-orange-500">{savedCards.length}</span>
                 </div>
               </div>
             </Card>
@@ -293,91 +338,121 @@ export default function MyProfile() {
                   value="subscriptions"
                   className="space-y-6 mt-0 outline-none"
                 >
-                  {[
-                    {
-                      name: "Funtology",
-                      price: "$299",
-                      students: "24/30",
-                      start: "1/15/2024",
-                    },
-                    {
-                      name: "Nailtology",
-                      price: "$329",
-                      students: "18/25",
-                      start: "31/01/2024",
-                    },
-                  ].map((sub, i) => (
-                    <div
-                      key={i}
-                      className="rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-6"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 flex items-center justify-center bg-orange-50 dark:bg-orange-950/20 text-orange-500 rounded-xl">
-                            <Building2 className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-bold text-slate-900 dark:text-white">
-                                {sub.name}
-                              </h4>
-                              <Badge className="bg-green-500 hover:bg-green-600 border-none text-[10px] font-bold px-2 py-0 h-4">
-                                Active
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-slate-500 font-medium">
-                              Renews on 1/15/2025
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-green-600">
-                            {sub.price}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            Per Year
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 text-center">
-                            Students Enrolled
-                          </p>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                            {sub.students}
-                          </p>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 text-center">
-                            Started
-                          </p>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white text-center">
-                            {sub.start}
-                          </p>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center justify-center">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
-                            Auto-Renew
-                          </p>
-                          <Switch defaultChecked />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <Button className="flex-1 rounded-full bg-lime-500 hover:bg-lime-600 text-white font-bold h-11 border-none">
-                          Renew Now
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 border-none shadow-none"
-                        >
-                          Cancel Subscription
-                        </Button>
-                      </div>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                     </div>
-                  ))}
+                  ) : subscriptionsData.length === 0 ? (
+                    <p className="text-sm text-center text-muted-foreground py-10">
+                      No active subscriptions found.
+                    </p>
+                  ) : (
+                    subscriptionsData.map((sub: any) => {
+                      const renewsOn = sub?.endDate
+                        ? new Date(sub.endDate).toLocaleDateString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "—";
+                      const startedOn = sub?.startDate
+                        ? new Date(sub.startDate).toLocaleDateString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "—";
+                      const billingPeriod =
+                        sub?.subscriptionType === "MONTHLY" ? "Per Month" : "Per Year";
+
+                      return (
+                        <div
+                          key={sub._id}
+                          className="rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-6"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 flex items-center justify-center bg-orange-50 dark:bg-orange-950/20 text-orange-500 rounded-xl">
+                                <Building2 className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-bold text-slate-900 dark:text-white">
+                                    {sub.courseType}
+                                  </h4>
+                                  <Badge className="bg-green-500 hover:bg-green-600 border-none text-[10px] font-bold px-2 py-0 h-4">
+                                    {sub.status.charAt(0) + sub.status.slice(1).toLowerCase()}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium">
+                                  Renews on {renewsOn}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-green-600">
+                                $299
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                {billingPeriod}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 text-center">
+                                Students Enrolled
+                              </p>
+                              <p className="text-lg font-bold text-slate-900 dark:text-white text-center">
+                                {sub.usedSeats ?? 0}/{sub.numberOfSeats ?? 0}
+                              </p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 text-center">
+                                Started
+                              </p>
+                              <p className="text-lg font-bold text-slate-900 dark:text-white text-center">
+                                {startedOn}
+                              </p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                                Auto-Renew
+                              </p>
+                              {togglingSubscriptionId === sub._id ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                              ) : (
+                                <Switch
+                                  checked={sub.autoRenew}
+                                  disabled={togglingSubscriptionId !== null}
+                                  onCheckedChange={(checked) => handleToggleAutoRenewal(sub._id, checked)}
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4">
+                            {/* <Button className="flex-1 rounded-full bg-lime-500 hover:bg-lime-600 text-white font-bold h-11 border-none">
+                              Renew Now
+                            </Button> */}
+                            <Button
+                              variant="destructive"
+                              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 border-none shadow-none"
+                              disabled={cancellingSubscriptionId === sub._id}
+                              onClick={() => handleCancelSubscription(sub._id)}
+                            >
+                              {cancellingSubscriptionId === sub._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Cancel Subscription"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </TabsContent>
 
                 {/* Payment Methods Tab */}

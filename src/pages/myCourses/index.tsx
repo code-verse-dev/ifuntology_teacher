@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Award, Users, Clock, Loader2 } from "lucide-react";
 import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+import { useLocation } from "react-router-dom";
 
 const COURSE_THEMES: Record<string, { bg: string; border: string; iconBg: string; iconColor: string; progressColor: string }> = {
     Funtology: {
@@ -57,17 +58,31 @@ function formatExpiresDate(dateStr: string | undefined): string {
 
 export default function MyCourses() {
     const navigate = useNavigate();
+    const location = useLocation();
+
 
     useEffect(() => {
         document.title = "My Courses • iFuntology Teacher";
     }, []);
 
-    const { data: subscriptions, isLoading } = useGetMySubscriptionsQuery({
-        status: "ACTIVE",
-    });
+    const fromPayment = location.state?.from === "/payment";
+    const [polling, setPolling] = useState(fromPayment);
+
+    const { data: subscriptions, isLoading } = useGetMySubscriptionsQuery(
+        { status: "ACTIVE" },
+        {
+            pollingInterval: polling ? 3000 : 0,
+        }
+    );
     const subscriptionsData = subscriptions?.data?.docs ?? [];
 
-    if (isLoading) {
+    useEffect(() => {
+        if (subscriptionsData.length > 0) {
+            setPolling(false);
+        }
+    }, [subscriptionsData.length]);
+
+    if (isLoading || polling) {
         return (
             <DashboardWithSidebarLayout>
                 <section className="mx-auto w-full space-y-6">
