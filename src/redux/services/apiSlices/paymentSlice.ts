@@ -41,6 +41,17 @@ export const paymentSlice = createApi({
       }),
       invalidatesTags: ["Subscription"],
     }),
+    createSubscription: builder.mutation<any, {
+      courseType: string;
+      subscriptionType: string;
+      numberOfSeats: number;
+    }>({
+      query: (data) => ({
+        url: "/payment/create-subscription",
+        method: "POST",
+        body: data,
+      }),
+    }),
     getSavedPaymentMethods: builder.query<any, void>({
       query: () => ({
         url: "/payment/payment-methods",
@@ -57,4 +68,5 @@ export const {
   useOrderPaymentMutation,
   useSubscriptionPaymentMutation,
   useGetSavedPaymentMethodsQuery,
+  useCreateSubscriptionMutation,
 } = paymentSlice;

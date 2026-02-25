@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitatio
 
 export default function CourseDetails() {
     const { courseType } = useParams();
+    const navigate = useNavigate();
     const { data, isLoading, error } = useFindByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
     const courseModules = data?.data;
     const { data: courseData } = useGetCourseModuleByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
@@ -128,7 +129,9 @@ export default function CourseDetails() {
                                 <span className="text-2xl font-bold">{averageProgress?.data?.subscription?.usedSeats ?? 0}</span>
                             </div>
 
-                            <Button className="w-full rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white font-semibold py-6 shadow-lg shadow-lime-900/20">
+                            <Button className="w-full rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white font-semibold py-6 shadow-lg shadow-lime-900/20"
+                            onClick={() => navigate("/my-students")}
+                            >
                                 View All Students
                             </Button>
                         </Card>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import {
+  useCreateSubscriptionMutation,
   usePaymentConfigQuery,
   usePaymentIntentMutation,
 } from "../../redux/services/apiSlices/paymentSlice";
@@ -25,33 +26,76 @@ const Payment = () => {
   const { data: paymentData } = usePaymentConfigQuery({});
 
   const [createPaymentIntent, { isLoading }] = usePaymentIntentMutation();
+  const [createSubscription] = useCreateSubscriptionMutation();
   useEffect(() => {
     if (paymentData?.publishableKey) {
       setStripePromise(loadStripe(paymentData.publishableKey));
     }
   }, [paymentData]);
+  // useEffect(() => {
+  //   if (!total || Number.isNaN(total)) {
+  //     toast.error("Invalid payment amount");
+  //     navigate("/cart");
+  //     return;
+  //   }
+
+  //   const createIntent = async () => {
+  //     try {
+  //       const res = await createPaymentIntent({
+  //         amount: Math.round(total * 100), // cents
+  //         currency: "usd",
+  //       }).unwrap();
+
+  //       setClientSecret(res.clientSecret);
+  //     } catch (err: any) {
+  //       toast.error(err?.data?.message || "Failed to create payment intent");
+  //     }
+  //   };
+
+  //   createIntent();
+  // }, [total, createPaymentIntent, navigate]);
+
   useEffect(() => {
     if (!total || Number.isNaN(total)) {
       toast.error("Invalid payment amount");
-      navigate("/cart");
+      navigate(-1);
       return;
     }
-
-    const createIntent = async () => {
-      try {
-        const res = await createPaymentIntent({
-          amount: Math.round(total * 100), // cents
-          currency: "usd",
-        }).unwrap();
-
-        setClientSecret(res.clientSecret);
-      } catch (err: any) {
-        toast.error(err?.data?.message || "Failed to create payment intent");
-      }
-    };
-
-    createIntent();
-  }, [total, createPaymentIntent, navigate]);
+    if (type === "SUBSCRIPTION") {
+      const createSub = async () => {
+        try {
+          const res = await createSubscription({
+            courseType,
+            subscriptionType,
+            numberOfSeats,
+          }).unwrap();
+          if(res.status){
+            setClientSecret(res.data.clientSecret);
+          }
+  
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Failed to create subscription");
+        }
+      };
+  
+      createSub();
+    } else {
+      const createIntent = async () => {
+        try {
+          const res = await createPaymentIntent({
+            amount: total,
+            currency: "usd",
+          }).unwrap();
+  
+          setClientSecret(res.clientSecret);
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Failed to create payment intent");
+        }
+      };
+  
+      createIntent();
+    }
+  }, [type]);
   const [isProcessing, setIsProcessing] = useState(false);
   return (
     <DashboardWithSidebarLayout>

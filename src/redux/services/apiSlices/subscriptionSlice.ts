@@ -14,7 +14,7 @@ export const subscriptionSlice = createApi({
         status?: string;
       }
     >({
-      query: ( {page, limit, status}) => ({
+      query: ({ page, limit, status }) => ({
         url: "/teacher-subscription/my",
         method: "GET",
         params: { page, limit, status },
@@ -30,11 +30,36 @@ export const subscriptionSlice = createApi({
         method: "GET",
       }),
     }),
+    toggleAutoRenewal: builder.mutation<
+      any,
+      { subscriptionId: string, autoRenew: boolean }
+    >({
+      query: ({ subscriptionId , autoRenew }) => ({
+        url: `/teacher-subscription/toggle-auto-renew/${subscriptionId}`,
+        method: "PATCH",
+        body: {
+          autoRenew
+        },
+      }),
+      invalidatesTags: ["Subscription"],
+    }),
+    cancelSubscription: builder.mutation<
+      any,
+      { subscriptionId: string }
+    >({
+      query: ({ subscriptionId }) => ({
+        url: `/teacher-subscription/cancel/${subscriptionId}`,
+        method: "PATCH",
+      }),
+    }),
+
   }),
-  
+
 });
 
-export const { 
-    useGetMySubscriptionsQuery,
-    useGetSubscriptionStatsQuery,
- } = subscriptionSlice;
+export const {
+  useGetMySubscriptionsQuery,
+  useGetSubscriptionStatsQuery,
+  useToggleAutoRenewalMutation,
+  useCancelSubscriptionMutation,
+} = subscriptionSlice;
