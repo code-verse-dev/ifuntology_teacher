@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
@@ -14,7 +14,9 @@ import { Avatar } from "@/components/ui/avatar";
 export default function SignUpPage() {
   const navigate = useNavigate();
   const [register, { isLoading }] = useRegisterMutation();
-
+  const [searchParams] = useSearchParams();
+  const referralFromUrl = searchParams.get("ref");
+  const isReferredUser = !!referralFromUrl;
   // State for all fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -30,6 +32,7 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [role, setRole] = useState("teacher");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Helper for image preview
@@ -60,7 +63,7 @@ export default function SignUpPage() {
     formData.append("lastName", lastName);
     formData.append("email", email);
     formData.append("password", password);
-    formData.append("organization", org);
+    if (isReferredUser && role === "teacher" || !isReferredUser) formData.append("organization", org);
     formData.append("country", country);
     formData.append("phoneNumber", phone);
     formData.append("city", city);
@@ -68,14 +71,19 @@ export default function SignUpPage() {
     formData.append("streetAddress", streetAddress);
     formData.append("zipCode", zipCode);
     if (image) formData.append("image", image);
-    formData.append("role", "teacher");
+    if (isReferredUser) {
+      formData.append("role", role);
+      formData.append("referralCode", referralFromUrl);
+    } else {
+      formData.append("role", "teacher"); // default normal signup
+    }
     try {
       const res: any = await register(formData).unwrap();
-      if(res?.status) {
+      if (res?.status) {
         toast.success("Account created successfully");
         navigate("/login");
       }
-      else{
+      else {
         toast.error(res?.message || "Failed to create account");
       }
     } catch (err: any) {
@@ -94,6 +102,12 @@ export default function SignUpPage() {
           <p className="mt-2 text-base text-foreground/90">
             Begin Your Funtology Journey Now!
           </p>
+
+          {isReferredUser && (
+            <p className="mt-2 text-green-600 font-medium">
+              🎉 You were invited! Complete your registration below.
+            </p>
+          )}
 
           <div className="flex mt-4">
             <div className="flex flex-col items-center mb-2">
@@ -152,6 +166,23 @@ export default function SignUpPage() {
             encType="multipart/form-data"
           >
             <div>
+              {isReferredUser && (
+                <>
+                  <div className="space-y-2 mb-2">
+                    <Label>Register As *</Label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4"
+                      disabled={isLoading}
+                    >
+                      <option value="teacher">Teacher</option>
+                      <option value="user">User</option>
+                    </select>
+                  </div>
+
+                </>
+              )}
               <div className="text-sm font-medium text-foreground">
                 Personal Information
               </div>
@@ -246,22 +277,24 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <div className="text-sm font-semibold">
+              {(isReferredUser && role === "teacher" || !isReferredUser) && <div className="text-sm font-semibold">
                 Organization Information
-              </div>
+              </div>}
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="org">Organization / School Name *</Label>
-                  <Input
-                    id="org"
-                    required
-                    placeholder="Enter Name"
-                    className="h-11 rounded-full border-border/80 bg-background/80"
-                    value={org}
-                    onChange={(e) => setOrg(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
+                {(isReferredUser && role === "teacher" || !isReferredUser) && (
+                  <div className="space-y-2 md:col-span-1">
+                    <Label htmlFor="org">Organization / School Name *</Label>
+                    <Input
+                      id="org"
+                      required
+                      placeholder="Enter Name"
+                      className="h-11 rounded-full border-border/80 bg-background/80"
+                      value={org}
+                      onChange={(e) => setOrg(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="country">Country *</Label>
                   <Input
@@ -359,7 +392,7 @@ export default function SignUpPage() {
             </label>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Button
+              {/* <Button
                 type="submit"
                 variant="brand"
                 size="pill"
@@ -367,6 +400,18 @@ export default function SignUpPage() {
                 disabled={isLoading}
               >
                 {isLoading ? "Creating..." : "Create Teacher Account"}
+              </Button> */}
+              <Button
+                type="submit"
+                variant="brand"
+                size="pill"
+                disabled={isLoading}
+              >
+                {isLoading
+                  ? "Creating..."
+                  : isReferredUser
+                    ? "Create Account"
+                    : "Create Teacher Account"}
               </Button>
               <p className="text-sm text-foreground">
                 Already Have An Account?{" "}

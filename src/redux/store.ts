@@ -21,6 +21,7 @@ import { courseModuleSlice } from "./services/apiSlices/courseModuleSlice";
 import { invitationSlice } from "./services/apiSlices/invitationSlice";
 import { ticketSlice } from "./services/apiSlices/ticketSlice";
 import { faqSlice } from "./services/apiSlices/faqSlice";
+import { affiliateSlice } from "./services/apiSlices/affiliateSlice";
 
 
 const rootReducer = combineReducers({
@@ -43,6 +44,7 @@ const rootReducer = combineReducers({
   [invitationSlice.reducerPath]: invitationSlice.reducer,
   [ticketSlice.reducerPath]: ticketSlice.reducer,
   [faqSlice.reducerPath]: faqSlice.reducer,
+  [affiliateSlice.reducerPath]: affiliateSlice.reducer,
 });
 
 const persistConfig = {
@@ -67,6 +69,7 @@ const persistConfig = {
     invitationSlice.reducerPath,
     ticketSlice.reducerPath,
     faqSlice.reducerPath,
+    affiliateSlice.reducerPath,
   ],
 };
 
@@ -95,7 +98,8 @@ export const store = configureStore({
       .concat(courseModuleSlice.middleware)
       .concat(invitationSlice.middleware)
       .concat(ticketSlice.middleware)
-      .concat(faqSlice.middleware),
+      .concat(faqSlice.middleware)
+      .concat(affiliateSlice.middleware),
 });
 
 setupListeners(store.dispatch);
