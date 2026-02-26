@@ -59,7 +59,7 @@ const CheckoutForm = ({
         }).unwrap();
         if (res?.status) {
           swal("Success", "Payment completed successfully", "success");
-          navigate("/my-courses");
+          navigate("/my-orders");
         } else {
           swal("Error", res?.data?.error?.message || res?.error?.message || "Something went wrong", "error");
         }

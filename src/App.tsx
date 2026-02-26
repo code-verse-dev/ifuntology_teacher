@@ -227,7 +227,11 @@ const App = () => (
                   <MyStudents />
                 </ProtectedRoute>
               } />
-              <Route path="/affiliate-program" element={<AffiliateProgram />} />
+              <Route path="/affiliate-program" element={
+                <ProtectedRoute>
+                  <AffiliateProgram />
+                </ProtectedRoute>
+              } />
               <Route path="/notifications" element={<Notifications />} />
               <Route
                 path="/my-profile"
