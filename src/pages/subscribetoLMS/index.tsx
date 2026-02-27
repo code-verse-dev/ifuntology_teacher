@@ -11,6 +11,8 @@ import { useGetCoursesQuery } from "@/redux/services/apiSlices/courseSlice";
 import { useGetProductByCourseTypeQuery } from "@/redux/services/apiSlices/productSlice";
 import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
 import { useNavigate } from "react-router-dom";
+import { useUtilizePurchaseOrderMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import { toast } from "sonner";
 
 type SubscriptionPlan = {
     id: string;
@@ -181,6 +183,9 @@ export default function SubscribetoLMS() {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
     const [subscriptionType, setSubscriptionType] = useState<string>("MONTHLY");
+    const [isPODialogOpen, setIsPODialogOpen] = useState(false);
+    const [poNumber, setPoNumber] = useState("");
+    const [utilizePurchaseOrder, { isLoading: isUtilizingPO }] = useUtilizePurchaseOrderMutation();
     const { data: settingData } = useGetAllSettingsQuery({});
     const [monthlyFee, setMonthlyFee] = useState<number>(0);
     const [yearlyFee, setYearlyFee] = useState<number>(0);
@@ -200,7 +205,8 @@ export default function SubscribetoLMS() {
           )
         : [];
 
-    const courseTypeForPrice = selectedPlan?.name ?? "Funtology";
+    // const courseTypeForPrice = selectedPlan?.name ?? "Funtology";
+    const [courseTypeForPrice, setCourseTypeForPrice] = useState("Funtology");
     const { data: productByCourse } = useGetProductByCourseTypeQuery(
         { courseType: courseTypeForPrice },
         { skip: !selectedPlan }
@@ -253,6 +259,7 @@ export default function SubscribetoLMS() {
             features: Array.isArray(course.features) ? course.features : [],
             theme: getThemeForCourseType(course.courseType ?? ""),
         });
+        setCourseTypeForPrice(course.courseType);
     };
     const handlePayWithCreditCard = () => {
         navigate("/payment", {
@@ -264,6 +271,33 @@ export default function SubscribetoLMS() {
                 type: "SUBSCRIPTION"
             },
         });
+    };
+
+    const handlePurchaseViaPO = async () => {
+        if (!poNumber.trim()) {
+            toast.error("Please enter a PO number.");
+            return;
+        }
+        try {
+            const res: any = await utilizePurchaseOrder({
+                serviceType: "lms",
+                poNumber: poNumber.trim(),
+                subscriptionType: subscriptionType.toLowerCase(),
+                courseType: courseTypeForPrice,
+                noOfStudents: numStudents,
+            }).unwrap();
+            if (res.status) {
+                toast.success(res.message ?? "Purchase order applied successfully.");
+                setIsPODialogOpen(false);
+                setSelectedPlan(null);
+                setPoNumber("");
+                navigate("/my-courses", { state: { from: "/subscribe-to-lms" } });
+            } else {
+                toast.error(res.message ?? "Failed to apply purchase order.");
+            }
+        } catch (error: any) {
+            toast.error(error?.data?.message ?? "Failed to apply purchase order.");
+        }
     };
 
 
@@ -371,8 +405,12 @@ export default function SubscribetoLMS() {
                         </div>
 
                         <DialogFooter className="p-6 pt-0 gap-3 sm:gap-4 flex-col sm:flex-row">
-                            <Button variant="outline" className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground" onClick={() => setSelectedPlan(null)}>
-                                Request via PO
+                            <Button
+                                variant="outline"
+                                className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground"
+                                onClick={() => { setSelectedPlan(null); setIsPODialogOpen(true); }}
+                            >
+                                Purchase via PO
                             </Button>
                             <Button
                                 variant="gradient-green"
@@ -385,6 +423,50 @@ export default function SubscribetoLMS() {
                     </DialogContent>
                 </Dialog>
             </section>
+
+            {/* Purchase via PO Dialog */}
+            <Dialog open={isPODialogOpen} onOpenChange={(open) => { setIsPODialogOpen(open); if (!open) setPoNumber(""); }}>
+                <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden bg-white/95 dark:bg-popover/95 backdrop-blur-xl">
+                    <DialogHeader className="p-6 pb-2">
+                        <DialogTitle className="text-xl font-bold">Purchase via PO</DialogTitle>
+                        <DialogDescription>
+                            Enter your Purchase Order number to complete the subscription.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 pt-2 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">
+                                PO Number <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                                placeholder="Enter PO number"
+                                value={poNumber}
+                                onChange={(e) => setPoNumber(e.target.value)}
+                                className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"
+                                disabled={isUtilizingPO}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="p-6 pt-0 gap-3 sm:gap-4 flex-col sm:flex-row">
+                        <Button
+                            variant="outline"
+                            className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground"
+                            onClick={() => { setIsPODialogOpen(false); setPoNumber(""); }}
+                            disabled={isUtilizingPO}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="gradient-green"
+                            className="w-full rounded-full"
+                            onClick={handlePurchaseViaPO}
+                            disabled={isUtilizingPO}
+                        >
+                            {isUtilizingPO ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardWithSidebarLayout>
     );
 }

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { UPLOADS_URL } from "@/constants/api";
-import { useGetSavedPaymentMethodsQuery } from "@/redux/services/apiSlices/paymentSlice";
+import { useGetSavedPaymentMethodsQuery, useDeleteSavedPaymentMethodMutation } from "@/redux/services/apiSlices/paymentSlice";
 import { useGetMySubscriptionsQuery, useToggleAutoRenewalMutation, useCancelSubscriptionMutation } from "@/redux/services/apiSlices/subscriptionSlice";
 import { toast } from "sonner";
 
@@ -41,6 +41,8 @@ export default function MyProfile() {
   const [togglingSubscriptionId, setTogglingSubscriptionId] = useState<string | null>(null);
   const [cancelSubscription] = useCancelSubscriptionMutation();
   const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<string | null>(null);
+  const [deleteSavedPaymentMethod] = useDeleteSavedPaymentMethodMutation();
+  const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
 
   const handleToggleAutoRenewal = async (subscriptionId: string, checked: boolean) => {
     setTogglingSubscriptionId(subscriptionId);
@@ -75,7 +77,26 @@ export default function MyProfile() {
       setCancellingSubscriptionId(null);
     }
   };
-  
+
+
+  const handleDeleteCard = async (paymentMethodId: string) => {
+    setDeletingCardId(paymentMethodId);
+    try {
+      const res: any = await deleteSavedPaymentMethod({ paymentMethodId }).unwrap();
+      if (res.status) {
+        toast.success(res.message ?? "Card removed successfully.");
+      } else {
+        toast.error(res.message ?? "Failed to remove card.");
+      }
+    } catch (error) {
+      toast.error("Failed to remove card.");
+      console.error("Failed to delete card:", error);
+    } finally {
+      setDeletingCardId(null);
+    }
+  };
+
+  console.log(subscriptionsData, 'subscriptionsData');
   return (
     <DashboardWithSidebarLayout>
       <div className="mx-auto w-full space-y-6">
@@ -153,10 +174,10 @@ export default function MyProfile() {
                   <Calendar className="h-4 w-4 text-lime-500" />
                   {user?.createdAt
                     ? new Date(user.createdAt).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
                     : "-"}
                 </p>
               </div>
@@ -287,7 +308,7 @@ export default function MyProfile() {
                           value={user?.streetAddress || ""}
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
-                          />
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-500 uppercase">
@@ -297,7 +318,7 @@ export default function MyProfile() {
                           value={user?.city || ""}
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
-                          />
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-500 uppercase">
@@ -307,7 +328,7 @@ export default function MyProfile() {
                           value={user?.state || ""}
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
-                          />
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-500 uppercase">
@@ -317,7 +338,7 @@ export default function MyProfile() {
                           value={user?.zipCode || ""}
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
-                          />
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-500 uppercase">
@@ -350,17 +371,17 @@ export default function MyProfile() {
                     subscriptionsData.map((sub: any) => {
                       const renewsOn = sub?.endDate
                         ? new Date(sub.endDate).toLocaleDateString("en-US", {
-                            month: "numeric",
-                            day: "numeric",
-                            year: "numeric",
-                          })
+                          month: "numeric",
+                          day: "numeric",
+                          year: "numeric",
+                        })
                         : "—";
                       const startedOn = sub?.startDate
                         ? new Date(sub.startDate).toLocaleDateString("en-US", {
-                            month: "numeric",
-                            day: "numeric",
-                            year: "numeric",
-                          })
+                          month: "numeric",
+                          day: "numeric",
+                          year: "numeric",
+                        })
                         : "—";
                       const billingPeriod =
                         sub?.subscriptionType === "MONTHLY" ? "Per Month" : "Per Year";
@@ -384,14 +405,18 @@ export default function MyProfile() {
                                     {sub.status.charAt(0) + sub.status.slice(1).toLowerCase()}
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium">
+                                {!sub.byPurchaseOrder ? (<p className="text-xs text-slate-500 font-medium">
                                   Renews on {renewsOn}
-                                </p>
+                                </p>) : (
+                                  <p className="text-xs text-slate-500 font-medium">
+                                    One-time subscription
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="text-2xl font-bold text-green-600">
-                                $299
+                                ${sub.amount.toFixed(2)}
                               </p>
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                 {billingPeriod}
@@ -416,7 +441,7 @@ export default function MyProfile() {
                                 {startedOn}
                               </p>
                             </div>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                           {!sub.byPurchaseOrder ? (<div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center justify-center">
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
                                 Auto-Renew
                               </p>
@@ -429,7 +454,16 @@ export default function MyProfile() {
                                   onCheckedChange={(checked) => handleToggleAutoRenewal(sub._id, checked)}
                                 />
                               )}
-                            </div>
+                            </div>) : (
+                              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                                  Auto-Renew
+                                </p>
+                                <p className="text-lg font-bold text-slate-900 dark:text-white text-center">
+                                  One-time subscription
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex gap-4">
@@ -510,8 +544,14 @@ export default function MyProfile() {
                               <Button
                                 variant="ghost"
                                 className="rounded-full bg-red-500 text-white hover:bg-red-600 hover:text-white h-9 px-4 text-xs font-bold border-none"
+                                disabled={deletingCardId === pm.id}
+                                onClick={() => handleDeleteCard(pm.id)}
                               >
-                                Remove
+                                {deletingCardId === pm.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  "Remove"
+                                )}
                               </Button>
                             </div>
                           </div>

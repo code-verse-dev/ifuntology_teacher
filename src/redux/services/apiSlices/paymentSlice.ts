@@ -4,7 +4,7 @@ import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 export const paymentSlice = createApi({
   reducerPath: "paymentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Payment", "Cart", "Subscription"],
+  tagTypes: ["Payment", "Cart", "Subscription", "Cards"],
   endpoints: (builder) => ({
     paymentConfig: builder.query<any, any>({
       query: () => ({
@@ -57,9 +57,16 @@ export const paymentSlice = createApi({
         url: "/payment/payment-methods",
         method: "GET",
       }),
+      providesTags: ["Cards"],
+    }),
+    deleteSavedPaymentMethod: builder.mutation<any, { paymentMethodId: string }>({
+      query: ({ paymentMethodId }) => ({
+        url: `/payment/${paymentMethodId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Cards"],
     }),
   }),
-
 });
 
 export const {
@@ -69,4 +76,5 @@ export const {
   useSubscriptionPaymentMutation,
   useGetSavedPaymentMethodsQuery,
   useCreateSubscriptionMutation,
+  useDeleteSavedPaymentMethodMutation,
 } = paymentSlice;

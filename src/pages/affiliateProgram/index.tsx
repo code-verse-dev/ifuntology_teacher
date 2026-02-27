@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, X, Loader2 } from "lucide-react";
-import { useGetAffiliateLinkQuery, useGetDashboardQuery, useRequestWithdrawalMutation } from "@/redux/services/apiSlices/affiliateSlice";
+import { useGetAffiliateLinkQuery, useGetDashboardQuery, useGetLastWithdrawalAmountsQuery, useRequestWithdrawalMutation } from "@/redux/services/apiSlices/affiliateSlice";
 
 const INITIAL_FORM = { fullName: "", address: "", bankName: "", accountNo: "", accountTitle: "" };
 
@@ -35,6 +35,10 @@ export default function AffiliateProgram() {
     const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardQuery();
     const { data: affiliateLinkData, isLoading: isLinkLoading } = useGetAffiliateLinkQuery();
     const [requestWithdrawal, { isLoading: isSubmitting }] = useRequestWithdrawalMutation();
+    const { data: lastWithdrawalAmounts, isLoading: isLastWithdrawalAmountsLoading } = useGetLastWithdrawalAmountsQuery();
+    console.log(lastWithdrawalAmounts, 'lastWithdrawalAmounts');
+    const lastApprovedAmount = lastWithdrawalAmounts?.data?.lastApprovedAmount ?? 0;
+    const lastSettledAmount = lastWithdrawalAmounts?.data?.lastSettledAmount ?? 0;
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -79,6 +83,11 @@ export default function AffiliateProgram() {
         toast.success("Affiliate link copied to clipboard!");
     };
 
+    const referredUsers: any[] = dashboard?.data?.referredUsers ?? [];
+    const activeSubscribers = referredUsers.filter((u) => u.status === "ACTIVE").length;
+    const pendingSubscribers = referredUsers.filter((u) => u.status !== "ACTIVE").length;
+    const totalCommission = referredUsers.reduce((acc, u) => acc + (u.commissionEarned ?? 0), 0);
+
     return (
         <DashboardWithSidebarLayout>
             <div className="mx-auto w-full space-y-6 pb-10">
@@ -92,7 +101,7 @@ export default function AffiliateProgram() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-medium">Pending Subscribers</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">05</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{pendingSubscribers}</h3>
                         </div>
                     </Card>
                     <Card className="p-4 rounded-2xl border-none shadow-sm bg-white dark:bg-slate-900">
@@ -101,7 +110,7 @@ export default function AffiliateProgram() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-medium">Active Subscribers</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">02</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{activeSubscribers}</h3>
                         </div>
                     </Card>
                     <Card className="p-4 rounded-2xl border-none shadow-sm bg-white dark:bg-slate-900">
@@ -110,7 +119,7 @@ export default function AffiliateProgram() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-medium">Total Commission</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">$499</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">${totalCommission.toFixed(2) || 0}</h3>
                         </div>
                     </Card>
                     <Card className="p-4 rounded-2xl border-none shadow-sm bg-white dark:bg-slate-900">
@@ -119,7 +128,7 @@ export default function AffiliateProgram() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-medium">Withdrawable Amount</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">$499</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">${dashboard?.data?.pendingPayout.toFixed(2) || 0}</h3>
                         </div>
                     </Card>
                 </div>
@@ -146,19 +155,19 @@ export default function AffiliateProgram() {
                 </Card> */}
                 {/* Affiliate Link Section */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                <Input
-                    readOnly
-                    value={affiliateLinkData?.data?.link || ""}
-                    className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12 pr-12 text-sm text-slate-600 dark:text-slate-300"
-                />
-                </div>
-                <Button
-                    className="rounded-full bg-lime-600 hover:bg-lime-700 text-white px-8 h-12 gap-2"
-                    onClick={() => copyToClipboard(affiliateLinkData?.data?.link || "")}
-                >
-                    <Copy className="h-4 w-4" /> Copy
-                </Button>
+                    <div className="flex-1 relative">
+                        <Input
+                            readOnly
+                            value={affiliateLinkData?.data?.link || ""}
+                            className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12 pr-12 text-sm text-slate-600 dark:text-slate-300"
+                        />
+                    </div>
+                    <Button
+                        className="rounded-full bg-lime-600 hover:bg-lime-700 text-white px-8 h-12 gap-2"
+                        onClick={() => copyToClipboard(affiliateLinkData?.data?.link || "")}
+                    >
+                        <Copy className="h-4 w-4" /> Copy
+                    </Button>
                 </div>
 
                 {/* Subscribers Table */}
@@ -205,20 +214,20 @@ export default function AffiliateProgram() {
                                         </Badge>
                                     </td>
                                 </tr> */}
-                                {dashboard?.data?.referredUsers.map((user : any) => (
+                                {dashboard?.data?.referredUsers.map((user: any) => (
                                     <tr className="text-sm">
-                                    <td className="px-4 py-4 font-medium">{user.firstName} {user.lastName}</td>
-                                    <td className="px-4 py-4 text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
-                                    <td className="px-4 py-4 font-semibold text-slate-700 dark:text-slate-300">${user.totalPaid.toFixed(2)}</td>
-                                    <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">${user.commissionEarned.toFixed(2)}</td>
-                                    {/* <td className="px-4 py-4 text-center">
+                                        <td className="px-4 py-4 font-medium">{user.firstName} {user.lastName}</td>
+                                        <td className="px-4 py-4 text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
+                                        <td className="px-4 py-4 font-semibold text-slate-700 dark:text-slate-300">${user.totalPaid.toFixed(2)}</td>
+                                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">${user.commissionEarned.toFixed(2)}</td>
+                                        {/* <td className="px-4 py-4 text-center">
                                         <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 dark:bg-green-900/10 dark:text-green-400 dark:border-green-900 font-normal rounded-full px-4">
                                             Active
                                         </Badge>
                                     </td> */}
-                                </tr>
+                                    </tr>
                                 ))}
-                                
+
                             </tbody>
                         </table>
                     </div>
@@ -238,10 +247,10 @@ export default function AffiliateProgram() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Approved</p>
-                                    <p className="text-xl font-bold">$499</p>
+                                    <p className="text-xl font-bold">${lastApprovedAmount.toFixed(2) || 0}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm">
+                            {/* <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm">
                                 <div className="h-10 w-10 flex items-center justify-center bg-green-100 text-green-600 rounded-xl">
                                     <DollarSign className="h-5 w-5" />
                                 </div>
@@ -249,7 +258,7 @@ export default function AffiliateProgram() {
                                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Paid</p>
                                     <p className="text-xl font-bold">${dashboard?.data?.totalEarned || 0}</p>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                         <p className="text-sm text-slate-500 font-medium">
                             Commission is auto-calculated at 10% on all products and services.
@@ -289,7 +298,7 @@ export default function AffiliateProgram() {
                                 <div>
                                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Last Withdrawal</p>
                                     <div className="flex items-center gap-1">
-                                        <p className="text-xl font-bold">$499</p>
+                                        <p className="text-xl font-bold">${lastSettledAmount.toFixed(2) || 0}</p>
                                         <span className="text-[10px] font-bold text-slate-400">(Settled)</span>
                                     </div>
                                 </div>
