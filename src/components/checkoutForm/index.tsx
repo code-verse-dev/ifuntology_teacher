@@ -13,6 +13,7 @@ import { subscriptionSlice } from "../../redux/services/apiSlices/subscriptionSl
 import swal from "sweetalert";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2, CheckCircle2 } from "lucide-react";
+import { useGetCartQuery } from "@/redux/services/apiSlices/cartSlice";
 
 interface CheckoutFormProps {
   type?: string;
@@ -38,6 +39,7 @@ const CheckoutForm = ({
   const elements = useElements();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { refetch } = useGetCartQuery();
 
   const [message, setMessage] = useState("");
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -59,6 +61,7 @@ const CheckoutForm = ({
         }).unwrap();
         if (res?.status) {
           swal("Success", "Payment completed successfully", "success");
+          await refetch();
           navigate("/my-orders");
         } else {
           swal("Error", res?.data?.error?.message || res?.error?.message || "Something went wrong", "error");

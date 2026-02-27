@@ -60,28 +60,31 @@ export default function MyCourses() {
     const navigate = useNavigate();
     const location = useLocation();
 
-
     useEffect(() => {
         document.title = "My Courses • iFuntology Teacher";
     }, []);
 
-    const fromPayment = location.state?.from === "/payment";
+    const fromPayment = location.state?.from === "/payment" || location.state?.from === "/subscribe-to-lms";
     const [polling, setPolling] = useState(fromPayment);
 
-    const { data: subscriptions, isLoading } = useGetMySubscriptionsQuery(
-        { status: "ACTIVE" },
-        {
-            pollingInterval: polling ? 3000 : 0,
-        }
+    const { data: subscriptions, refetch, isLoading } = useGetMySubscriptionsQuery(
+        { status: "ACTIVE" }
     );
-    const subscriptionsData = subscriptions?.data?.docs ?? [];
 
     useEffect(() => {
-        if (subscriptionsData.length > 0) {
-            setPolling(false);
-        }
-    }, [subscriptionsData.length]);
+        if (fromPayment) {
+            setPolling(true);
+            
+            const timer = setTimeout(() => {
+                refetch();
+                setPolling(false);
+            }, 3000);
 
+            return () => clearTimeout(timer);
+        }
+    }, [fromPayment]);
+
+    const subscriptionsData = subscriptions?.data?.docs ?? [];
     if (isLoading || polling) {
         return (
             <DashboardWithSidebarLayout>

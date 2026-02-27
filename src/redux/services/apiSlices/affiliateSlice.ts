@@ -22,6 +22,10 @@ export const affiliateSlice = createApi({
       }),
       invalidatesTags: ["Affiliate"],
     }),
+    getLastWithdrawalAmounts: builder.query<any, void>({
+      query: () => "/affiliate/withdrawal/last-amounts",
+      providesTags: ["Affiliate"]
+    }),
   }),
 });
 
@@ -29,4 +33,5 @@ export const {
   useGetDashboardQuery,
   useGetAffiliateLinkQuery,
   useRequestWithdrawalMutation,
+  useGetLastWithdrawalAmountsQuery,
 } = affiliateSlice;

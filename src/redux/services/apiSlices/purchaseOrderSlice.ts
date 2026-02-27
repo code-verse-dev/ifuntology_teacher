@@ -35,7 +35,13 @@ export const purchaseOrderSlice = createApi({
     }),
     utilizePurchaseOrder: builder.mutation<
       any,
-      { serviceType: string; poNumber: string }
+      {
+        serviceType: string;
+        poNumber: string;
+        subscriptionType?: string;
+        courseType?: string;
+        noOfStudents?: number;
+      }
     >({
       query: (body) => ({
         url: "/porder/utilize",
