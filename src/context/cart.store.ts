@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 export type CartItem = {
   id: string;
   title: string;
-  price: number; // store as number for calculations
+  price: number;
   qty: number;
   image?: string;
 };

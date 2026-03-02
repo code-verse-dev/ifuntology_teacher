@@ -17,7 +17,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch (e) {
-      // If writing to localStorage fails (quota, disabled, etc.) keep app functional and log the error for debugging
       console.warn("Failed to persist cart to localStorage:", e);
     }
   }, [items]);

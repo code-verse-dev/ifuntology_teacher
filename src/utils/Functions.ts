@@ -7,40 +7,9 @@ export const getBasename = () => {
   return basename;
 };
 
-// export const ImageUrl = (image: string) => {
-//     let { PUBLIC_URL } = process.env;
-//     return `${PUBLIC_URL}/images/${image}`;
-// };
-
 export const ImageUrl = (image: string) => {
   return `${getBasename()}/images/${image}`;
 };
-
-// export const buildCartItems = (productId: string, cartData: any) => {
-//   const existingItems = cartData?.data?.items || []; // use .response for RTK Query
-
-//   const found = existingItems.find(
-//     (item: any) => (item.product as any)._id === productId || item.product === productId
-//   );
-
-//   if (found) {
-//     return existingItems.map((item: any) => ({
-//       product: (item.product as any)._id || item.product, // always string
-//       quantity:
-//         ((item.product as any)._id === productId || item.product === productId)
-//           ? item.quantity + 1
-//           : item.quantity,
-//     }));
-//   }
-
-//   return [
-//     ...existingItems.map((item: any) => ({
-//       product: (item.product as any)._id || item.product, // always string
-//       quantity: item.quantity,
-//     })),
-//     { product: productId, quantity: 1 },
-//   ];
-// };
 
 export const buildCartItems = (
   productId: string,
