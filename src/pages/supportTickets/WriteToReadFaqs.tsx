@@ -35,6 +35,7 @@ export default function WriteToReadFaqs() {
     const { data: faqsData } = useGetFaqsQuery({
         module: "write_to_read",
         keyword: keyword || undefined,
+        published: true,
     });
     const faqs = faqsData?.data?.docs ?? [];
 

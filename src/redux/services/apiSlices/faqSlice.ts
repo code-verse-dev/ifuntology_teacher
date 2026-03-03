@@ -7,12 +7,12 @@ export const faqSlice = createApi({
     endpoints: (builder) => ({
         getFaqs: builder.query<
             any,
-            { page?: number; limit?: number; keyword?: string; module?: string }
+            { page?: number; limit?: number; keyword?: string; module?: string, published?: boolean }
         >({
-            query: ({ page, limit, keyword, module }) => ({
+            query: ({ page, limit, keyword, module, published }) => ({
                 url: "/faqs",
                 method: "GET",
-                params: { page, limit, keyword, module },
+                params: { page, limit, keyword, module, published },
             }),
         }),
     }),

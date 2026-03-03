@@ -37,6 +37,7 @@ export default function AffiliateFaqs() {
     const { data: faqsData } = useGetFaqsQuery({
         module: "affiliate_partnership",
         keyword: keyword || undefined,
+        published: true,
     });
     const faqs = faqsData?.data?.docs || [];
 

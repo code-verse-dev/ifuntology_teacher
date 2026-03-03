@@ -35,6 +35,7 @@ export default function BookingFaqs() {
     const { data: faqsData } = useGetFaqsQuery({
         module: "booking_quotation",
         keyword: keyword || undefined,
+        published: true,
     });
     const faqs = faqsData?.data?.docs ?? [];
 

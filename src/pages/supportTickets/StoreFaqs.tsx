@@ -35,6 +35,7 @@ export default function StoreFaqs() {
     const { data: faqsData } = useGetFaqsQuery({
         module: "ecommerce",
         keyword: keyword || undefined,
+        published: true,
     });
     const faqs = faqsData?.data?.docs ?? [];
 

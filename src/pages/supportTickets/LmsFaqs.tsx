@@ -35,6 +35,7 @@ export default function LmsFaqs() {
     const { data: faqsData } = useGetFaqsQuery({
         module: "lms",
         keyword: keyword || undefined,
+        published: true,
     });
     const faqs = faqsData?.data?.docs ?? [];
 
