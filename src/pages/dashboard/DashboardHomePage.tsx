@@ -24,6 +24,7 @@ import {
   useGetMySessionsQuery,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
+import socket from "@/config/socket";
 
 function StatCard({
   icon,
@@ -195,9 +196,18 @@ export default function DashboardHomePage() {
 
   const navigate = useNavigate();
 
-  const { data: notificationsData } = useGetAllNotificationsQuery({ limit: 4 });
+  const { data: notificationsData, refetch } = useGetAllNotificationsQuery({ limit: 4 });
   const recentNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 4) ?? [];
-
+  
+  useEffect(() => {
+    socket.on("notification", (data) => {
+      refetch();
+    });
+    return () => {
+      socket.off("notification");
+    };
+    // eslint-disable-next-line
+  }, []);
   return (
     <DashboardWithSidebarLayout>
       <section className="w-full space-y-6">

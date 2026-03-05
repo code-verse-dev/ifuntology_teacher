@@ -43,6 +43,8 @@ import {
 } from "@/redux/services/apiSlices/cartSlice";
 import { UPLOADS_URL } from "@/constants/api";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
+import socket from "@/config/socket";
+import { useEffect } from "react";
 
 export default function Topbar() {
   const navigate = useNavigate();
@@ -52,7 +54,7 @@ export default function Topbar() {
   const user = useSelector((state: RootState) => state.user.userData);
   const dispatch = useDispatch();
 
-  const { data: notificationsData } = useGetAllNotificationsQuery({ isRead: false, limit: 3 });
+  const { data: notificationsData, refetch } = useGetAllNotificationsQuery({ isRead: false, limit: 3 });
   const unreadCount: number = notificationsData?.data?.unreadCount ?? 0;
   const topNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 3) ?? [];
 
@@ -61,6 +63,16 @@ export default function Topbar() {
     dispatch(removeUser());
     navigate("/login", { replace: true });
   };
+  
+  useEffect(() => {
+    socket.on("notification", (data) => {
+      refetch();
+    });
+    return () => {
+      socket.off("notification");
+    };
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background">

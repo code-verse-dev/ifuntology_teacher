@@ -16,6 +16,7 @@ import {
     useToggleNotificationMutation,
     useMarkAllReadMutation,
 } from "@/redux/services/apiSlices/notificationSlice";
+import socket from "@/config/socket";
 
 type FilterType = "all" | "unread" | "read";
 
@@ -27,7 +28,7 @@ export default function Notifications() {
             filter === "read" ? { isRead: true } :
                 {};
 
-    const { data: notificationsData, isLoading } = useGetAllNotificationsQuery(queryArg);
+    const { data: notificationsData, isLoading, refetch } = useGetAllNotificationsQuery(queryArg);
     const [toggleNotification] = useToggleNotificationMutation();
     const [markAllRead] = useMarkAllReadMutation();
 
@@ -39,6 +40,16 @@ export default function Notifications() {
     const unreadCount: number = notificationsData?.data?.unreadCount ?? 0;
 
     const filterLabel = filter === "unread" ? "Unread" : filter === "read" ? "Read" : "All Notifications";
+
+    useEffect(() => {
+        socket.on("notification", (data) => {
+          refetch();
+        });
+        return () => {
+          socket.off("notification");
+        };
+        // eslint-disable-next-line
+      }, []);
 
     return (
         <DashboardWithSidebarLayout>

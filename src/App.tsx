@@ -306,18 +306,13 @@ import socket from "@/config/socket";
 // );
 
 const App = () => {
-  // const user = useSelector((state: any) => state.user.userData);
-  // useEffect(() => {
-  //   try {
-      
-  //   if (user) {
-  //     socket.emit("setupAdmin", user);
-  //   }
-    
-  // } catch (error) {
-  //   console.log(error, 'error');
-  // }
-  // }, [user]);
+  const user = useSelector((state: any) => state.user.userData);
+  useEffect(() => {
+    if (user?._id) {
+      socket.emit("setupAdmin", user);
+    }
+  }, [user]);
+
   return (
     <ThemeProvider
       attribute="class"
