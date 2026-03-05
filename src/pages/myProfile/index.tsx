@@ -219,7 +219,6 @@ export default function MyProfile() {
                     "Account Details",
                     "Subscriptions",
                     "Payment Methods",
-                    "Notifications",
                   ].map((tab) => (
                     <TabsTrigger
                       key={tab}
@@ -561,118 +560,6 @@ export default function MyProfile() {
                   </div>
                 </TabsContent>
 
-                {/* Notifications Tab */}
-                <TabsContent
-                  value="notifications"
-                  className="space-y-8 mt-0 outline-none"
-                >
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    Notification Preferences
-                  </h3>
-
-                  <div className="rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-8">
-                    <div className="space-y-6">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                        Student Activity
-                      </h4>
-                      {[
-                        {
-                          label: "Student Activity Updates",
-                          sub: "Get notified when students complete modules or lessons",
-                        },
-                        {
-                          label: "Quiz Attempts",
-                          sub: "Receive alerts when students attempt quizzes or tests",
-                        },
-                        {
-                          label: "Certificates Earned",
-                          sub: "Know when students unlock new certificates",
-                        },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-1"
-                        >
-                          <div className="space-y-1">
-                            <Label className="text-sm font-bold text-slate-900 dark:text-white inline">
-                              {item.label}
-                            </Label>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {item.sub}
-                            </p>
-                          </div>
-                          <Switch defaultChecked />
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
-                    <div className="space-y-6">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                        Account & Subscriptions
-                      </h4>
-                      {[
-                        {
-                          label: "New Student Enrollment",
-                          sub: "Alerts when new students join your batches",
-                        },
-                        {
-                          label: "Subscription Renewals",
-                          sub: "Reminders about upcoming subscription renewals",
-                        },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-1"
-                        >
-                          <div className="space-y-1">
-                            <Label className="text-sm font-bold text-slate-900 dark:text-white inline">
-                              {item.label}
-                            </Label>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {item.sub}
-                            </p>
-                          </div>
-                          <Switch defaultChecked />
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
-                    <div className="space-y-6">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                        System & Marketing
-                      </h4>
-                      {[
-                        {
-                          label: "System Updates",
-                          sub: "Platform updates and new feature announcements",
-                          checked: false,
-                        },
-                        {
-                          label: "Marketing Emails",
-                          sub: "Promotional offers and course recommendations",
-                          checked: false,
-                        },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-1 text-slate-400"
-                        >
-                          <div className="space-y-1">
-                            <Label className="text-sm font-bold inline">
-                              {item.label}
-                            </Label>
-                            <p className="text-xs font-medium">{item.sub}</p>
-                          </div>
-                          <Switch defaultChecked={item.checked} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </TabsContent>
               </Tabs>
             </Card>
           </div>
