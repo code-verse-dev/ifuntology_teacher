@@ -13,6 +13,7 @@ import {
   TrendingUp,
   UserPlus,
   Users,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDays, format } from "date-fns";
@@ -22,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import {
   useGetMySessionsQuery,
 } from "@/redux/services/apiSlices/sessionSlice";
+import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 
 function StatCard({
   icon,
@@ -193,6 +195,9 @@ export default function DashboardHomePage() {
 
   const navigate = useNavigate();
 
+  const { data: notificationsData } = useGetAllNotificationsQuery({ limit: 4 });
+  const recentNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 4) ?? [];
+
   return (
     <DashboardWithSidebarLayout>
       <section className="w-full space-y-6">
@@ -292,63 +297,29 @@ export default function DashboardHomePage() {
                 View All &gt;
               </Button>
             </div>
-            <div className="px-3 pb-4 pt-3 sm:px-6">
-              <div className="divide-y divide-border/60">
-                {[
-                  {
-                    icon: FileText,
-                    iconBackground: "#3b82f6",
-                    text: "Quote request submitted for Funtology Kits",
-                    time: "2 hours ago",
-                  },
-                  {
-                    icon: Calendar,
-                    iconBackground: "#22c55e",
-                    text: "Training session scheduled for Dec 20",
-                    time: "5 hours ago",
-                  },
-                  {
-                    icon: CheckCircle2,
-                    iconBackground: "#a855f7",
-                    text: "Emma Johnson completed Module 5",
-                    time: "1 day ago",
-                  },
-                  {
-                    icon: Package,
-                    iconBackground: "#fb923c",
-                    text: "Order #ORD-2024-042 has been shipped",
-                    time: "2 days ago",
-                  },
-                  {
-                    icon: Award,
-                    iconBackground: "#d97706",
-                    text: "3 students earned new certificates",
-                    time: "3 days ago",
-                  },
-                ].map((activity) => {
-                  const Icon = activity.icon;
-                  return (
-                    <button
-                      key={activity.text}
-                      type="button"
-                      onClick={() => toast.message("Open activity (coming soon)")}
-                      className="group flex w-full items-center gap-4 py-6 text-left transition hover:bg-card/30 first:pt-3 last:pb-3"
-                    >
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/60"
-                        style={{ color: activity.iconBackground }}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold">{activity.text}</div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">{activity.time}</div>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5" />
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="mt-4 divide-y divide-border/50">
+              {recentNotifs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-6 py-10 text-muted-foreground gap-2">
+                  <Bell className="h-8 w-8 opacity-20" />
+                  <p className="text-sm">No recent activity.</p>
+                </div>
+              ) : recentNotifs.map((n) => (
+                <div key={n._id} className="flex items-start gap-4 px-6 py-4 group hover:bg-muted/30 transition-colors">
+                  <div className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${n.isRead ? "bg-slate-100 dark:bg-slate-800 text-slate-400" : "bg-orange-100 dark:bg-orange-950/30 text-orange-500"}`}>
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">{n.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.content}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {!n.isRead && (
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                  )}
+                </div>
+              ))}
             </div>
           </Card>
 

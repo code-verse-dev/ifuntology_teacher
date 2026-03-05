@@ -22,7 +22,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { buildCartItems, ImageUrl } from "@/utils/Functions";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSidebarOptional } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -42,6 +42,7 @@ import {
   useCreateCartMutation,
 } from "@/redux/services/apiSlices/cartSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 
 export default function Topbar() {
   const navigate = useNavigate();
@@ -50,6 +51,11 @@ export default function Topbar() {
   const [logout] = useLogoutMutation();
   const user = useSelector((state: RootState) => state.user.userData);
   const dispatch = useDispatch();
+
+  const { data: notificationsData } = useGetAllNotificationsQuery({ isRead: false, limit: 3 });
+  const unreadCount: number = notificationsData?.data?.unreadCount ?? 0;
+  const topNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 3) ?? [];
+
   const onLogout = async () => {
     const res = await logout().unwrap();
     dispatch(removeUser());
@@ -107,55 +113,59 @@ export default function Topbar() {
             </SheetContent>
           </Sheet>
 
-            {/* Notifications — circular with thin border + red dot */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-full border border-border bg-background"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="h-4 w-4" />
-                  </Button>
-                  <span
+          {/* Notifications — circular with thin border + red dot */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border border-border bg-background"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                </Button>
+                <span
                   className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500"
                   aria-hidden
                 />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-              align="end"
-              className="z-50 w-80 bg-popover p-2 shadow-elev"
-            >
-                <DropdownMenuLabel className="px-2">
-                Notifications
-              </DropdownMenuLabel>
-                <div className="px-2 pb-2 text-xs text-muted-foreground">
-                Latest updates and reminders.
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white" aria-hidden>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                  <div className="text-sm font-semibold">New booking request</div>
-                  <div className="text-xs text-muted-foreground">
-                  A student requested a session for next week.
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="z-50 w-80 bg-popover p-2 shadow-elev">
+              <div className="flex items-center justify-between px-2 pb-1">
+                <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] font-bold text-red-500">{unreadCount} unread</span>
+                )}
+              </div>
+              <DropdownMenuSeparator />
+              {topNotifs.length === 0 ? (
+                <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No new notifications.
                 </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                  <div className="text-sm font-semibold">Calendar updated</div>
-                  <div className="text-xs text-muted-foreground">
-                  Availability synced successfully.
-                </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-md">
-                  <Link to="/notifications" className="w-full">
-                    View all
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              ) : (
+                topNotifs.map((n) => (
+                  <DropdownMenuItem key={n._id} className="flex flex-col items-start gap-1 rounded-md py-2 cursor-default focus:bg-accent/50">
+                    <div className="text-sm font-semibold leading-snug">{n.title}</div>
+                    <div className="text-xs text-muted-foreground leading-snug line-clamp-2">{n.content}</div>
+                    <div className="text-[10px] text-muted-foreground/60">{new Date(n.createdAt).toLocaleString()}</div>
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="rounded-md">
+                <Link to="/notifications" className="w-full text-center text-xs font-semibold text-orange-500 hover:text-orange-600">
+                  View all notifications
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Profile — avatar + Hi, name! + role in green (no dropdown chevron) */}
           <DropdownMenu>
@@ -166,16 +176,17 @@ export default function Topbar() {
                 aria-label="Profile menu"
               >
                 <Avatar className="h-9 w-9 border border-border">
-                  <AvatarFallback className="bg-muted text-foreground text-sm">
-                    TF
-                  </AvatarFallback>
+                  <AvatarImage src={
+                    user?.image ? `${UPLOADS_URL}${user.image}` : undefined
+                  } />
+                  <AvatarFallback className="bg-muted text-foreground text-sm">{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left sm:block">
                   <div className="text-sm font-semibold leading-none text-foreground">
                     Hi, {user?.firstName}!
                   </div>
                   <div className="mt-0.5 text-xs leading-none text-primary">
-                    {user?.role}
+                    {user?.role[0]?.toUpperCase() + user?.role?.slice(1)}
                   </div>
                 </div>
                 <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />

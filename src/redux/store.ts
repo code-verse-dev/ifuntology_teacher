@@ -22,6 +22,7 @@ import { invitationSlice } from "./services/apiSlices/invitationSlice";
 import { ticketSlice } from "./services/apiSlices/ticketSlice";
 import { faqSlice } from "./services/apiSlices/faqSlice";
 import { affiliateSlice } from "./services/apiSlices/affiliateSlice";
+import { notificationSlice } from "./services/apiSlices/notificationSlice";
 
 
 const rootReducer = combineReducers({
@@ -45,6 +46,7 @@ const rootReducer = combineReducers({
   [ticketSlice.reducerPath]: ticketSlice.reducer,
   [faqSlice.reducerPath]: faqSlice.reducer,
   [affiliateSlice.reducerPath]: affiliateSlice.reducer,
+  [notificationSlice.reducerPath]: notificationSlice.reducer,
 });
 
 const persistConfig = {
@@ -70,6 +72,7 @@ const persistConfig = {
     ticketSlice.reducerPath,
     faqSlice.reducerPath,
     affiliateSlice.reducerPath,
+    notificationSlice.reducerPath,
   ],
 };
 
@@ -99,7 +102,8 @@ export const store = configureStore({
       .concat(invitationSlice.middleware)
       .concat(ticketSlice.middleware)
       .concat(faqSlice.middleware)
-      .concat(affiliateSlice.middleware),
+      .concat(affiliateSlice.middleware)
+      .concat(notificationSlice.middleware),
 });
 
 setupListeners(store.dispatch);
