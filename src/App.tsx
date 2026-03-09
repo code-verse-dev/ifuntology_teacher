@@ -58,253 +58,6 @@ import { getBasename } from "./utils/Functions";
 import { useEffect } from "react";
 import socket from "@/config/socket";
 
-
-// const App = () => (
-//   <Provider store={store}>
-//     <ThemeProvider
-//       attribute="class"
-//       defaultTheme="dark"
-//       storageKey="ifuntology-theme"
-//       enableSystem={false}
-//     >
-//       <CartProvider>
-//         <TooltipProvider>
-//           <Toaster />
-//           <Sonner />
-//           <BrowserRouter basename={getBasename()}>
-//             <Routes>
-//               <Route path="/" element={<Index />} />
-//               <Route path="/login" element={<LoginPage />} />
-//               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-//               <Route
-//                 path="/recover-password"
-//                 element={<RecoverPasswordPage />}
-//               />
-//               <Route path="/verify-otp" element={<VerifyOtp />} />
-//               <Route path="/sign-up" element={<SignUpPage />} />
-
-//               <Route
-//                 path="/dashboard"
-//                 element={
-//                   <ProtectedRoute>
-//                     <DashboardHomePage />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route path="/welcome" element={<DashboardWelcomePage />} />
-//               <Route path="/book-session" element={<BookSessionPage />} />
-//               <Route path="/session-booked" element={<SessionBookedPage />} />
-
-//               <Route
-//                 path="/book-a-session"
-//                 element={
-//                   <ProtectedRoute>
-//                     <BookaSessionDashboard />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/all-sessions"
-//                 element={
-//                   <ProtectedRoute>
-//                     <AllSessions />
-//                   </ProtectedRoute>
-//                 }
-//               />
-
-//               <Route path="/quotes" element={
-//                 <ProtectedRoute>
-//                   <QutationTracking />
-//                 </ProtectedRoute>
-//               } />
-//               <Route
-//                 path="/quotes/request"
-//                 element={
-//                   <ProtectedRoute>
-//                     <RequestQuotation />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/quotes/:id"
-//                 element={
-//                   <ProtectedRoute>
-//                     <QuoteDetails />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/purchase-orders"
-//                 element={
-//                   <ProtectedRoute>
-//                     <PurchaseOrder />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/purchase-orders/:id"
-//                 element={
-//                   <ProtectedRoute>
-//                     <PurchaseOrderDetails />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/enrichment-store"
-//                 element={
-//                   <ProtectedRoute>
-//                     <EnrichmentStore />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/cart"
-//                 element={
-//                   <ProtectedRoute>
-//                     <CartPage />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/enrichment-store/product/:id"
-//                 element={
-//                   <ProtectedRoute>
-//                     <ProductDetails />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/enrichment-store/checkout"
-//                 element={
-//                   <ProtectedRoute>
-//                     <CheckoutPage />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/enrichment-store/payment"
-//                 element={<PaymentPage />}
-//               />
-//               <Route
-//                 path="/payment"
-//                 element={
-//                   <ProtectedRoute>
-//                     <StripePayment />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/my-orders"
-//                 element={
-//                   <ProtectedRoute>
-//                     <MyOrdersPage />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/my-orders/:id"
-//                 element={
-//                   <ProtectedRoute>
-//                     <MyOrderDetails />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route path="/pay-invoice" element={<PayInvoice />} />
-//               <Route path="/subscribe-to-lms" element={
-//                 <ProtectedRoute>
-//                   <SubscribetoLMS />
-//                 </ProtectedRoute>
-//               } />
-//               <Route path="/my-courses" element={
-//                 <ProtectedRoute>
-//                   <MyCourses />
-//                 </ProtectedRoute>
-//               } />
-//               <Route path="/my-courses/:courseType" element={
-//                 <ProtectedRoute>
-//                   <CourseDetails />
-//                 </ProtectedRoute>
-//               } />
-//               <Route path="/my-students" element={
-//                 <ProtectedRoute>
-//                   <MyStudents />
-//                 </ProtectedRoute>
-//               } />
-//               <Route path="/affiliate-program" element={
-//                 <ProtectedRoute>
-//                   <AffiliateProgram />
-//                 </ProtectedRoute>
-//               } />
-//               <Route path="/notifications" element={<Notifications />} />
-//               <Route
-//                 path="/my-profile"
-//                 element={
-//                   <ProtectedRoute>
-//                     <MyProfile />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route path="/support-tickets" element={
-//                 <ProtectedRoute>
-//                   <SupportTickets />
-//                 </ProtectedRoute>
-//               } />
-//               <Route
-//                 path="/support-tickets/create"
-//                 element={
-//                   <ProtectedRoute>
-//                     <CreateTicket />
-//                   </ProtectedRoute>
-//                 }
-//               />
-//               <Route
-//                 path="/support-tickets/faqs/affiliate"
-//                 element={<AffiliateFaqs />}
-//               />
-//               <Route
-//                 path="/support-tickets/faqs/store"
-//                 element={<StoreFaqs />}
-//               />
-//               <Route path="/support-tickets/faqs/lms" element={<LmsFaqs />} />
-//               <Route
-//                 path="/support-tickets/faqs/booking"
-//                 element={<BookingFaqs />}
-//               />
-//               <Route
-//                 path="/support-tickets/faqs/write-to-read"
-//                 element={<WriteToReadFaqs />}
-//               />
-//               <Route path="/write-to-read" element={<WriteToRead />} />
-
-//               <Route path="/invite-student" element={
-//                 <ProtectedRoute>
-//                   <InviteStudent />
-//                 </ProtectedRoute>
-//               } />
-
-//               <Route path="/quotes/lms" element={<QuoteLmsPage />} />
-//               <Route
-//                 path="/quotes/write-to-read"
-//                 element={<QuoteWriteToReadPage />}
-//               />
-//               <Route
-//                 path="/quotes/enrichment-store"
-//                 element={<QuoteEnrichmentStorePage />}
-//               />
-//               <Route
-//                 path="/quotation-document"
-//                 element={<QuotationDocumentPage />}
-//               />
-//               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-//               <Route path="*" element={<NotFound />} />
-//             </Routes>
-//           </BrowserRouter>
-//         </TooltipProvider>
-//       </CartProvider>
-//     </ThemeProvider>
-//   </Provider>
-// );
-
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
   useEffect(() => {
@@ -512,20 +265,41 @@ const App = () => {
               />
               <Route
                 path="/support-tickets/faqs/affiliate"
-                element={<AffiliateFaqs />}
+                element={
+                <ProtectedRoute>
+                  <AffiliateFaqs />
+                </ProtectedRoute>
+                }
               />
               <Route
                 path="/support-tickets/faqs/store"
-                element={<StoreFaqs />}
+                element={
+                <ProtectedRoute>
+                  <StoreFaqs />
+                </ProtectedRoute>
+                }
               />
-              <Route path="/support-tickets/faqs/lms" element={<LmsFaqs />} />
+              <Route path="/support-tickets/faqs/lms" element={
+                <ProtectedRoute>
+                  <LmsFaqs />
+                </ProtectedRoute>
+                }
+              />
               <Route
                 path="/support-tickets/faqs/booking"
-                element={<BookingFaqs />}
+                element={
+                <ProtectedRoute>
+                  <BookingFaqs />
+                </ProtectedRoute>
+                }
               />
               <Route
                 path="/support-tickets/faqs/write-to-read"
-                element={<WriteToReadFaqs />}
+                element={
+                <ProtectedRoute>
+                  <WriteToReadFaqs />
+                </ProtectedRoute>
+                }
               />
               <Route path="/write-to-read" element={<WriteToRead />} />
 
