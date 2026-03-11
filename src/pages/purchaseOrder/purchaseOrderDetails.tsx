@@ -87,9 +87,13 @@ export default function PurchaseOrderDetails() {
             </div>
 
             <div className="flex gap-3">
-              {purchaseOrderData?.quote?.serviceType === "lms" && <Button variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to LMS Subscriptions</Button>}
+              {purchaseOrderData?.quote?.serviceType === "lms" && <Button
+                onClick={() => navigate("/subscribe-to-lms")}
+                variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to LMS Subscriptions</Button>}
               {purchaseOrderData?.quote?.serviceType === "write_to_read" && <Button variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to Write to Read</Button>}
-              {purchaseOrderData?.quote?.serviceType === "enrichment_store" && <Button variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to Ecommerce Store</Button>}
+              {purchaseOrderData?.quote?.serviceType === "enrichment_store" && <Button
+                onClick={() => navigate("/enrichment-store")}
+                variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to Ecommerce Store</Button>}
             </div>
           </div>
         </div>
@@ -296,36 +300,36 @@ export default function PurchaseOrderDetails() {
                       {purchaseOrderData?.quote?.subTotal != null &&
                         (purchaseOrderData.quote.noOfSubscriptions != null ||
                           purchaseOrderData.quote.noOfSubscriptions === 0) && (
-                        <tr>
-                          <td className="px-4 py-3">
-                            Write to Read Subscriptions
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.noOfSubscriptions ?? "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.noOfSubscriptions != null &&
-                              purchaseOrderData.quote.noOfSubscriptions > 0 &&
-                              purchaseOrderData.quote.subTotal != null
-                              ? formatAmount(
+                          <tr>
+                            <td className="px-4 py-3">
+                              Write to Read Subscriptions
+                            </td>
+                            <td className="px-4 py-3">
+                              {purchaseOrderData.quote.noOfSubscriptions ?? "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {purchaseOrderData.quote.noOfSubscriptions != null &&
+                                purchaseOrderData.quote.noOfSubscriptions > 0 &&
+                                purchaseOrderData.quote.subTotal != null
+                                ? formatAmount(
                                   purchaseOrderData.quote.subTotal /
-                                    purchaseOrderData.quote.noOfSubscriptions
+                                  purchaseOrderData.quote.noOfSubscriptions
                                 )
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {formatAmount(purchaseOrderData.quote.subTotal)}
-                          </td>
-                        </tr>
-                      )}
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {formatAmount(purchaseOrderData.quote.subTotal)}
+                            </td>
+                          </tr>
+                        )}
                       <tr>
                         <td className="px-4 py-3">Book Printing Requests</td>
                         <td className="px-4 py-3">
                           {purchaseOrderData?.quote?.bookPrintingRequests ===
-                          true
+                            true
                             ? "Yes"
                             : purchaseOrderData?.quote?.bookPrintingRequests ===
-                                false
+                              false
                               ? "No"
                               : "—"}
                         </td>
