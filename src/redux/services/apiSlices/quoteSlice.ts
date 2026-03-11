@@ -28,6 +28,7 @@ export const quoteSlice = createApi({
         method: "GET",
         params: { keyword, page, limit },
       }),
+      providesTags: ["Quotes"],
     }),
     getMyQuoteStats: builder.query<any, void>({
       query: () => ({
