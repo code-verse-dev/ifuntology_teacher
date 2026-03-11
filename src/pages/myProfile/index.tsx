@@ -96,7 +96,6 @@ export default function MyProfile() {
     }
   };
 
-  console.log(subscriptionsData, 'subscriptionsData');
   return (
     <DashboardWithSidebarLayout>
       <div className="mx-auto w-full space-y-6">

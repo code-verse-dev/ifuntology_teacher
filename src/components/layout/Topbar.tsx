@@ -172,7 +172,7 @@ export default function Topbar() {
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="rounded-md">
-                <Link to="/notifications" className="w-full text-center text-xs font-semibold text-orange-500 hover:text-orange-600">
+                <Link to="/notifications" className="w-full text-center text-xs font-semibold text-orange-500 hover:text-orange-600 cursor-pointer">
                   View all notifications
                 </Link>
               </DropdownMenuItem>

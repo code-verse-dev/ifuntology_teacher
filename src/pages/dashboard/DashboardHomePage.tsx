@@ -14,6 +14,7 @@ import {
   UserPlus,
   Users,
   Bell,
+  BadgeDollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDays, format } from "date-fns";
@@ -25,6 +26,9 @@ import {
 } from "@/redux/services/apiSlices/sessionSlice";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 import socket from "@/config/socket";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { useGetDashboardStatsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
 
 function StatCard({
   icon,
@@ -208,6 +212,11 @@ export default function DashboardHomePage() {
     };
     // eslint-disable-next-line
   }, []);
+  const user = useSelector((state: RootState) => state.user.userData);
+
+  const { data: dashboardStatsData, isLoading: dashboardStatsLoading } = useGetDashboardStatsQuery();
+  const dashboardStats = dashboardStatsData?.data;
+  console.log(dashboardStats, 'dashboardStats');
   return (
     <DashboardWithSidebarLayout>
       <section className="w-full space-y-6">
@@ -225,7 +234,7 @@ export default function DashboardHomePage() {
           <div className="relative p-6 sm:p-8">
             <div className="max-w-3xl">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Welcome back, Tom! <span className="align-middle">👋</span>
+                Welcome back, {user?.firstName}! 
               </h1>
               <p className="mt-2 text-sm text-white/80 sm:text-base">
                 Here’s what’s happening with your classes today.
@@ -267,30 +276,30 @@ export default function DashboardHomePage() {
             icon={<Users className="h-5 w-5" />}
             iconBackground="linear-gradient(135deg, #22c55e, #16a34a)"
             title="Total Students"
-            value="2"
+            value={dashboardStats?.totalStudents ?? 0}
             subtitle="Across all batches"
           />
           <StatCard
             icon={<GraduationCap className="h-5 w-5" />}
             iconBackground="linear-gradient(135deg, #22c55e, #16a34a)"
             title="Active Subscriptions"
-            value="2"
+            value={dashboardStats?.activeSubscriptions ?? 0}
             subtitle="LMS & Write to Read"
           />
           <StatCard
             icon={<FileText className="h-5 w-5" />}
             iconBackground="linear-gradient(135deg, #fb923c, #ea580c)"
             title="Pending POs"
-            value="4"
+            value={dashboardStats?.pendingPOs ?? 0}
             subtitle="Awaiting approval"
             showWarning
           />
-          <StatCard
-            icon={<BookOpen className="h-5 w-5" />}
+           <StatCard
+            icon={<BadgeDollarSign className="h-5 w-5" />}
             iconBackground="linear-gradient(135deg, #3b82f6, #1d4ed8)"
-            title="Books to Grade"
-            value="1"
-            subtitle="Pending review"
+            title="Affiliate Earnings"
+            value={`$${dashboardStats?.affiliateEarnings?.toFixed(2) ?? "0"}`}
+            subtitle="+$150 this Month"
           />
         </div>
 

@@ -9,41 +9,6 @@ import { Download } from "lucide-react";
 import { useGetOrderByIdQuery } from "@/redux/services/apiSlices/orderSlice";
 import { UPLOADS_URL } from "@/constants/api";
 
-type OrderItem = {
-  id: string;
-  title: string;
-  quantity: number;
-  price: number;
-  image: string;
-};
-
-// Sample order data - in a real app, this would come from an API
-const sampleOrderData = {
-  orderNumber: "ORD-2024-001",
-  date: "12/8/2025",
-  status: "Approved" as const,
-  subtotal: 743.76,
-  shipping: 0.0,
-  total: 743.76,
-  shippingAddress: "123 Education St, Learning City, LC 12345",
-  items: [
-    {
-      id: "1",
-      title: "Funtology Starter Kit",
-      quantity: 12,
-      price: 551.88,
-      image: "product-1.png",
-    },
-    {
-      id: "2",
-      title: "Student Workbook Bundle",
-      quantity: 12,
-      price: 191.88,
-      image: "product-2.png",
-    },
-  ],
-};
-
 const getStatusColor = (
   status: "processing" | "shipped" | "completed" | "cancelled"
 ) => {
