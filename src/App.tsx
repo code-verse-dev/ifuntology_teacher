@@ -62,7 +62,7 @@ const App = () => {
   const user = useSelector((state: any) => state.user.userData);
   useEffect(() => {
     if (user?._id) {
-      socket.emit("setupAdmin", user);
+      socket.emit("setup", user);
     }
   }, [user]);
 
