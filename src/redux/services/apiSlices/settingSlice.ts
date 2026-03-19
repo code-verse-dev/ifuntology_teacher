@@ -16,12 +16,12 @@ export const settingSlice = createApi({
         url: "/setting",
         method: "GET",
       }),
-    }),
+    })
 
   }),
 });
 
 export const {
     useGetSettingsQuery,
-    useGetAllSettingsQuery,
+    useGetAllSettingsQuery
 } = settingSlice;

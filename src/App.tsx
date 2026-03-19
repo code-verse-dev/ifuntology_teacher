@@ -53,10 +53,14 @@ import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToRead from "./pages/writeToRead";
 import AllSessions from "./pages/allSessions";
+import SurveysList from "./pages/surveys";
+import SurveyResponseView from "./pages/surveys/SurveyResponseView";
+import SurveyAttempt from "./pages/surveys/SurveyAttempt";
 import ProtectedRoute from "./pages/protectedRoute";
 import { getBasename } from "./utils/Functions";
 import { useEffect } from "react";
 import socket from "@/config/socket";
+import MessagesPage from "./pages/messages";
 
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
@@ -306,6 +310,26 @@ const App = () => {
               <Route path="/invite-student" element={
                 <ProtectedRoute>
                   <InviteStudent />
+                </ProtectedRoute>
+              } />
+              <Route path="/surveys" element={
+                <ProtectedRoute>
+                  <SurveysList />
+                </ProtectedRoute>
+              } />
+              <Route path="/surveys/response/:responseId" element={
+                <ProtectedRoute>
+                  <SurveyResponseView />
+                </ProtectedRoute>
+              } />
+              <Route path="/surveys/:id" element={
+                <ProtectedRoute>
+                  <SurveyAttempt />
+                </ProtectedRoute>
+              } />
+               <Route path="/messages" element={
+                <ProtectedRoute>
+                  <MessagesPage />
                 </ProtectedRoute>
               } />
 

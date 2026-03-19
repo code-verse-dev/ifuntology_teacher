@@ -32,6 +32,12 @@ export const invitationSlice = createApi({
                 params: { courseType },
             }),
         }),
+        getAdminAccount: builder.query<any, void>({
+            query: () => ({
+              url: "/user/admin-account",
+              method: "GET",
+            }),
+          }),
     }),
 });
 
@@ -39,4 +45,5 @@ export const {
     useInviteStudentMutation,
     useGetMyStudentsQuery,
     useGetAverageProgressQuery,
+    useGetAdminAccountQuery,
 } = invitationSlice;

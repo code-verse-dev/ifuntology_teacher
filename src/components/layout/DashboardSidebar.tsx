@@ -3,6 +3,7 @@ import {
   BookOpen,
   Box,
   ClipboardList,
+  FileText,
   Gift,
   GraduationCap,
   LayoutDashboard,
@@ -93,10 +94,11 @@ export default function DashboardSidebar() {
 
   const affiliateProgram: Item[] = [
     { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
+    { title: "Surveys", url: "/surveys", icon: FileText },
   ];
 
   const communication: Item[] = [
-    { title: "Chat", icon: MessagesSquare },
+    { title: "Chat", url: "/messages", icon: MessagesSquare },
   ];
 
   const support: Item[] = [

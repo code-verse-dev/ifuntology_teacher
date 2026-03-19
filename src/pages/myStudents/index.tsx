@@ -110,7 +110,7 @@ export default function MyStudents() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">My Students</h1>
                     <div className="flex gap-3">
-                        <Button className="rounded-full bg-lime-600 hover:bg-lime-700 text-white gap-2 px-6">
+                        <Button className="rounded-full bg-lime-600 hover:bg-lime-700 text-white gap-2 px-6" onClick={() => navigate("/messages")}>
                             <MessageCircle className="h-4 w-4" />
                             Chat Now
                         </Button>
