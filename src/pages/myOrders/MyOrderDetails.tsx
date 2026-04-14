@@ -170,7 +170,7 @@ export default function MyOrderDetails() {
                 </div>
 
                 {/* Download Invoice Button */}
-                <div className="flex justify-center pt-4">
+                {/* <div className="flex justify-center pt-4">
                   <Button
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
                     onClick={handleDownloadInvoice}
@@ -178,7 +178,7 @@ export default function MyOrderDetails() {
                     <Download className="h-4 w-4 mr-2" />
                     Download Invoice
                   </Button>
-                </div>
+                </div> */}
               </div>
             </Card>
           </>
