@@ -121,36 +121,6 @@ export default function BookaSessionDashboard() {
     document.title = "Book a Session • iFuntology Teacher";
   }, []);
 
-  // const events: any[] = useMemo(
-  //   () =>
-  //     [
-  //       {
-  //         id: 1,
-  //         title: "Zoom Meeting",
-  //         start: "2026-02-10", // YYYY-MM-DD
-  //         end: "2026-02-10",
-  //         platform: "Zoom Meeting",
-  //         available: true,
-  //         timeRange: "10:00-10:30",
-  //         color: "#dcfce7",
-  //       },
-  //       {
-  //         id: 2,
-  //         title: "Google Meet",
-  //         start: "2026-02-20",
-  //         end: "2026-02-20",
-  //         platform: "Google Meet",
-  //         available: true,
-  //         timeRange: "09:00-09:30",
-  //         color: "#fce7f3", // #fef3c7
-  //       },
-  //     ].map((ev) => ({
-  //       ...ev,
-  //       start: new Date(ev.start + "T00:00:00"), // normalize to midnight
-  //       end: new Date(ev.end + "T00:00:00"),
-  //     })),
-  //   []
-  // );
   const to12Hour = (time: string) => {
     const [h, m] = time.split(":").map(Number);
     const hour = h % 12 || 12;
@@ -315,6 +285,18 @@ export default function BookaSessionDashboard() {
     if (!title || !platform || !subject || !selectedSlot) {
       toast.error("Please fill in all required fields and select a time slot");
       return;
+    }
+
+    const todayStrForCompare = format(new Date(), "yyyy-MM-dd");
+    if (selectedDate === todayStrForCompare) {
+      const startNormalized = to24HourWithSeconds(selectedSlot.startTime);
+      const timePart =
+        startNormalized.length === 5 ? `${startNormalized}:00` : startNormalized;
+      const slotStart = new Date(`${selectedDate}T${timePart}`);
+      if (Number.isNaN(slotStart.getTime()) || slotStart.getTime() <= Date.now()) {
+        toast.error("This slot has passed. Please select a future time.");
+        return;
+      }
     }
 
     const payload: any = {

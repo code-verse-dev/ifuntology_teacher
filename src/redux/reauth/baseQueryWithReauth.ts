@@ -9,7 +9,7 @@ const rawBaseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   const result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result?.error?.status === 401 || result?.error?.status === "FETCH_ERROR" || result?.error?.status === 403) {
+  if (result?.error?.status === 401 || result?.error?.status === 403) {
 
     // remove location from redux and local storage
     localStorage.removeItem("user");
