@@ -25,8 +25,17 @@ export const sessionSlice = createApi({
       }),
       providesTags: ["Session"],
     }),
-    
+    joinMeeting: builder.mutation<any, string>({
+      query: (sessionId) => ({
+        url: `/session/join-meeting/${sessionId}`,
+        method: "POST",
+      }),
+    }),
   }),
 });
 
-export const { useCreateSessionMutation, useGetMySessionsQuery } = sessionSlice;
+export const {
+  useCreateSessionMutation,
+  useGetMySessionsQuery,
+  useJoinMeetingMutation,
+} = sessionSlice;

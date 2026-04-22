@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   useGetMySessionsQuery,
+  useJoinMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 import socket from "@/config/socket";
@@ -76,18 +77,38 @@ function UpcomingCard({
   platform,
   status,
   title,
+  sessionId,
 }: {
   date: string;
   time: string;
   platform: string;
   status: "confirmed" | "pending";
   title: string;
+  sessionId: string;
 }) {
   const statusLabel = status === "confirmed" ? "Confirmed" : "Pending";
   const statusClass =
     status === "confirmed"
       ? "bg-secondary/50 text-foreground ring-1 ring-border/60"
       : "bg-secondary/30 text-muted-foreground ring-1 ring-border/60";
+  const [joinMeeting, { isLoading: joinMeetingLoading }] = useJoinMeetingMutation();
+
+  const handleJoinMeeting = async () => {
+    try {
+      const res: any = await joinMeeting(sessionId).unwrap();
+      if (res?.status) {
+        window.open(res?.data?.joinUrl, "_blank");
+      } else {
+        toast.error(res?.message || "Failed to join meeting");
+      }
+    } catch (error) {
+      console.log(error, 'error');
+      const message = error?.data?.message || error?.message || "Failed to join meeting";
+      toast.error(message);
+    }
+  
+  };
+
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/30 p-4">
@@ -114,7 +135,7 @@ function UpcomingCard({
           variant="brand"
           size="sm"
           className="rounded-full bg-[#ff7a2f] hover:opacity-95"
-          onClick={() => toast.message("Join meeting (coming soon)")}
+          onClick={handleJoinMeeting}
         >
           Join Meeting
         </Button>
@@ -176,7 +197,7 @@ export default function DashboardHomePage() {
     data: mySessionsData,
     isLoading: mySessionsLoading,
   } = useGetMySessionsQuery({
-    from: format(new Date(), "yyyy-MM-dd"),
+    from: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
     to: format(addDays(new Date(), 30), "yyyy-MM-dd"),
     status: "approved",
   });
@@ -216,7 +237,6 @@ export default function DashboardHomePage() {
 
   const { data: dashboardStatsData, isLoading: dashboardStatsLoading } = useGetDashboardStatsQuery();
   const dashboardStats = dashboardStatsData?.data;
-  console.log(dashboardStats, 'dashboardStats');
   return (
     <DashboardWithSidebarLayout>
       <section className="w-full space-y-6">
@@ -378,6 +398,7 @@ export default function DashboardHomePage() {
                       platform={platform}
                       status={status}
                       title={title}
+                      sessionId={session._id}
                     />
                   );
                 })

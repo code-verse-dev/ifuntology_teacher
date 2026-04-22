@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+import { format, addDays } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { useGetMySessionsQuery } from "@/redux/services/apiSlices/sessionSlice";
+import {
+  useGetMySessionsQuery,
+  useJoinMeetingMutation,
+} from "@/redux/services/apiSlices/sessionSlice";
+import { toast } from "sonner";
+import { Calendar as CalendarIcon, Clock, Loader2, Video } from "lucide-react";
 
 interface Query {
   from?: string;
@@ -14,6 +19,16 @@ interface Query {
   page?: number;
   limit?: number;
   keyword?: string;
+}
+
+function to12Hour(time: string) {
+  if (!time) return "—";
+  const [h, m] = time.split(":").map(Number);
+  const hour = typeof h === "number" && !isNaN(h) ? h % 24 : 0;
+  const min = typeof m === "number" && !isNaN(m) ? m : 0;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${min.toString().padStart(2, "0")} ${ampm}`;
 }
 
 const getStatusColor = (status: "pending" | "approved" | "decined") => {
@@ -31,7 +46,6 @@ const getStatusColor = (status: "pending" | "approved" | "decined") => {
 };
 
 export default function MyOrdersPage() {
-  const navigate = useNavigate();
   const [paginationConfig, setPaginationConfig] = useState({
     pageNumber: 1,
     limit: 10,
@@ -43,12 +57,48 @@ export default function MyOrdersPage() {
     limit: 10,
   });
   const [search, setSearch] = useState("");
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
+  const [joinMeeting] = useJoinMeetingMutation();
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const upcomingRangeEnd = format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+  const {
+    data: upcomingSessionsData,
+    isLoading: upcomingSessionsLoading,
+  } = useGetMySessionsQuery({
+    from: todayStr,
+    to: upcomingRangeEnd,
+    status: "approved",
+    limit: 10,
+    page: 1,
+  });
+
+  const upcomingSessions: any[] = upcomingSessionsData?.data?.docs ?? [];
 
   const {
     data: mySessionsData,
     error: mySessionsError,
     isLoading: mySessionsLoading,
   } = useGetMySessionsQuery(queryOptions);
+
+  const handleJoinMeeting = async (sessionId: string) => {
+    setJoiningSessionId(sessionId);
+    try {
+      const res: any = await joinMeeting(sessionId).unwrap();
+      if (res?.status) {
+        window.open(res?.data?.joinUrl, "_blank");
+      } else {
+        toast.error(res?.message || "Failed to join meeting");
+      }
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.message || "Failed to join meeting";
+      toast.error(message);
+    } finally {
+      setJoiningSessionId(null);
+    }
+  };
 
   useEffect(() => {
     if (mySessionsData?.data) {
@@ -77,6 +127,73 @@ export default function MyOrdersPage() {
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full  space-y-6">
         <h1 className="text-2xl font-extrabold">My Sessions</h1>
+
+        {/* Upcoming Sessions */}
+        <Card className="rounded-2xl border border-border/60 p-5">
+          <h2 className="text-lg font-bold text-foreground mb-4">Upcoming Sessions</h2>
+          {upcomingSessionsLoading ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading upcoming sessions…
+            </div>
+          ) : upcomingSessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              No upcoming sessions
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {upcomingSessions.map((session: any) => {
+                const slot = session?.slots?.[0];
+                const isJoining = joiningSessionId === session._id;
+                return (
+                  <div
+                    key={session._id}
+                    className="rounded-xl bg-muted/30 dark:bg-muted/20 p-4 border border-border/40 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                          {format(new Date(session.date), "yyyy-MM-dd")}
+                        </div>
+                        {slot && (
+                          <div className="flex items-center gap-2 text-xs font-medium">
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            {to12Hour(String(slot.startTime))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400">
+                          <Video className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{session.platform}</span>
+                        </div>
+                      </div>
+                      <Badge className="shrink-0 bg-green-500 hover:bg-green-600 border-0 text-[10px]">
+                        approved
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                      {session.title}
+                    </p>
+                    <Button
+                      className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9"
+                      onClick={() => handleJoinMeeting(session._id)}
+                      disabled={isJoining}
+                    >
+                      {isJoining ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                          Joining…
+                        </>
+                      ) : (
+                        "Join Meeting"
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
 
         {/* Search and Filter */}
         <Card className="rounded-2xl border border-border/60 p-4">

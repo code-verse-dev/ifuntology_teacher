@@ -27,12 +27,14 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import "./calendar-custom.css";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
 import {
   useCreateSessionMutation,
   useGetMySessionsQuery,
+  useJoinMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { toast } from "sonner";
 import swal from "sweetalert";
@@ -71,6 +73,7 @@ interface Query {
 export default function BookaSessionDashboard() {
   const [createSession, { isLoading: bookingLoading, error, isSuccess }] =
     useCreateSessionMutation();
+  const [joinMeeting, { isLoading: joinMeetingLoading }] = useJoinMeetingMutation();
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState("");
   const [subject, setSubject] = useState("");
@@ -117,6 +120,22 @@ export default function BookaSessionDashboard() {
     mySessionsData?.data?.docs && mySessionsData.data.docs.length > 0
       ? mySessionsData.data.docs[0]
       : null;
+
+  const handleJoinMeeting = async () => {
+    if (!upcomingSession?._id) return;
+    try {
+      const res: any = await joinMeeting(upcomingSession._id).unwrap();
+      if (res?.status) {
+        window.open(res?.data?.joinUrl, "_blank");
+      } else {
+        toast.error(res?.message || "Failed to join meeting");
+      }
+    } catch (error: any) {
+      const message = error?.data?.message || error?.message || "Failed to join meeting";
+      toast.error(message);
+    }
+  };
+
   useEffect(() => {
     document.title = "Book a Session • iFuntology Teacher";
   }, []);
@@ -545,8 +564,19 @@ export default function BookaSessionDashboard() {
                     </span>
                   </div>
 
-                  <Button className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3">
-                    Join Meeting
+                  <Button
+                    className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3"
+                    onClick={handleJoinMeeting}
+                    disabled={joinMeetingLoading}
+                  >
+                    {joinMeetingLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                        Joining…
+                      </>
+                    ) : (
+                      "Join Meeting"
+                    )}
                   </Button>
 
                   <div className="pt-3 border-t border-border/30 text-xs text-muted-foreground">
