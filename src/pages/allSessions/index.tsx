@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,29 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useGetInviteableStudentsQuery,
+  useSetSessionInvitesMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, Clock, Loader2, Video } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  Loader2,
+  Video,
+  UserPlus,
+} from "lucide-react";
 
 interface Query {
   from?: string;
@@ -29,6 +47,17 @@ function to12Hour(time: string) {
   const ampm = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 || 12;
   return `${hour12}:${min.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function getInvitedStudentIds(session: any): string[] {
+  const raw = session?.invitedStudents ?? [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((x: any) => String(x?._id ?? x));
+}
+
+function studentDisplayName(s: { firstName?: string; lastName?: string; email?: string }) {
+  const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim();
+  return name || s.email || "Student";
 }
 
 const getStatusColor = (status: "pending" | "approved" | "decined") => {
@@ -59,6 +88,10 @@ export default function MyOrdersPage() {
   const [search, setSearch] = useState("");
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [joinMeeting] = useJoinMeetingMutation();
+  const [inviteSessionId, setInviteSessionId] = useState<string | null>(null);
+  const [selectedInviteStudentIds, setSelectedInviteStudentIds] = useState<string[]>([]);
+  const [setSessionInvites, { isLoading: savingInvites }] =
+    useSetSessionInvitesMutation();
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const upcomingRangeEnd = format(addDays(new Date(), 1), "yyyy-MM-dd");
@@ -75,6 +108,28 @@ export default function MyOrdersPage() {
   });
 
   const upcomingSessions: any[] = upcomingSessionsData?.data?.docs ?? [];
+
+  const {
+    data: inviteableRaw,
+    isLoading: inviteableLoading,
+  } = useGetInviteableStudentsQuery(inviteSessionId ?? "", {
+    skip: !inviteSessionId,
+  });
+
+  const inviteableStudents: any[] = useMemo(() => {
+    const d = inviteableRaw?.data;
+    return Array.isArray(d) ? d : [];
+  }, [inviteableRaw]);
+
+  const inviteSession = useMemo(
+    () => upcomingSessions.find((s: any) => s._id === inviteSessionId) ?? null,
+    [upcomingSessions, inviteSessionId]
+  );
+
+  useEffect(() => {
+    if (!inviteSessionId || !inviteSession) return;
+    setSelectedInviteStudentIds(getInvitedStudentIds(inviteSession));
+  }, [inviteSessionId, inviteSession]);
 
   const {
     data: mySessionsData,
@@ -97,6 +152,34 @@ export default function MyOrdersPage() {
       toast.error(message);
     } finally {
       setJoiningSessionId(null);
+    }
+  };
+
+  const toggleInviteStudent = (studentId: string, checked: boolean) => {
+    setSelectedInviteStudentIds((prev) =>
+      checked ? [...prev.filter((id) => id !== studentId), studentId] : prev.filter((id) => id !== studentId)
+    );
+  };
+
+  const handleSaveInvites = async () => {
+    if (!inviteSessionId) return;
+    if (selectedInviteStudentIds.length === 0) {
+      toast.error("Select at least one student.");
+      return;
+    }
+    try {
+      const res: any = await setSessionInvites({
+        sessionId: inviteSessionId,
+        studentIds: selectedInviteStudentIds,
+      }).unwrap();
+      if (res?.status) {
+        toast.success(res?.message || "Invites updated");
+        setInviteSessionId(null);
+      } else {
+        toast.error(res?.message || "Failed to update invites");
+      }
+    } catch (e: any) {
+      toast.error(e?.data?.message || e?.message || "Failed to update invites");
     }
   };
 
@@ -145,6 +228,11 @@ export default function MyOrdersPage() {
               {upcomingSessions.map((session: any) => {
                 const slot = session?.slots?.[0];
                 const isJoining = joiningSessionId === session._id;
+                const invitedIds = getInvitedStudentIds(session);
+                const invitedLabel =
+                  invitedIds.length === 0
+                    ? "No students invited yet"
+                    : `${invitedIds.length} student${invitedIds.length !== 1 ? "s" : ""} invited`;
                 return (
                   <div
                     key={session._id}
@@ -171,29 +259,170 @@ export default function MyOrdersPage() {
                         approved
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                       {session.title}
                     </p>
-                    <Button
-                      className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9"
-                      onClick={() => handleJoinMeeting(session._id)}
-                      disabled={isJoining}
-                    >
-                      {isJoining ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                          Joining…
-                        </>
-                      ) : (
-                        "Join Meeting"
-                      )}
-                    </Button>
+                    <p className="text-[11px] text-muted-foreground mb-3 border-b border-border/40 pb-2">
+                      {invitedLabel}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-full border-orange-500/60 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 font-medium h-9"
+                        onClick={() => setInviteSessionId(session._id)}
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Invite students
+                      </Button>
+                      <Button
+                        className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9"
+                        onClick={() => handleJoinMeeting(session._id)}
+                        disabled={isJoining}
+                      >
+                        {isJoining ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                            Joining…
+                          </>
+                        ) : (
+                          "Join Meeting"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
         </Card>
+
+        <Dialog
+          open={!!inviteSessionId}
+          onOpenChange={(open) => {
+            if (!open) setInviteSessionId(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col gap-0">
+            <DialogHeader>
+              <DialogTitle>Invite students</DialogTitle>
+              <DialogDescription>
+                Choose who can see this session in their upcoming list. Selected
+                students are notified.
+              </DialogDescription>
+            </DialogHeader>
+
+            {inviteSession && (
+              <p className="text-sm font-medium text-foreground truncate border-b border-border/40 pb-3 -mt-1">
+                {inviteSession.title}
+              </p>
+            )}
+
+            {inviteableLoading ? (
+              <div className="flex justify-center py-10 text-muted-foreground gap-2">
+                <Loader2 className="h-6 w-6 animate-spin shrink-0" />
+                <span className="text-sm">Loading students…</span>
+              </div>
+            ) : inviteableRaw && inviteableRaw.status === false ? (
+              <p className="text-sm text-destructive py-4">
+                {inviteableRaw.message || "Could not load students."}
+              </p>
+            ) : inviteableStudents.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">
+                No students are linked to your account for this session.
+              </p>
+            ) : (
+              <>
+                {selectedInviteStudentIds.length > 0 ? (
+                  <div className="mb-3 rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                    <span className="font-semibold text-foreground">
+                      Students invited to this session ({selectedInviteStudentIds.length}):{" "}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {selectedInviteStudentIds
+                        .map((id) => {
+                          const st = inviteableStudents.find(
+                            (u: any) => String(u._id) === id
+                          );
+                          return st ? studentDisplayName(st) : `…${id.slice(-6)}`;
+                        })
+                        .join(", ")}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    No students selected yet. Check the boxes below to invite.
+                  </p>
+                )}
+
+                <div className="overflow-y-auto max-h-[min(50vh,320px)] space-y-2 pr-1 -mr-1">
+                  {inviteableStudents.map((stu: any) => {
+                    const id = String(stu._id);
+                    const checked = selectedInviteStudentIds.includes(id);
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-start gap-3 rounded-lg border border-border/60 p-3"
+                      >
+                        <Checkbox
+                          id={`invite-student-${id}`}
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            toggleInviteStudent(id, v === true)
+                          }
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor={`invite-student-${id}`}
+                          className="flex-1 cursor-pointer leading-snug font-normal"
+                        >
+                          <span className="text-sm font-medium text-foreground">
+                            {studentDisplayName(stu)}
+                          </span>
+                          {stu.email ? (
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              {stu.email}
+                            </span>
+                          ) : null}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            <DialogFooter className="mt-4 gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInviteSessionId(null)}
+                disabled={savingInvites}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-orange-600 hover:bg-orange-700"
+                onClick={handleSaveInvites}
+                disabled={
+                  savingInvites ||
+                  inviteableLoading ||
+                  selectedInviteStudentIds.length === 0
+                }
+              >
+                {savingInvites ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save invites"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Search and Filter */}
         <Card className="rounded-2xl border border-border/60 p-4">

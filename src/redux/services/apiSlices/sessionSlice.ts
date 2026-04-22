@@ -31,6 +31,23 @@ export const sessionSlice = createApi({
         method: "POST",
       }),
     }),
+    getInviteableStudents: builder.query<any, string>({
+      query: (sessionId) => ({
+        url: `/session/${sessionId}/inviteable-students`,
+        method: "GET",
+      }),
+    }),
+    setSessionInvites: builder.mutation<
+      any,
+      { sessionId: string; studentIds: string[] }
+    >({
+      query: ({ sessionId, studentIds }) => ({
+        url: `/session/${sessionId}/invites`,
+        method: "PATCH",
+        body: { studentIds },
+      }),
+      invalidatesTags: ["Session"],
+    }),
   }),
 });
 
@@ -38,4 +55,6 @@ export const {
   useCreateSessionMutation,
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useGetInviteableStudentsQuery,
+  useSetSessionInvitesMutation,
 } = sessionSlice;

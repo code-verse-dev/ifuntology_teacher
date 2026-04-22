@@ -389,7 +389,7 @@ export default function BookaSessionDashboard() {
                   >
                     <option value="">Select Platform</option>
                     <option>Zoom Meeting</option>
-                    <option>Google Meet</option>
+                    {/* <option>Google Meet</option> */}
                   </select>
 
                   <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
