@@ -2,13 +2,17 @@ import React, { useState } from "react";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
 import { useDispatch } from "react-redux";
+import { store } from "@/redux/store";
 import { PaymentIntentResult } from "@stripe/stripe-js";
 import { useNavigate } from "react-router";
 import {
+  paymentSlice,
+  useConfirmWtrPrintPaymentMutation,
   useGetSavedPaymentMethodsQuery,
   useOrderPaymentMutation,
   useSubscriptionPaymentMutation,
 } from "../../redux/services/apiSlices/paymentSlice";
+import { printOrderSlice } from "../../redux/services/apiSlices/printOrderSlice";
 import { subscriptionSlice } from "../../redux/services/apiSlices/subscriptionSlice";
 import swal from "sweetalert";
 import { Button } from "@/components/ui/button";
@@ -16,9 +20,12 @@ import { CreditCard, Loader2, CheckCircle2 } from "lucide-react";
 import { useGetCartQuery } from "@/redux/services/apiSlices/cartSlice";
 
 interface CheckoutFormProps {
+  /** ORDER | SUBSCRIPTION (LMS) | WTR_SUBSCRIPTION | WTR_PRINT */
   type?: string;
   amount?: number;
   clientSecret?: string;
+  /** Required when type is WTR_PRINT */
+  printOrderId?: string;
   subscriptionType?: string;
   numberOfSeats?: number;
   courseType?: string;
@@ -29,6 +36,7 @@ interface CheckoutFormProps {
 const CheckoutForm = ({
   type,
   clientSecret,
+  printOrderId,
   subscriptionType,
   numberOfSeats,
   courseType,
@@ -46,6 +54,7 @@ const CheckoutForm = ({
 
   const [bookOrder] = useOrderPaymentMutation();
   const [bookSubscription] = useSubscriptionPaymentMutation();
+  const [confirmWtrPrintPayment] = useConfirmWtrPrintPaymentMutation();
 
   const { data: paymentData, isLoading: cardsLoading } =
     useGetSavedPaymentMethodsQuery();
@@ -69,6 +78,52 @@ const CheckoutForm = ({
       } else if (type === "SUBSCRIPTION") {
         swal("Success", "Payment completed successfully", "success");
         navigate("/my-courses", { state: { from: "/payment" } });
+      } else if (type === "WTR_SUBSCRIPTION") {
+        dispatch(paymentSlice.util.invalidateTags(["WtrSubscription"]));
+        let subscriptionReady = false;
+        try {
+          const action = paymentSlice.endpoints.getMyWtrSubscription.initiate(undefined, {
+            subscribe: false,
+            forceRefetch: true,
+          });
+          const refreshed = await (store.dispatch as (a: typeof action) => ReturnType<typeof action>)(
+            action
+          ).unwrap();
+          subscriptionReady = Boolean(refreshed?.status && refreshed?.data);
+        } catch {
+          subscriptionReady = false;
+        }
+        swal("Success", "Payment completed successfully", "success");
+        navigate("/write-to-read", {
+          replace: true,
+          state: subscriptionReady
+            ? { from: "/payment" }
+            : { from: "/payment", fromWtrPayment: true },
+        });
+      } else if (type === "WTR_PRINT") {
+        if (!printOrderId) {
+          swal("Error", "Missing print order id.", "error");
+          return;
+        }
+        const res: any = await confirmWtrPrintPayment({
+          paymentIntentId: paymentIntent.id,
+          printOrderId,
+          type: "WTR_PRINT",
+        }).unwrap();
+        if (res?.status) {
+          dispatch(printOrderSlice.util.invalidateTags(["PrintOrder"]));
+          swal("Success", "Print order payment completed.", "success");
+          navigate("/write-to-read", {
+            replace: true,
+            state: { wtrActiveTab: "print" },
+          });
+        } else {
+          swal(
+            "Error",
+            res?.message || "Print payment could not be confirmed.",
+            "error"
+          );
+        }
       }
     } catch (err: any) {
       swal("Error", err?.data?.message || err?.message || "An unexpected error occurred.", "error");
@@ -82,7 +137,11 @@ const CheckoutForm = ({
     setMessage("");
     try {
       let result: any;
-      if (type === "SUBSCRIPTION") {
+      if (
+        type === "SUBSCRIPTION" ||
+        type === "WTR_SUBSCRIPTION" ||
+        type === "WTR_PRINT"
+      ) {
         result = await stripe.confirmPayment({
           clientSecret,
           confirmParams: {

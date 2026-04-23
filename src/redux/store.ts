@@ -25,6 +25,9 @@ import { affiliateSlice } from "./services/apiSlices/affiliateSlice";
 import { notificationSlice } from "./services/apiSlices/notificationSlice";
 import { surveySlice } from "./services/apiSlices/surveySlice";
 import { chatSlice } from "./services/apiSlices/chatSlice";
+import { batchSlice } from "./services/apiSlices/batchSlice";
+import { bookSlice } from "./services/apiSlices/bookSlice";
+import { printOrderSlice } from "./services/apiSlices/printOrderSlice";
 
 
 const rootReducer = combineReducers({
@@ -51,6 +54,9 @@ const rootReducer = combineReducers({
   [notificationSlice.reducerPath]: notificationSlice.reducer,
   [surveySlice.reducerPath]: surveySlice.reducer,
   [chatSlice.reducerPath]: chatSlice.reducer,
+  [batchSlice.reducerPath]: batchSlice.reducer,
+  [bookSlice.reducerPath]: bookSlice.reducer,
+  [printOrderSlice.reducerPath]: printOrderSlice.reducer,
 });
 
 const persistConfig = {
@@ -79,6 +85,9 @@ const persistConfig = {
     notificationSlice.reducerPath,
     surveySlice.reducerPath,
     chatSlice.reducerPath,
+    batchSlice.reducerPath,
+    bookSlice.reducerPath,
+    printOrderSlice.reducerPath,
   ],
 };
 
@@ -111,7 +120,10 @@ export const store = configureStore({
       .concat(affiliateSlice.middleware)
       .concat(notificationSlice.middleware)
       .concat(surveySlice.middleware)
-      .concat(chatSlice.middleware),
+      .concat(chatSlice.middleware)
+      .concat(batchSlice.middleware)
+      .concat(bookSlice.middleware)
+      .concat(printOrderSlice.middleware),
 });
 
 setupListeners(store.dispatch);

@@ -51,7 +51,8 @@ import StoreFaqs from "./pages/supportTickets/StoreFaqs";
 import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
-import WriteToRead from "./pages/writeToRead";
+import WriteToReadGate from "./pages/writeToRead/WriteToReadGate";
+import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
 import AllSessions from "./pages/allSessions";
 import SurveysList from "./pages/surveys";
 import SurveyResponseView from "./pages/surveys/SurveyResponseView";
@@ -270,42 +271,54 @@ const App = () => {
               <Route
                 path="/support-tickets/faqs/affiliate"
                 element={
-                <ProtectedRoute>
-                  <AffiliateFaqs />
-                </ProtectedRoute>
+                  <ProtectedRoute>
+                    <AffiliateFaqs />
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/support-tickets/faqs/store"
                 element={
-                <ProtectedRoute>
-                  <StoreFaqs />
-                </ProtectedRoute>
+                  <ProtectedRoute>
+                    <StoreFaqs />
+                  </ProtectedRoute>
                 }
               />
               <Route path="/support-tickets/faqs/lms" element={
                 <ProtectedRoute>
                   <LmsFaqs />
                 </ProtectedRoute>
-                }
+              }
               />
               <Route
                 path="/support-tickets/faqs/booking"
                 element={
-                <ProtectedRoute>
-                  <BookingFaqs />
-                </ProtectedRoute>
+                  <ProtectedRoute>
+                    <BookingFaqs />
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/support-tickets/faqs/write-to-read"
                 element={
-                <ProtectedRoute>
-                  <WriteToReadFaqs />
-                </ProtectedRoute>
+                  <ProtectedRoute>
+                    <WriteToReadFaqs />
+                  </ProtectedRoute>
                 }
               />
-              <Route path="/write-to-read" element={<WriteToRead />} />
+              <Route
+                path="/write-to-read/subscribe"
+                element={
+                  <ProtectedRoute>
+                    <WriteToReadSubscribePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/write-to-read" element={
+                <ProtectedRoute>
+                  <WriteToReadGate />
+                </ProtectedRoute>
+              } />
 
               <Route path="/invite-student" element={
                 <ProtectedRoute>
@@ -327,7 +340,7 @@ const App = () => {
                   <SurveyAttempt />
                 </ProtectedRoute>
               } />
-               <Route path="/messages" element={
+              <Route path="/messages" element={
                 <ProtectedRoute>
                   <MessagesPage />
                 </ProtectedRoute>
@@ -352,7 +365,7 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>
-     </ThemeProvider>
+    </ThemeProvider>
   )
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import {
   useCreateSubscriptionMutation,
+  useCreateWtrSubscriptionMutation,
   usePaymentConfigQuery,
   usePaymentIntentMutation,
 } from "../../redux/services/apiSlices/paymentSlice";
@@ -15,9 +16,13 @@ const Payment = () => {
   const location = useLocation();
   const total = location.state?.total;
   const type = location.state?.type;
+  const printOrderId = location.state?.printOrderId as string | undefined;
   const courseType = location.state?.courseType;
   const numberOfSeats = location.state?.numberOfSeats;
   const subscriptionType = location.state?.subscriptionType;
+  const subscriberKind = location.state?.subscriberKind;
+  const pricingModel = location.state?.pricingModel;
+  const wtrNumberOfSeats = location.state?.numberOfSeats;
   const [stripePromise, setStripePromise] =
     useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState("");
@@ -27,6 +32,7 @@ const Payment = () => {
 
   const [createPaymentIntent, { isLoading }] = usePaymentIntentMutation();
   const [createSubscription] = useCreateSubscriptionMutation();
+  const [createWtrSubscription] = useCreateWtrSubscriptionMutation();
   useEffect(() => {
     if (paymentData?.publishableKey) {
       setStripePromise(loadStripe(paymentData.publishableKey));
@@ -56,7 +62,11 @@ const Payment = () => {
   // }, [total, createPaymentIntent, navigate]);
 
   useEffect(() => {
-    if (!total || Number.isNaN(total)) {
+    const needsAmount =
+      type !== "SUBSCRIPTION" &&
+      type !== "WTR_SUBSCRIPTION" &&
+      type !== "WTR_PRINT";
+    if (needsAmount && (!total || Number.isNaN(total))) {
       toast.error("Invalid payment amount");
       navigate(-1);
       return;
@@ -79,6 +89,59 @@ const Payment = () => {
       };
   
       createSub();
+    } else if (type === "WTR_SUBSCRIPTION") {
+      const run = async () => {
+        try {
+          const res = await createWtrSubscription({
+            subscriptionType,
+            subscriberKind: subscriberKind ?? "TEACHER",
+            pricingModel: pricingModel ?? "FIXED",
+            numberOfSeats: Number(wtrNumberOfSeats) || 1,
+          }).unwrap();
+          if (res?.status) {
+            setClientSecret(res.data.clientSecret);
+          }
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Failed to start Write to Read checkout");
+          navigate("/write-to-read/subscribe", { replace: true });
+        }
+      };
+      run();
+    } else if (type === "WTR_PRINT") {
+      if (!printOrderId) {
+        toast.error("Missing print order.");
+        navigate("/write-to-read", {
+          replace: true,
+          state: { wtrActiveTab: "print" },
+        });
+        return;
+      }
+      const runPrint = async () => {
+        try {
+          const res = await createPaymentIntent({
+            type: "WTR_PRINT",
+            printOrderId,
+          }).unwrap();
+          if (res?.clientSecret) {
+            setClientSecret(res.clientSecret);
+          } else {
+            toast.error("Could not start print payment.");
+            navigate("/write-to-read", {
+              replace: true,
+              state: { wtrActiveTab: "print" },
+            });
+          }
+        } catch (err: any) {
+          toast.error(
+            err?.data?.message || "Failed to create print payment intent"
+          );
+          navigate("/write-to-read", {
+            replace: true,
+            state: { wtrActiveTab: "print" },
+          });
+        }
+      };
+      runPrint();
     } else {
       const createIntent = async () => {
         try {
@@ -95,6 +158,8 @@ const Payment = () => {
   
       createIntent();
     }
+    // Intentionally depend on `type` only (same as legacy flow) so we do not recreate intents on unrelated renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
   const [isProcessing, setIsProcessing] = useState(false);
   return (
@@ -106,7 +171,13 @@ const Payment = () => {
           margin: "40px 0px",
         }}
       >
-        <h1>Stripe Payment</h1>
+        <h1>
+          {type === "WTR_SUBSCRIPTION"
+            ? "Write to Read — payment"
+            : type === "WTR_PRINT"
+              ? "Write to Read — print order payment"
+              : "Stripe Payment"}
+        </h1>
         {clientSecret && stripePromise ? (
           <Elements
             stripe={stripePromise}
@@ -117,6 +188,7 @@ const Payment = () => {
               type={type}
               amount={total}
               clientSecret={clientSecret}
+              printOrderId={printOrderId}
               isProcessing={isProcessing}
               setIsProcessing={setIsProcessing}
               courseType={courseType}
