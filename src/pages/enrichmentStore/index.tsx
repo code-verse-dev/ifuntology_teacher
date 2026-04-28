@@ -102,10 +102,11 @@ export default function EnrichmentStore() {
   }, []);
 
   const interactiveCategoryId = categoriesData?.data?.find(
-    (cat: any) => cat.title === "Interactive Classroom Kits"
+    (cat: any) => cat.title === "Interactive STEM Kits"
   )?._id;
 
   useEffect(() => {
+    console.log(interactiveCategoryId);
     if (tab === "interactive" && interactiveCategoryId) {
       setSelectedCategory(interactiveCategoryId);
     }
@@ -153,7 +154,7 @@ export default function EnrichmentStore() {
                     : "surface-glass text-card-foreground"
                 }`}
               >
-                Interactive Classroom Kits
+                Interactive STEM Kits
               </button>
             </div>
 
@@ -164,7 +165,7 @@ export default function EnrichmentStore() {
                     <Badge>
                       {tab === "categories"
                         ? "Categories"
-                        : "Interactive Classroom Kits"}
+                        : "Interactive STEM Kits"}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
                       {tab === "categories"
@@ -185,7 +186,7 @@ export default function EnrichmentStore() {
                       categoriesData?.data
                         ?.filter(
                           (cat: any) =>
-                            cat.title !== "Interactive Classroom Kits"
+                            cat.title !== "Interactive STEM Kits"
                         )
                         .map((cat: any) => (
                           <button

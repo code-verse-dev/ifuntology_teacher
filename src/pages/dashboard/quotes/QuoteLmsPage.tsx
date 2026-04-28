@@ -73,7 +73,8 @@ export default function QuoteLmsPage() {
                 <SelectValue placeholder="Select service" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Learning Management System">Learning Management System</SelectItem>
+                {/* <SelectItem value="Learning Management System">Learning Management System</SelectItem> */}
+                <SelectItem value="Learning Management System">Workforce Readiness Courses</SelectItem>
               </SelectContent>
             </Select>
           </div>

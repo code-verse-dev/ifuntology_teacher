@@ -17,6 +17,7 @@ export type InviteBatchesListParams = {
   page?: number;
   limit?: number;
   keyword?: string;
+  subscriptionId?: string;
 };
 
 export const batchSlice = createApi({

@@ -62,10 +62,14 @@ export function StudentsAndBatchesTab() {
   const wtrSub = wtrRes?.status && wtrRes?.data ? wtrRes.data : null;
   const subscriptionId = wtrSub?._id ? String(wtrSub._id) : "";
 
-  const { data: batchesRes, isLoading: batchesLoading, isFetching } = useGetInviteBatchesQuery({
-    page: 1,
-    limit: 50,
-  });
+  const { data: batchesRes, isLoading: batchesLoading, isFetching } = useGetInviteBatchesQuery(
+    {
+      page: 1,
+      limit: 10,
+      subscriptionId,
+    },
+    { skip: !subscriptionId }
+  );
 
   const [createBatch, { isLoading: isCreatingBatch }] = useCreateInviteBatchMutation();
 

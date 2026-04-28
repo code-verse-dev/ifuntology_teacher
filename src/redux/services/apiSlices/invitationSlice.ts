@@ -12,6 +12,13 @@ export const invitationSlice = createApi({
                 body,
             }),
         }),
+        inviteStudentBulk: builder.mutation({
+            query: (body) => ({
+                url: "/invitation/create-bulk",
+                method: "POST",
+                body,
+            }),
+        }),
         getMyStudents: builder.query<
             any,
             { page?: number; limit?: number; keyword?: string; courseType?: string }
@@ -46,4 +53,5 @@ export const {
     useGetMyStudentsQuery,
     useGetAverageProgressQuery,
     useGetAdminAccountQuery,
+    useInviteStudentBulkMutation,
 } = invitationSlice;

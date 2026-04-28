@@ -10,16 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useGetMyWtrSubscriptionQuery } from "@/redux/services/apiSlices/paymentSlice";
+  useGetMyWtrSubscriptionQuery,
+  useGetWtrPricingByPlanQuery,
+} from "@/redux/services/apiSlices/paymentSlice";
 import { cn } from "@/lib/utils";
-
-const WTR_PRICE_MONTHLY_LABEL = "$49.99";
-const WTR_PRICE_YEARLY_LABEL = "$499.99";
 
 export default function WriteToReadSubscribePage() {
   const navigate = useNavigate();
@@ -30,6 +24,51 @@ export default function WriteToReadSubscribePage() {
 
   const [subscriptionType, setSubscriptionType] = useState<"MONTHLY" | "YEARLY">("YEARLY");
   const [numberOfSeats, setNumberOfSeats] = useState<string>("1");
+  const seats = Math.max(1, parseInt(numberOfSeats, 10) || 0);
+
+  const {
+    data: monthlyPricingRes,
+    isLoading: isMonthlyPricingLoading,
+    isFetching: isMonthlyPricingFetching,
+    isError: isMonthlyPricingError,
+  } = useGetWtrPricingByPlanQuery({
+    subscriberKind: "TEACHER",
+    billing: "MONTHLY",
+  });
+  const {
+    data: yearlyPricingRes,
+    isLoading: isYearlyPricingLoading,
+    isFetching: isYearlyPricingFetching,
+    isError: isYearlyPricingError,
+  } = useGetWtrPricingByPlanQuery({
+    subscriberKind: "TEACHER",
+    billing: "YEARLY",
+  });
+
+  const monthlyUnitAmount = Number(monthlyPricingRes?.data?.amount ?? 0);
+  const yearlyUnitAmount = Number(yearlyPricingRes?.data?.amount ?? 0);
+  const selectedUnitAmount =
+    subscriptionType === "MONTHLY" ? monthlyUnitAmount : yearlyUnitAmount;
+  const computedTotal = selectedUnitAmount * seats;
+
+  const isPricingLoading =
+    isMonthlyPricingLoading ||
+    isMonthlyPricingFetching ||
+    isYearlyPricingLoading ||
+    isYearlyPricingFetching;
+  const hasPricingError =
+    isMonthlyPricingError ||
+    isYearlyPricingError ||
+    monthlyUnitAmount <= 0 ||
+    yearlyUnitAmount <= 0;
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
 
   useEffect(() => {
     document.title = "Subscribe • Write to Read • iFuntology Teacher";
@@ -44,24 +83,27 @@ export default function WriteToReadSubscribePage() {
   }, [hasActive, isLoading, isFetching, navigate]);
 
   const handleContinueToPayment = () => {
-    const seats = Math.max(1, parseInt(numberOfSeats, 10) || 0);
     if (!Number.isFinite(seats) || seats < 1) {
       toast.error("Enter a valid seat count (at least 1).");
       return;
     }
+    if (hasPricingError || selectedUnitAmount <= 0) {
+      toast.error("Write to Read pricing is not available right now.");
+      return;
+    }
     navigate("/payment", {
       state: {
-        total: 1,
+        total: computedTotal,
         type: "WTR_SUBSCRIPTION",
         subscriptionType,
         subscriberKind: "TEACHER",
-        pricingModel: "FIXED",
+        pricingModel: "PER_SEAT",
         numberOfSeats: seats,
       },
     });
   };
 
-  if (isLoading || isFetching) {
+  if (isLoading || isFetching || isPricingLoading) {
     return (
       <DashboardWithSidebarLayout>
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
@@ -96,47 +138,12 @@ export default function WriteToReadSubscribePage() {
 
         <Card className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-8">
           <div className="space-y-6">
-            {/* <div className="space-y-3">
-              <Label className="text-base font-semibold">Who is subscribing?</Label>
-              <div className="grid gap-3">
-                <div
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl border border-lime-200 bg-lime-50/60 px-4 py-3 dark:border-lime-900 dark:bg-lime-950/20"
-                  )}
-                >
-                  <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-lime-600 bg-lime-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">Teacher (school)</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Fixed pricing for your program; set how many student seats you need.
-                    </p>
-                  </div>
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 opacity-60 dark:border-slate-700 dark:bg-slate-800/50">
-                        <div className="h-4 w-4 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-white">Individual</p>
-                          <p className="text-xs text-slate-500">Not available yet.</p>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>Individual Write to Read plans are coming soon.</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div> */}
-
             <div className="space-y-3">
               <Label className="text-base font-semibold">Pricing model</Label>
               <div className="rounded-xl border border-lime-200 bg-lime-50/40 px-4 py-3 dark:border-lime-900 dark:bg-lime-950/20">
-                <p className="font-semibold text-slate-900 dark:text-white">Fixed</p>
+                <p className="font-semibold text-slate-900 dark:text-white">Per student</p>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
-                  One recurring price for your seat pool (per-seat billing is not enabled in this flow).
+                  Admin-managed price per student. Total is auto-calculated from billing cycle and student count.
                 </p>
               </div>
             </div>
@@ -168,7 +175,7 @@ export default function WriteToReadSubscribePage() {
                         : "text-slate-500 dark:text-slate-400"
                     )}
                   >
-                    {WTR_PRICE_MONTHLY_LABEL}/mo
+                    {monthlyUnitAmount > 0 ? formatCurrency(monthlyUnitAmount) : "—"}/mo
                   </span>
                 </label>
                 <label
@@ -191,7 +198,7 @@ export default function WriteToReadSubscribePage() {
                         : "text-slate-500 dark:text-slate-400"
                     )}
                   >
-                    {WTR_PRICE_YEARLY_LABEL}/yr
+                    {yearlyUnitAmount > 0 ? formatCurrency(yearlyUnitAmount) : "—"}/yr
                   </span>
                 </label>
               </RadioGroup>
@@ -205,24 +212,24 @@ export default function WriteToReadSubscribePage() {
                 {subscriptionType === "MONTHLY" ? (
                   <p className="text-slate-700 dark:text-slate-200">
                     <span className="font-semibold text-slate-900 dark:text-white">
-                      {WTR_PRICE_MONTHLY_LABEL}
+                      {monthlyUnitAmount > 0 ? formatCurrency(monthlyUnitAmount) : "—"}
                     </span>{" "}
-                    per month (billed monthly). Yearly option:{" "}
+                    per student/month. Yearly option:{" "}
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {WTR_PRICE_YEARLY_LABEL}
+                      {yearlyUnitAmount > 0 ? formatCurrency(yearlyUnitAmount) : "—"}
                     </span>
-                    /year.
+                    /student/year.
                   </p>
                 ) : (
                   <p className="text-slate-700 dark:text-slate-200">
                     <span className="font-semibold text-slate-900 dark:text-white">
-                      {WTR_PRICE_YEARLY_LABEL}
+                      {yearlyUnitAmount > 0 ? formatCurrency(yearlyUnitAmount) : "—"}
                     </span>{" "}
-                    per year (billed yearly). Monthly option:{" "}
+                    per student/year. Monthly option:{" "}
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {WTR_PRICE_MONTHLY_LABEL}
+                      {monthlyUnitAmount > 0 ? formatCurrency(monthlyUnitAmount) : "—"}
                     </span>
-                    /month.
+                    /student/month.
                   </p>
                 )}
               </div>
@@ -240,9 +247,24 @@ export default function WriteToReadSubscribePage() {
                 className="max-w-xs rounded-xl"
               />
               <p className="text-xs text-muted-foreground">
-                Used as your number of students for the fixed teacher plan (minimum 1).
+                Enter number of students (minimum 1). Total = selected plan price x students.
               </p>
             </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-800/40">
+              <p className="text-slate-700 dark:text-slate-200">
+                Total due now:{" "}
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {formatCurrency(computedTotal)}
+                </span>
+              </p>
+            </div>
+
+            {hasPricingError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Could not load active Write to Read pricing. Please try again or contact admin.
+              </p>
+            )}
 
             <Button
               type="button"
@@ -250,6 +272,7 @@ export default function WriteToReadSubscribePage() {
               size="pill"
               className="w-full sm:w-auto"
               onClick={handleContinueToPayment}
+              disabled={hasPricingError || isPricingLoading}
             >
               Continue to payment
             </Button>

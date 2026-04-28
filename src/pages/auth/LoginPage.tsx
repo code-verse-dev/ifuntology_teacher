@@ -90,7 +90,7 @@ export default function LoginPage() {
               Welcome Back!
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Your complete education &amp; enrichment platform
+              Your Complete Education &amp; Enrichment Platform
             </p>
           </div>
 
@@ -128,7 +128,7 @@ export default function LoginPage() {
             Sign In
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Access your personalized dashboard.
+            Access Your Personalized Dashboard.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4">

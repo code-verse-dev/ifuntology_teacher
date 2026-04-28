@@ -95,7 +95,7 @@ const Payment = () => {
           const res = await createWtrSubscription({
             subscriptionType,
             subscriberKind: subscriberKind ?? "TEACHER",
-            pricingModel: pricingModel ?? "FIXED",
+            pricingModel: pricingModel ?? "PER_SEAT",
             numberOfSeats: Number(wtrNumberOfSeats) || 1,
           }).unwrap();
           if (res?.status) {

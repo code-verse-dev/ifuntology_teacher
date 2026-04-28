@@ -373,7 +373,8 @@ export default function RequestQuotation() {
                   value={serviceType}
                   onChange={(e) => setServiceType(e.target.value)}
                 >
-                  <option value="lms">Learning Management System</option>
+                  {/* <option value="lms">Learning Management System</option> */}
+                  <option value="lms">Workforce Readiness Courses</option>
                   <option value="write_to_read">Write to Read</option>
                   <option value="enrichment_store">
                     Enrichment Store Products
@@ -435,7 +436,8 @@ export default function RequestQuotation() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Web Subscriptions *
+                        {/* Web Subscriptions * */}
+                        Interactive Digital Learning Curriculum
                       </label>
                       <input
                         type="number"
@@ -579,7 +581,7 @@ export default function RequestQuotation() {
                                     .filter(
                                       (cat: any) =>
                                         cat.title !==
-                                        "Interactive Classroom Kits"
+                                        "Interactive STEM Kits"
                                     )
                                     .map((cat: any) => (
                                       <option key={cat._id} value={cat._id}>

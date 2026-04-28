@@ -92,6 +92,18 @@ export const paymentSlice = createApi({
         body,
       }),
     }),
+    getWtrPricingByPlan: builder.query<
+      any,
+      {
+        subscriberKind: "TEACHER" | "INDIVIDUAL";
+        billing: "MONTHLY" | "YEARLY";
+      }
+    >({
+      query: ({ subscriberKind, billing }) => ({
+        url: `/write-to-read/subscriptions/pricing/${subscriberKind}/${billing}`,
+        method: "GET",
+      }),
+    }),
     getSavedPaymentMethods: builder.query<any, void>({
       query: () => ({
         url: "/payment/payment-methods",
@@ -117,6 +129,7 @@ export const {
   useGetSavedPaymentMethodsQuery,
   useCreateSubscriptionMutation,
   useCreateWtrSubscriptionMutation,
+  useGetWtrPricingByPlanQuery,
   useGetMyWtrSubscriptionQuery,
   useDeleteSavedPaymentMethodMutation,
   useConfirmWtrPrintPaymentMutation,
