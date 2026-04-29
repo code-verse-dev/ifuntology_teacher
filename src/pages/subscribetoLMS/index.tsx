@@ -81,6 +81,18 @@ const PLANS_THEMES: { name: string; theme: SubscriptionPlan["theme"] }[] = [
             checkColor: "text-green-500",
         },
     },
+    {
+        name: "iTeach iFuntology",
+        theme: {
+            bg: "bg-purple-50",
+            border: "border-purple-300",
+            iconBg: "bg-purple-500",
+            iconColor: "text-white",
+            titleColor: "text-foreground",
+            priceColor: "text-purple-600",
+            checkColor: "text-purple-500",
+        },
+    },
 ];
 
 const defaultTheme: SubscriptionPlan["theme"] = {

@@ -68,5 +68,6 @@ export const {
   useGetProductsByCategoryQuery,
   useLazyGetProductsByCategoryQuery,
   useGetProductByCourseTypeQuery,
+  useLazyGetProductByCourseTypeQuery,
   useGetInteractiveProductsQuery
 } = productSlice;

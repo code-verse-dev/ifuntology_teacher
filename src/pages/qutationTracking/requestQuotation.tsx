@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import {
@@ -15,26 +15,36 @@ import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice"
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import {
   useLazyGetProductsByCategoryQuery,
-  useGetProductByCourseTypeQuery,
+  useLazyGetProductByCourseTypeQuery,
 } from "@/redux/services/apiSlices/productSlice";
 import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import swal from "sweetalert";
 
 export default function RequestQuotation() {
+  type LmsCourseItem = {
+    key: string;
+    courseType: string;
+    noOfKits: string;
+    webSubscriptions: string;
+  };
+  const makeLmsCourseItem = (): LmsCourseItem => ({
+    key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    courseType: "Funtology",
+    noOfKits: "",
+    webSubscriptions: "",
+  });
+
   const [requestQuote] = useRequestQuoteMutation();
   useEffect(() => {
     document.title = "Request Quotation • iFuntology Teacher";
   }, []);
   const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
+  const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
   const { data: settingData } = useGetAllSettingsQuery({});
   const { data: categoriesData } = useGetCategoriesQuery({});
   const navigate = useNavigate();
   const [serviceType, setServiceType] = useState<string>("lms");
-  const [courseType, setCourseType] = useState<string>("Funtology");
-  const { data: productByCourse } = useGetProductByCourseTypeQuery({
-    courseType,
-  });
   useEffect(() => {
     if (settingData && Array.isArray(settingData.data)) {
       const taxSetting = settingData.data.find(
@@ -62,8 +72,11 @@ export default function RequestQuotation() {
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [kitsSub, setKitsSub] = useState("");
   const [subscriptionType, setSubscriptionType] = useState<string>("monthly");
+  const [lmsCourses, setLmsCourses] = useState<LmsCourseItem[]>([
+    makeLmsCourseItem(),
+  ]);
+  const [lmsKitPriceMap, setLmsKitPriceMap] = useState<Record<string, number>>({});
 
   // Write to Read fields
   const [bookPrinting, setBookPrinting] = useState<string>("Yes");
@@ -100,9 +113,23 @@ export default function RequestQuotation() {
   // price calc
   const lmsUnitPrice = subscriptionType === "yearly" ? yearlyFee : monthlyFee;
   const lmsUnitLabel = subscriptionType === "yearly" ? "Yearly" : "Monthly";
-  const lmsQty = Number(kitsSub) || 0;
-  const lmsSubtotal =
-    lmsQty * lmsUnitPrice + lmsQty * productByCourse?.data?.price;
+  const lmsLineItems = lmsCourses.map((item) => {
+    const webQty = Number(item.webSubscriptions) || 0;
+    const kitQty = Number(item.noOfKits) || 0;
+    const kitUnitPrice = lmsKitPriceMap[item.courseType] ?? 0;
+    const webTotal = webQty * lmsUnitPrice;
+    const kitTotal = kitQty * kitUnitPrice;
+    return {
+      ...item,
+      webQty,
+      kitQty,
+      kitUnitPrice,
+      webTotal,
+      kitTotal,
+      lineTotal: webTotal + kitTotal,
+    };
+  });
+  const lmsSubtotal = lmsLineItems.reduce((sum, item) => sum + item.lineTotal, 0);
 
   const lmsTax = lmsSubtotal * (taxPercent / 100);
   const lmsTotal = lmsSubtotal + lmsTax;
@@ -144,6 +171,64 @@ export default function RequestQuotation() {
   const enrichmentTotal = enrichmentAfterDiscount + enrichmentTax;
 
   const [submitOpen, setSubmitOpen] = useState(false);
+
+  const availableLmsCourses = useMemo(
+    () => [
+      "Funtology",
+      "Skintology",
+      "Barbertology",
+      "Nailtology",
+      "iTeach iFuntology",
+    ],
+    []
+  );
+
+  const updateLmsCourseItem = (
+    key: string,
+    field: "courseType" | "noOfKits" | "webSubscriptions",
+    value: string
+  ) => {
+    setLmsCourses((rows) =>
+      rows.map((r) => {
+        if (r.key !== key) return r;
+        if (field === "noOfKits") {
+          // Keep legacy behavior: kits and web subscriptions move together.
+          return { ...r, noOfKits: value, webSubscriptions: value };
+        }
+        if (field === "webSubscriptions") {
+          // Keep legacy behavior: web subscriptions and kits move together.
+          return { ...r, webSubscriptions: value, noOfKits: value };
+        }
+        return { ...r, [field]: value };
+      })
+    );
+  };
+
+  const addLmsCourseItem = () => setLmsCourses((rows) => [...rows, makeLmsCourseItem()]);
+  const removeLmsCourseItem = (key: string) =>
+    setLmsCourses((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
+
+  useEffect(() => {
+    const selectedCourseTypes = Array.from(
+      new Set(lmsCourses.map((c) => c.courseType).filter(Boolean))
+    );
+    const missing = selectedCourseTypes.filter((c) => lmsKitPriceMap[c] == null);
+    if (missing.length === 0) return;
+
+    (async () => {
+      for (const course of missing) {
+        try {
+          const res: any = await triggerGetProductByCourseType({
+            courseType: course,
+          }).unwrap();
+          const price = Number(res?.data?.price ?? 0);
+          setLmsKitPriceMap((prev) => ({ ...prev, [course]: price }));
+        } catch {
+          setLmsKitPriceMap((prev) => ({ ...prev, [course]: 0 }));
+        }
+      }
+    })();
+  }, [lmsCourses, lmsKitPriceMap, triggerGetProductByCourseType]);
 
 
 
@@ -242,10 +327,17 @@ export default function RequestQuotation() {
           return "Please enter a valid email address";
         if (!address || !address.toString().trim())
           return "Address is required";
-        const kitsNum = Number(kitsSub);
-        if (isNaN(kitsNum) || kitsNum <= 0)
-          return "Number of kits must be greater than 0";
         if (!subscriptionType) return "Subscription type is required";
+        if (!lmsCourses.length) return "At least one LMS course is required";
+        for (const row of lmsCourses) {
+          if (!row.courseType) return "Course type is required for each LMS row";
+          const kitsNum = Number(row.noOfKits);
+          const webNum = Number(row.webSubscriptions);
+          if (isNaN(kitsNum) || kitsNum <= 0)
+            return "Number of kits must be greater than 0 for each course";
+          if (isNaN(webNum) || webNum <= 0)
+            return "Interactive curriculum quantity must be greater than 0 for each course";
+        }
       }
 
       // if (serviceType === "write_to_read") {
@@ -282,10 +374,13 @@ export default function RequestQuotation() {
         ...data,
         email,
         address,
-        noOfKits: kitsSub,
-        webSubscriptions: kitsSub,
         subscriptionType,
-        courseType,
+        lmsCourses: lmsCourses.map((row) => ({
+          courseType: row.courseType,
+          subscriptionType,
+          noOfKits: row.noOfKits,
+          webSubscriptions: row.webSubscriptions,
+        })),
       };
     } else if (serviceType === "write_to_read") {
       data = {
@@ -336,9 +431,9 @@ export default function RequestQuotation() {
       setOrgName("");
       setEmail("");
       setAddress("");
-      setKitsSub("");
       setSubscriptionType("monthly");
-      setCourseType("Funtology");
+      setLmsCourses([makeLmsCourseItem()]);
+      setLmsKitPriceMap({});
     } else if (serviceType === "write_to_read") {
       setBookPrinting("Yes");
       setSubscriptions(0);
@@ -418,41 +513,10 @@ export default function RequestQuotation() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="space-y-3">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Number of kits *
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={kitsSub}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setKitsSub(val);
-                        }}
-                        min={0}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        {/* Web Subscriptions * */}
-                        Interactive Digital Learning Curriculum
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={kitsSub}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setKitsSub(val);
-                        }}
-                        min={0}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Subscription Type *
+                        Subscription Type * (applies to all selected courses)
                       </label>
                       <select
                         className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
@@ -463,21 +527,92 @@ export default function RequestQuotation() {
                         <option value="yearly">Yearly</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Course Type *
-                      </label>
-                      <select
-                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={courseType}
-                        onChange={(e) => setCourseType(e.target.value)}
+
+                    {lmsCourses.map((row, idx) => (
+                      <div
+                        key={row.key}
+                        className="rounded-md border border-border/50 p-4 space-y-3"
                       >
-                        <option value="Funtology">Funtology</option>
-                        <option value="Skintology">Skintology</option>
-                        <option value="Barbertology">Barbertology</option>
-                        <option value="Nailtology">Nailtology</option>
-                      </select>
-                    </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold text-muted-foreground">
+                            Course {idx + 1}
+                          </div>
+                          {lmsCourses.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs"
+                              onClick={() => removeLmsCourseItem(row.key)}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Course Type *
+                            </label>
+                            <select
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.courseType}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "courseType",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              {availableLmsCourses.map((course) => (
+                                <option key={course} value={course}>
+                                  {course}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Interactive Digital Learning Curriculum *
+                            </label>
+                            <input
+                              type="number"
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.webSubscriptions}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "webSubscriptions",
+                                  e.target.value
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Number of kits *
+                            </label>
+                            <input
+                              type="number"
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.noOfKits}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "noOfKits",
+                                  e.target.value
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" onClick={addLmsCourseItem}>
+                      Add Course
+                    </Button>
                   </div>
                 </div>
               )}
@@ -757,13 +892,14 @@ export default function RequestQuotation() {
           {serviceType === "lms" && (
             <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
               <div className="text-sm font-semibold">Live Price Calculator</div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {lmsUnitLabel} Subscriptions: ({lmsQty} x $
-                {lmsUnitPrice.toFixed(2)})
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {courseType} Kits: ({lmsQty} x $
-                {productByCourse?.data?.price.toFixed(2)})
+              <div className="mt-2 space-y-1">
+                {lmsLineItems.map((item) => (
+                  <div key={item.key} className="text-sm text-muted-foreground">
+                    {item.courseType}: {lmsUnitLabel} Subscriptions ({item.webQty} x $
+                    {lmsUnitPrice.toFixed(2)}) + Kits ({item.kitQty} x $
+                    {item.kitUnitPrice.toFixed(2)}) = ${item.lineTotal.toFixed(2)}
+                  </div>
+                ))}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
                 Tax ({taxPercent}%): ${lmsTax.toFixed(2)}

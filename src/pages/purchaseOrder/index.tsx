@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useGetMyPuchaseOrdersQuery, useGetMyPurchaseOrderStatsQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useGetMyPuchaseOrdersQuery, useGetMyPurchaseOrderStatsQuery, useUploadPurchaseOrderDocumentMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
 
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
@@ -69,7 +76,13 @@ export default function PurchaseOrder() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const { data, error, isLoading } = useGetMyPuchaseOrdersQuery(queryOptions);
+  const { data, error, isLoading, refetch } = useGetMyPuchaseOrdersQuery(queryOptions);
+  const [uploadPurchaseOrderDocument, { isLoading: isUploadingPoDocument }] =
+    useUploadPurchaseOrderDocumentMutation();
+  const [uploadingPoId, setUploadingPoId] = useState<string | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const res = data?.data;
   const docs = Array.isArray(res?.docs) ? res.docs : [];
   
@@ -100,6 +113,42 @@ export default function PurchaseOrder() {
     }));
   };
 
+  const handleUploadPoDocument = async (poId: string, file?: File | null) => {
+    if (!file) return;
+    const lowerName = file.name.toLowerCase();
+    const isPdf =
+      file.type === "application/pdf" || lowerName.endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Only PDF files are allowed.");
+      return;
+    }
+    try {
+      setUploadingPoId(poId);
+      const res: any = await uploadPurchaseOrderDocument({
+        id: poId,
+        file,
+      }).unwrap();
+      if (res?.status) {
+        toast.success(res?.message ?? "PO document uploaded successfully.");
+        refetch();
+      } else {
+        toast.error(res?.message ?? "Failed to upload PO document.");
+      }
+    } catch (err: any) {
+      toast.error(
+        err?.data?.message ?? err?.message ?? "Failed to upload PO document."
+      );
+    } finally {
+      setUploadingPoId(null);
+    }
+  };
+
+  const openUploadDialog = (poId: string) => {
+    setSelectedPoId(poId);
+    setSelectedPdfFile(null);
+    setUploadDialogOpen(true);
+  };
+
   return (
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full  space-y-6">
@@ -110,7 +159,7 @@ export default function PurchaseOrder() {
             <div className="flex items-center gap-3 w-full md:w-1/2">
               <div className="flex-1">
                 <Input
-                  placeholder="Search by PO number, organization, or service..."
+                  placeholder="Search by Invoice number, organization, or service..."
                   value={searchInput}
                   onChange={handleSearch}
                 />
@@ -152,6 +201,7 @@ export default function PurchaseOrder() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
+                  <th className="pb-2">Invoice Number</th>
                   <th className="pb-2">PO Number</th>
                   <th className="pb-2">Organization</th>
                   <th className="pb-2">Contact</th>
@@ -199,7 +249,8 @@ export default function PurchaseOrder() {
               ) : (
                 <tbody className="divide-y">
                   {docs.map((po: any) => {
-                    const id = po.poNumber || "-"
+                    const id = po.invoiceNumber || "-"
+                    const poNumber = po.poNumber || "-"
                     const organization =
                       po.quote.organizationName ?? po.quote.organizationName ?? "—";
                     const contact =
@@ -219,6 +270,7 @@ export default function PurchaseOrder() {
                         <td className="py-3">
                           <div className="font-medium">{id}</div>
                         </td>
+                        <td className="py-3">{poNumber ?? '-'}</td>
                         <td className="py-3">{organization}</td>
                      <td className="py-3">{contact}</td>
                            <td className="py-3">{itemsCount}</td>
@@ -243,12 +295,33 @@ export default function PurchaseOrder() {
                         </td>
                         <td className="py-3">{date}</td>
                         <td className="py-3">
-                          <NavLink
-                            to={`/purchase-orders/${po?.quote?._id}`}
-                            className="inline-block"
-                          >
-                            <Button variant="ghost">View</Button>
-                          </NavLink>
+                          <div className="flex items-center gap-2">
+                            <NavLink
+                              to={`/purchase-orders/${po?.quote?._id}`}
+                              className="inline-block"
+                            >
+                              <Button variant="ghost">View</Button>
+                            </NavLink>
+                            {String(status).toLowerCase() === "approved" &&
+                              String(payment).toLowerCase() === "pending" && !po?.poDocument && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() =>
+                                    openUploadDialog(String(po?._id))
+                                  }
+                                  disabled={
+                                    isUploadingPoDocument &&
+                                    uploadingPoId === String(po?._id)
+                                  }
+                                >
+                                  {isUploadingPoDocument &&
+                                  uploadingPoId === String(po?._id)
+                                    ? "Uploading..."
+                                    : "Upload PO"}
+                                </Button>
+                              )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -321,6 +394,49 @@ export default function PurchaseOrder() {
           </div>
         </Card>
       </section>
+      <Dialog
+        open={uploadDialogOpen}
+        onOpenChange={(open) => {
+          setUploadDialogOpen(open);
+          if (!open) {
+            setSelectedPoId(null);
+            setSelectedPdfFile(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <div className="space-y-4">
+            <DialogTitle>Upload Purchase Order Document</DialogTitle>
+            <DialogDescription>
+              Select a single PDF file to upload.
+            </DialogDescription>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setSelectedPdfFile(e.target.files?.[0] ?? null)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setUploadDialogOpen(false)}
+                disabled={isUploadingPoDocument}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!selectedPoId) return;
+                  await handleUploadPoDocument(selectedPoId, selectedPdfFile);
+                  setUploadDialogOpen(false);
+                }}
+                disabled={!selectedPdfFile || isUploadingPoDocument}
+              >
+                {isUploadingPoDocument ? "Uploading..." : "Upload"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardWithSidebarLayout>
   );
 }

@@ -50,6 +50,20 @@ export const purchaseOrderSlice = createApi({
       }),
       invalidatesTags: ["Cart"],
     }),
+    uploadPurchaseOrderDocument: builder.mutation<
+      any,
+      { id: string; file: File }
+    >({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return {
+          url: `/porder/${id}/upload-po-document`,
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
   }),
 
 });
@@ -59,4 +73,5 @@ export const {
   useGetMyPurchaseOrderStatsQuery,
   useGetPurchaseOrderByQuoteIdQuery,
   useUtilizePurchaseOrderMutation,
+  useUploadPurchaseOrderDocumentMutation,
 } = purchaseOrderSlice;
