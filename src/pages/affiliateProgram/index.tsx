@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { useGetAffiliateLinkQuery, useGetDashboardQuery, useGetLastWithdrawalAmo
 const INITIAL_FORM = { fullName: "", address: "", bankName: "", accountNo: "", accountTitle: "" };
 
 export default function AffiliateProgram() {
+    const navigate = useNavigate();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [form, setForm] = useState(INITIAL_FORM);
@@ -36,7 +38,6 @@ export default function AffiliateProgram() {
     const { data: affiliateLinkData, isLoading: isLinkLoading } = useGetAffiliateLinkQuery();
     const [requestWithdrawal, { isLoading: isSubmitting }] = useRequestWithdrawalMutation();
     const { data: lastWithdrawalAmounts, isLoading: isLastWithdrawalAmountsLoading } = useGetLastWithdrawalAmountsQuery();
-    console.log(lastWithdrawalAmounts, 'lastWithdrawalAmounts');
     const lastApprovedAmount = lastWithdrawalAmounts?.data?.lastApprovedAmount ?? 0;
     const lastSettledAmount = lastWithdrawalAmounts?.data?.lastSettledAmount ?? 0;
 
@@ -306,6 +307,19 @@ export default function AffiliateProgram() {
                         </div>
                     </div>
                 </Card>
+
+                <Button
+                    className="rounded-full bg-lime-600 hover:bg-lime-700 text-white px-6 mr-2"
+                    onClick={() => navigate("/write-to-read")}
+                >
+                    Write to Read
+                </Button>
+                <Button
+                    className="rounded-full bg-lime-600 hover:bg-lime-700 text-white px-6"
+                    onClick={() => navigate("/subscribe-to-lms")}
+                >
+                    Ifuntology
+                </Button>
             </div>
 
             {/* Affiliate Compliance Form Dialog */}
