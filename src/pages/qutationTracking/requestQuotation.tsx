@@ -409,7 +409,6 @@ export default function RequestQuotation() {
       const res: any = await requestQuote({
         data,
       }).unwrap();
-      console.log("Quote request response:", res);
       if (res?.status) {
         setSubmitOpen(true);
       } else {

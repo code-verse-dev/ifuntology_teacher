@@ -17,6 +17,7 @@ import DashboardWelcomePage from "./pages/dashboard/DashboardWelcomePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
 import BookSessionPage from "./pages/dashboard/BookSessionPage";
 import BookaSessionDashboard from "./pages/BookaSessionDashboard";
+import CreateTeacherHostedSession from "./pages/CreateTeacherHostedSession";
 import SessionBookedPage from "./pages/dashboard/SessionBookedPage";
 import QuoteLmsPage from "./pages/dashboard/quotes/QuoteLmsPage";
 import QuoteWriteToReadPage from "./pages/dashboard/quotes/QuoteWriteToReadPage";
@@ -111,6 +112,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <BookaSessionDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/book-a-session/create-own"
+                element={
+                  <ProtectedRoute>
+                    <CreateTeacherHostedSession />
                   </ProtectedRoute>
                 }
               />

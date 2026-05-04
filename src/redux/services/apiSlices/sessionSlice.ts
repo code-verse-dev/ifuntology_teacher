@@ -31,11 +31,43 @@ export const sessionSlice = createApi({
         method: "POST",
       }),
     }),
-    getInviteableStudents: builder.query<any, string>({
+    startMeeting: builder.mutation<any, string>({
       query: (sessionId) => ({
-        url: `/session/${sessionId}/inviteable-students`,
-        method: "GET",
+        url: `/session/start-meeting/${sessionId}`,
+        method: "POST",
       }),
+    }),
+    createTeacherHostedSession: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({
+        url: "/session/teacher-hosted",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Session"],
+    }),
+    getMyTeacherHostedSessions: builder.query<
+      any,
+      { from?: string; to?: string; status?: string; page?: number; limit?: number; keyword?: string }
+    >({
+      query: (params) => ({
+        url: "/session/teacher-hosted/my",
+        method: "GET",
+        params,
+      }),
+      providesTags: ["Session"],
+    }),
+    /** Pass a session Mongo id, or empty string to list inviteable students before creating a session (teacher only). */
+    getInviteableStudents: builder.query<any, string>({
+      query: (sessionId) =>
+        sessionId
+          ? {
+              url: `/session/${sessionId}/inviteable-students`,
+              method: "GET",
+            }
+          : {
+              url: "/session/inviteable-students",
+              method: "GET",
+            },
     }),
     setSessionInvites: builder.mutation<
       any,
@@ -55,6 +87,9 @@ export const {
   useCreateSessionMutation,
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useStartMeetingMutation,
+  useCreateTeacherHostedSessionMutation,
+  useGetMyTeacherHostedSessionsQuery,
   useGetInviteableStudentsQuery,
   useSetSessionInvitesMutation,
 } = sessionSlice;

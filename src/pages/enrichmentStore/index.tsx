@@ -13,7 +13,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
 import { useNavigate } from "react-router-dom";
-import { buildCartItems, ImageUrl } from "@/utils/Functions";
+import { buildCartItems } from "@/utils/Functions";
 import { Link } from "react-router-dom";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import {
@@ -106,7 +106,6 @@ export default function EnrichmentStore() {
   )?._id;
 
   useEffect(() => {
-    console.log(interactiveCategoryId);
     if (tab === "interactive" && interactiveCategoryId) {
       setSelectedCategory(interactiveCategoryId);
     }

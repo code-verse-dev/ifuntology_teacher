@@ -35,11 +35,6 @@ export default function MyOrderDetails() {
     document.title = "Order Details • iFuntology Teacher";
   }, []);
 
-  const handleDownloadInvoice = () => {
-    // Handle invoice download
-    console.log("Downloading invoice for order:", id);
-  };
-
   return (
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full  space-y-6">

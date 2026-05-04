@@ -5,7 +5,7 @@ import {
   EventProps,
   DayPropGetter,
 } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, isSameDay } from "date-fns";
+import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import "./calendar-custom.css";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
@@ -35,6 +36,7 @@ import {
   useCreateSessionMutation,
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useStartMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { toast } from "sonner";
 import swal from "sweetalert";
@@ -62,6 +64,7 @@ interface MyEvent {
   available: boolean;
   timeRange: string;
   color?: string; // We'll use this for day background
+  teacherHosted?: boolean;
 }
 
 interface Query {
@@ -74,6 +77,7 @@ export default function BookaSessionDashboard() {
   const [createSession, { isLoading: bookingLoading, error, isSuccess }] =
     useCreateSessionMutation();
   const [joinMeeting, { isLoading: joinMeetingLoading }] = useJoinMeetingMutation();
+  const [startMeeting, { isLoading: startMeetingLoading }] = useStartMeetingMutation();
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState("");
   const [subject, setSubject] = useState("");
@@ -121,17 +125,30 @@ export default function BookaSessionDashboard() {
       ? mySessionsData.data.docs[0]
       : null;
 
-  const handleJoinMeeting = async () => {
+  const handleMeetingAction = async () => {
     if (!upcomingSession?._id) return;
+    const teacherHosted = Boolean(upcomingSession.teacherHosted);
     try {
-      const res: any = await joinMeeting(upcomingSession._id).unwrap();
-      if (res?.status) {
-        window.open(res?.data?.joinUrl, "_blank");
+      if (teacherHosted) {
+        const res: any = await startMeeting(upcomingSession._id).unwrap();
+        if (res?.status && res?.data?.startUrl) {
+          window.open(res.data.startUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to start meeting");
+        }
       } else {
-        toast.error(res?.message || "Failed to join meeting");
+        const res: any = await joinMeeting(upcomingSession._id).unwrap();
+        if (res?.status) {
+          window.open(res?.data?.joinUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to join meeting");
+        }
       }
     } catch (error: any) {
-      const message = error?.data?.message || error?.message || "Failed to join meeting";
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        (teacherHosted ? "Failed to start meeting" : "Failed to join meeting");
       toast.error(message);
     }
   };
@@ -161,6 +178,7 @@ export default function BookaSessionDashboard() {
         platform: session.platform,
         available: false,
         color: getRandomColor(),
+        teacherHosted: Boolean(session.teacherHosted),
         timeRange: session.slots
           .map((slot: any) => {
             const start = to12Hour(slot.startTime);
@@ -237,8 +255,16 @@ export default function BookaSessionDashboard() {
         <div className="flex items-start gap-1 text-[10px] leading-tight text-gray-700">
           <Check className="h-3 w-3 text-green-600 mt-[1px]" />
           <span>
-            Confirmed: {event.platform.split(" ")[0]} with <br />
-            Admin ({event.timeRange})
+            {event.teacherHosted ? (
+              <>
+                Your session ({event.timeRange})
+              </>
+            ) : (
+              <>
+                Confirmed: {event.platform.split(" ")[0]} with <br />
+                Admin ({event.timeRange})
+              </>
+            )}
           </span>
         </div>
       </div>
@@ -356,7 +382,24 @@ export default function BookaSessionDashboard() {
   return (
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full  space-y-6">
-        <h1 className="text-2xl font-extrabold">Book a Session</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold">Book a Session</h1>
+            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+              Request a session with an admin for approval, or create your own Zoom session and invite
+              students when you are ready.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0 rounded-full border-orange-500/50 text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/40"
+            onClick={() => navigate("/book-a-session/create-own")}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Create your own session
+          </Button>
+        </div>
 
         <Card className="rounded-2xl border border-border/60 p-6">
           {/* Top Section matching the screenshot */}
@@ -559,21 +602,30 @@ export default function BookaSessionDashboard() {
                       </div>
                     </div>
 
-                    <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
-                      confirmed
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      {upcomingSession.teacherHosted ? (
+                        <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                          Your session
+                        </span>
+                      ) : null}
+                      <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
+                        confirmed
+                      </span>
+                    </div>
                   </div>
 
                   <Button
                     className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3"
-                    onClick={handleJoinMeeting}
-                    disabled={joinMeetingLoading}
+                    onClick={handleMeetingAction}
+                    disabled={joinMeetingLoading || startMeetingLoading}
                   >
-                    {joinMeetingLoading ? (
+                    {joinMeetingLoading || startMeetingLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        Joining…
+                        {upcomingSession.teacherHosted ? "Starting…" : "Joining…"}
                       </>
+                    ) : upcomingSession.teacherHosted ? (
+                      "Start meeting"
                     ) : (
                       "Join Meeting"
                     )}

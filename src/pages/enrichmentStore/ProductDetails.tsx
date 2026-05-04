@@ -3,7 +3,7 @@ import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebar
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { buildCartItems } from "@/utils/Functions";
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Carousel,
   CarouselContent,

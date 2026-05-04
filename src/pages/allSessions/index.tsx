@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import {
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useStartMeetingMutation,
   useGetInviteableStudentsQuery,
   useSetSessionInvitesMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
@@ -88,6 +89,7 @@ export default function MyOrdersPage() {
   const [search, setSearch] = useState("");
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [joinMeeting] = useJoinMeetingMutation();
+  const [startMeeting] = useStartMeetingMutation();
   const [inviteSessionId, setInviteSessionId] = useState<string | null>(null);
   const [selectedInviteStudentIds, setSelectedInviteStudentIds] = useState<string[]>([]);
   const [setSessionInvites, { isLoading: savingInvites }] =
@@ -137,18 +139,32 @@ export default function MyOrdersPage() {
     isLoading: mySessionsLoading,
   } = useGetMySessionsQuery(queryOptions);
 
-  const handleJoinMeeting = async (sessionId: string) => {
+  const handleJoinOrStartMeeting = async (session: any) => {
+    const sessionId = session?._id;
+    if (!sessionId) return;
+    const teacherHosted = Boolean(session.teacherHosted);
     setJoiningSessionId(sessionId);
     try {
-      const res: any = await joinMeeting(sessionId).unwrap();
-      if (res?.status) {
-        window.open(res?.data?.joinUrl, "_blank");
+      if (teacherHosted) {
+        const res: any = await startMeeting(sessionId).unwrap();
+        if (res?.status && res?.data?.startUrl) {
+          window.open(res.data.startUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to start meeting");
+        }
       } else {
-        toast.error(res?.message || "Failed to join meeting");
+        const res: any = await joinMeeting(sessionId).unwrap();
+        if (res?.status) {
+          window.open(res?.data?.joinUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to join meeting");
+        }
       }
     } catch (error: any) {
       const message =
-        error?.data?.message || error?.message || "Failed to join meeting";
+        error?.data?.message ||
+        error?.message ||
+        (teacherHosted ? "Failed to start meeting" : "Failed to join meeting");
       toast.error(message);
     } finally {
       setJoiningSessionId(null);
@@ -228,6 +244,7 @@ export default function MyOrdersPage() {
               {upcomingSessions.map((session: any) => {
                 const slot = session?.slots?.[0];
                 const isJoining = joiningSessionId === session._id;
+                const teacherHosted = Boolean(session.teacherHosted);
                 const invitedIds = getInvitedStudentIds(session);
                 const invitedLabel =
                   invitedIds.length === 0
@@ -255,9 +272,16 @@ export default function MyOrdersPage() {
                           <span className="truncate">{session.platform}</span>
                         </div>
                       </div>
-                      <Badge className="shrink-0 bg-green-500 hover:bg-green-600 border-0 text-[10px]">
-                        approved
-                      </Badge>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {teacherHosted ? (
+                          <Badge className="border-0 bg-violet-600 text-[9px] hover:bg-violet-600">
+                            Your session
+                          </Badge>
+                        ) : null}
+                        <Badge className="shrink-0 bg-green-500 hover:bg-green-600 border-0 text-[10px]">
+                          approved
+                        </Badge>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                       {session.title}
@@ -277,14 +301,16 @@ export default function MyOrdersPage() {
                       </Button>
                       <Button
                         className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9"
-                        onClick={() => handleJoinMeeting(session._id)}
+                        onClick={() => handleJoinOrStartMeeting(session)}
                         disabled={isJoining}
                       >
                         {isJoining ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                            Joining…
+                            {teacherHosted ? "Starting…" : "Joining…"}
                           </>
+                        ) : teacherHosted ? (
+                          "Start meeting"
                         ) : (
                           "Join Meeting"
                         )}
@@ -491,7 +517,16 @@ export default function MyOrdersPage() {
                           <td className="py-3 font-mono">
                             {session.sessionId}
                           </td>
-                          <td className="py-3">{session.title}</td>
+                          <td className="py-3">
+                            <span className="inline-flex flex-wrap items-center gap-2">
+                              {session.title}
+                              {session.teacherHosted ? (
+                                <Badge className="border-0 bg-violet-600 text-[10px] hover:bg-violet-600">
+                                  Your session
+                                </Badge>
+                              ) : null}
+                            </span>
+                          </td>
                           <td className="py-3">{session.platform}</td>
                           <td className="py-3">
                             <Badge

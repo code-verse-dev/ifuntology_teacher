@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/card";
 import {
   useGetMySessionsQuery,
   useJoinMeetingMutation,
+  useStartMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 import socket from "@/config/socket";
@@ -78,6 +79,7 @@ function UpcomingCard({
   status,
   title,
   sessionId,
+  teacherHosted,
 }: {
   date: string;
   time: string;
@@ -85,6 +87,7 @@ function UpcomingCard({
   status: "confirmed" | "pending";
   title: string;
   sessionId: string;
+  teacherHosted?: boolean;
 }) {
   const statusLabel = status === "confirmed" ? "Confirmed" : "Pending";
   const statusClass =
@@ -92,23 +95,35 @@ function UpcomingCard({
       ? "bg-secondary/50 text-foreground ring-1 ring-border/60"
       : "bg-secondary/30 text-muted-foreground ring-1 ring-border/60";
   const [joinMeeting, { isLoading: joinMeetingLoading }] = useJoinMeetingMutation();
+  const [startMeeting, { isLoading: startMeetingLoading }] = useStartMeetingMutation();
 
-  const handleJoinMeeting = async () => {
+  const handleMeeting = async () => {
     try {
-      const res: any = await joinMeeting(sessionId).unwrap();
-      if (res?.status) {
-        window.open(res?.data?.joinUrl, "_blank");
+      if (teacherHosted) {
+        const res: any = await startMeeting(sessionId).unwrap();
+        if (res?.status && res?.data?.startUrl) {
+          window.open(res.data.startUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to start meeting");
+        }
       } else {
-        toast.error(res?.message || "Failed to join meeting");
+        const res: any = await joinMeeting(sessionId).unwrap();
+        if (res?.status) {
+          window.open(res?.data?.joinUrl, "_blank");
+        } else {
+          toast.error(res?.message || "Failed to join meeting");
+        }
       }
-    } catch (error) {
-      console.log(error, 'error');
-      const message = error?.data?.message || error?.message || "Failed to join meeting";
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        (teacherHosted ? "Failed to start meeting" : "Failed to join meeting");
       toast.error(message);
     }
-  
   };
 
+  const loading = joinMeetingLoading || startMeetingLoading;
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/30 p-4">
@@ -124,9 +139,16 @@ function UpcomingCard({
           <div className="text-sm font-semibold">{platform}</div>
         </div>
 
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
-          {statusLabel}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          {teacherHosted ? (
+            <span className="inline-flex rounded-full bg-violet-600/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+              Your session
+            </span>
+          ) : null}
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
+            {statusLabel}
+          </span>
+        </div>
       </div>
 
       <div className="mt-3 text-sm text-muted-foreground">{title}</div>
@@ -135,9 +157,10 @@ function UpcomingCard({
           variant="brand"
           size="sm"
           className="rounded-full bg-[#ff7a2f] hover:opacity-95"
-          onClick={handleJoinMeeting}
+          onClick={handleMeeting}
+          disabled={loading}
         >
-          Join Meeting
+          {loading ? (teacherHosted ? "Starting…" : "Joining…") : teacherHosted ? "Start meeting" : "Join Meeting"}
         </Button>
       </div>
     </div>
@@ -399,6 +422,7 @@ export default function DashboardHomePage() {
                       status={status}
                       title={title}
                       sessionId={session._id}
+                      teacherHosted={Boolean(session.teacherHosted)}
                     />
                   );
                 })
