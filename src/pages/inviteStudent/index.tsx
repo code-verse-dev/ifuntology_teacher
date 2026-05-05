@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Mail, Key } from "lucide-react";
+import { Mail, Key, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -7,7 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useInviteStudentBulkMutation } from "@/redux/services/apiSlices/invitationSlice";
+import {
+  useInviteStudentBulkCsvMutation,
+  useInviteStudentBulkMutation,
+} from "@/redux/services/apiSlices/invitationSlice";
 import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
 
 type BulkInviteRow = {
@@ -44,8 +47,10 @@ export default function InviteStudent() {
 
   // Credentials from MANUAL response (if API returns them)
   const [createdCredentials, setCreatedCredentials] = useState<{ username?: string; password?: string } | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
 
   const [inviteStudentBulk] = useInviteStudentBulkMutation();
+  const [inviteStudentBulkCsv] = useInviteStudentBulkCsvMutation();
   const [submittingType, setSubmittingType] = useState<"EMAIL" | "MANUAL" | null>(null);
   const seatAvailabilityByCourse = useMemo(() => {
     const map: Record<string, number> = {};
@@ -161,6 +166,46 @@ export default function InviteStudent() {
       }
     } catch (err: any) {
       toast.error(err?.data?.message || err?.message || "Failed to send invitations");
+    } finally {
+      setSubmittingType(null);
+    }
+  };
+
+  const handleCsvInvitationUpload = async () => {
+    if (!csvFile) {
+      toast.error("Please choose a CSV file first.");
+      return;
+    }
+
+    const lowerName = csvFile.name.toLowerCase();
+    if (!lowerName.endsWith(".csv")) {
+      toast.error("Only .csv files are supported.");
+      return;
+    }
+
+    setSubmittingType("EMAIL");
+    try {
+      const res: any = await inviteStudentBulkCsv(csvFile).unwrap();
+      if (res?.status) {
+        toast.message(res?.message ?? "CSV invitations sent.");
+        setSendOpen(true);
+        setCsvFile(null);
+        refetchSubscriptions();
+      } else {
+        toast.error(res?.message || "Failed to upload CSV invitations");
+      }
+    } catch (err: any) {
+      const parseErrors: Array<{ row: number; message: string }> =
+        err?.data?.data?.parseErrors ?? [];
+      if (Array.isArray(parseErrors) && parseErrors.length > 0) {
+        const preview = parseErrors
+          .slice(0, 3)
+          .map((e) => `Row ${e.row}: ${e.message}`)
+          .join(" | ");
+        toast.error(`CSV has invalid rows. ${preview}`);
+      } else {
+        toast.error(err?.data?.message || err?.message || "Failed to upload CSV invitations");
+      }
     } finally {
       setSubmittingType(null);
     }
@@ -323,7 +368,34 @@ export default function InviteStudent() {
                 ))}
 
                 <Button type="button" variant="outline" onClick={addEmailRow}>
-                  Add Another Student
+                  Add Multiple Students
+                </Button>
+              </div>
+              <div className="rounded-md border border-border/60 p-3 space-y-3">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Bulk upload with CSV
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Required headers: <span className="font-mono">firstName,lastName,email,courseType</span>. For multiple courses use <span className="font-mono">|</span>, e.g. <span className="font-mono">Funtology|Barbertology</span>.
+                </p>
+                <Input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                />
+                {csvFile ? (
+                  <p className="text-xs text-muted-foreground">
+                    Selected file: <span className="font-medium text-foreground">{csvFile.name}</span>
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={submittingType !== null}
+                  onClick={handleCsvInvitationUpload}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {submittingType === "EMAIL" ? "Uploading…" : "Upload CSV & Send Invites"}
                 </Button>
               </div>
               {/* What happens next (left) */}
@@ -416,7 +488,7 @@ export default function InviteStudent() {
                 ))}
 
                 <Button type="button" variant="outline" onClick={addManualRow}>
-                  Add Another Student
+                  Add Multiple Students
                 </Button>
               </div>
 

@@ -13,10 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Users, Plus, Loader2, ChevronLeft, Info, Copy } from "lucide-react";
+import { Users, Plus, Loader2, ChevronLeft, Info, Copy, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useCreateInviteBatchMutation,
+  useCreateInviteBatchCsvMutation,
   useGetInviteBatchesQuery,
   type InviteRowInput,
 } from "@/redux/services/apiSlices/batchSlice";
@@ -72,10 +73,12 @@ export function StudentsAndBatchesTab() {
   );
 
   const [createBatch, { isLoading: isCreatingBatch }] = useCreateInviteBatchMutation();
+  const [createBatchCsv, { isLoading: isCreatingBatchCsv }] = useCreateInviteBatchCsvMutation();
 
   const [selectedBatch, setSelectedBatch] = useState<InviteBatchDoc | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [batchTitle, setBatchTitle] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const [studentRows, setStudentRows] = useState<StudentFieldRow[]>(() => [emptyStudentRow()]);
 
   const batches = useMemo(() => {
@@ -85,6 +88,7 @@ export function StudentsAndBatchesTab() {
 
   const resetCreateForm = useCallback(() => {
     setBatchTitle("");
+    setCsvFile(null);
     setStudentRows([emptyStudentRow()]);
   }, []);
 
@@ -164,6 +168,43 @@ export function StudentsAndBatchesTab() {
       }
     } catch (e: any) {
       toast.error(e?.data?.message ?? e?.message ?? "Could not create batch.");
+    }
+  };
+
+  const handleSubmitCreateCsv = async () => {
+    if (!subscriptionId) {
+      toast.error("You need an active Write to Read subscription to invite students.");
+      return;
+    }
+    const title = batchTitle.trim();
+    if (!title) {
+      toast.error("Please enter a batch name.");
+      return;
+    }
+    if (!csvFile) {
+      toast.error("Please choose a CSV file.");
+      return;
+    }
+    if (!csvFile.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Only .csv files are supported.");
+      return;
+    }
+
+    try {
+      const res = await createBatchCsv({
+        title,
+        subscriptionId,
+        file: csvFile,
+      }).unwrap();
+      if (res?.status) {
+        toast.success(res?.message ?? "Batch invitations sent.");
+        setCreateOpen(false);
+        setSelectedBatch(null);
+      } else {
+        toast.error(res?.message ?? "Could not create batch from CSV.");
+      }
+    } catch (e: any) {
+      toast.error(e?.data?.message ?? e?.message ?? "Could not create batch from CSV.");
     }
   };
 
@@ -384,7 +425,7 @@ export function StudentsAndBatchesTab() {
                     onClick={duplicateLastRow}
                   >
                     <Copy className="mr-1 h-4 w-4" />
-                    Duplicate last row
+                    Add Multiple Students
                   </Button>
                 </div>
               </div>
@@ -452,6 +493,45 @@ export function StudentsAndBatchesTab() {
               </div>
             </div>
 
+            <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                Or upload CSV
+              </Label>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Required headers in CSV format: <span className="font-mono">firstName,lastName,email</span>
+              </p>
+              <Input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                className="h-11 rounded-xl border-none bg-white px-4 text-sm dark:bg-slate-900"
+              />
+              {csvFile ? (
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Selected: <span className="font-semibold">{csvFile.name}</span>
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-full font-bold"
+                disabled={isCreatingBatch || isCreatingBatchCsv}
+                onClick={handleSubmitCreateCsv}
+              >
+                {isCreatingBatchCsv ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading…
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload CSV & send invitations
+                  </span>
+                )}
+              </Button>
+            </div>
+
             <div className="flex items-start gap-4 rounded-2xl border border-orange-100 bg-orange-50/50 p-5 dark:border-orange-900/30 dark:bg-orange-950/10">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-orange-500 dark:bg-slate-800">
                 <Info className="h-5 w-5" />
@@ -474,7 +554,7 @@ export function StudentsAndBatchesTab() {
               <Button
                 type="button"
                 className="h-14 flex-1 rounded-full border-none bg-lime-500 font-extrabold text-white shadow-lg hover:bg-lime-600"
-                disabled={isCreatingBatch}
+                disabled={isCreatingBatch || isCreatingBatchCsv}
                 onClick={handleSubmitCreate}
               >
                 {isCreatingBatch ? (

@@ -19,6 +19,17 @@ export const invitationSlice = createApi({
                 body,
             }),
         }),
+        inviteStudentBulkCsv: builder.mutation({
+            query: (file: File) => {
+                const formData = new FormData();
+                formData.append("file", file);
+                return {
+                    url: "/invitation/create-bulk-csv",
+                    method: "POST",
+                    body: formData,
+                };
+            },
+        }),
         getMyStudents: builder.query<
             any,
             { page?: number; limit?: number; keyword?: string; courseType?: string }
@@ -54,4 +65,5 @@ export const {
     useGetAverageProgressQuery,
     useGetAdminAccountQuery,
     useInviteStudentBulkMutation,
+    useInviteStudentBulkCsvMutation,
 } = invitationSlice;

@@ -95,6 +95,7 @@ export default function RequestQuotation() {
   const [city, setCity] = useState("");
   const [stateVal, setStateVal] = useState("");
   const [country, setCountry] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
   const [zip, setZip] = useState("");
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -349,9 +350,11 @@ export default function RequestQuotation() {
 
       if (serviceType === "enrichment_store") {
         if (!products || products.length === 0) return "At least one product is required";
+        if (!country || !country.toString().trim()) return "Country is required";
         if (!city || !city.toString().trim()) return "City is required";
         if (!stateVal || !stateVal.toString().trim()) return "State is required";
-        if (!country || !country.toString().trim()) return "Country is required";
+        if (!streetAddress || !streetAddress.toString().trim())
+          return "Street Address is required";
         if (!zip || !zip.toString().trim()) return "Zip Code is required";
       }
 
@@ -400,6 +403,7 @@ export default function RequestQuotation() {
         city,
         state: stateVal,
         country,
+        streetAddress,
         zipCode: zip,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
       };
@@ -443,6 +447,7 @@ export default function RequestQuotation() {
       setCity("");
       setStateVal("");
       setCountry("");
+      setStreetAddress("");
       setZip("");
       setCoupon("");
       setAppliedCoupon(null);
@@ -802,7 +807,17 @@ export default function RequestQuotation() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Country *
+                      </label>
+                      <Input
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        placeholder="Enter Country"
+                      />
+                    </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
                         City *
@@ -828,12 +843,12 @@ export default function RequestQuotation() {
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Country *
+                        Street Address *
                       </label>
                       <Input
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        placeholder="Enter Country"
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        placeholder="Enter Street Address"
                       />
                     </div>
                     <div>

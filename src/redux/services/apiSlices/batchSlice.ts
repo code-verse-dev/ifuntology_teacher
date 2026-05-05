@@ -13,6 +13,12 @@ export type CreateInviteBatchBody = {
   invites: InviteRowInput[];
 };
 
+export type CreateInviteBatchCsvBody = {
+  title: string;
+  subscriptionId: string;
+  file: File;
+};
+
 export type InviteBatchesListParams = {
   page?: number;
   limit?: number;
@@ -32,6 +38,21 @@ export const batchSlice = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["InviteBatch"],
+    }),
+    /** POST /api/batch/invite-batches-csv */
+    createInviteBatchCsv: builder.mutation<any, CreateInviteBatchCsvBody>({
+      query: ({ title, subscriptionId, file }) => {
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("subscriptionId", subscriptionId);
+        formData.append("file", file);
+        return {
+          url: "/batch/invite-batches-csv",
+          method: "POST",
+          body: formData,
+        };
+      },
       invalidatesTags: ["InviteBatch"],
     }),
 
@@ -58,6 +79,7 @@ export const batchSlice = createApi({
 
 export const {
   useCreateInviteBatchMutation,
+  useCreateInviteBatchCsvMutation,
   useGetInviteBatchesQuery,
   useLazyGetInviteBatchesQuery,
   useGetInviteBatchByIdQuery,
