@@ -6,20 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, Info, MessageSquare, Star } from "lucide-react";
+import { BookOpen, RotateCcw, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useAssignGradeMutation,
   useGetAvailableForReviewQuery,
+  useRejectReviewMutation,
   type AssignBookGradeBody,
 } from "@/redux/services/apiSlices/bookSlice";
+import { BASE_URL, SOCKET_URL } from "@/constants/api";
 
 type ReviewBookDoc = {
   _id: string;
@@ -29,7 +30,7 @@ type ReviewBookDoc = {
   wordCount?: number;
   submittedAt?: string;
   pdfUrl?: string;
-  feedback?: string;
+  pdfStorageKey?: string;
   grade?: AssignBookGradeBody["grade"];
   owner?:
     | string
@@ -77,7 +78,32 @@ function isBookGraded(book: ReviewBookDoc): boolean {
   return book.status === "COMPLETED";
 }
 
-/** Card + modal primary action when opening the same PATCH assign-grade flow. */
+function resolveBookPdfUrl(book: ReviewBookDoc): string | null {
+  const path =
+    book.pdfUrl?.trim() ||
+    (book.pdfStorageKey?.trim()
+      ? `/Uploads/${book.pdfStorageKey.trim().replace(/^Uploads\//i, "")}`
+      : "");
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const origin = SOCKET_URL.replace(/\/+$/, "");
+  if (origin) {
+    return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+  }
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+async function readApiErrorMessage(res: Response): Promise<string> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text) as { message?: unknown };
+    if (typeof j.message === "string" && j.message.trim()) return j.message.trim();
+  } catch {
+    /* not JSON */
+  }
+  return text.trim() || `${res.status} ${res.statusText}`;
+}
+
 function primaryGradeActionLabel(book: ReviewBookDoc): string {
   return isBookGraded(book) ? "Update Grade" : "Grade book";
 }
@@ -86,6 +112,7 @@ export function GradeBooksTab() {
   const { data: booksRes, isLoading, isError, refetch } =
     useGetAvailableForReviewQuery({ page: 1, limit: 20 });
   const [assignGrade, { isLoading: isSubmitting }] = useAssignGradeMutation();
+  const [rejectReview, { isLoading: isRejecting }] = useRejectReviewMutation();
 
   const books: ReviewBookDoc[] =
     booksRes?.data?.docs ?? booksRes?.docs ?? [];
@@ -95,12 +122,12 @@ export function GradeBooksTab() {
   const [selectedGrade, setSelectedGrade] = useState<
     AssignBookGradeBody["grade"] | null
   >(null);
-  const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [openingPdfId, setOpeningPdfId] = useState<string | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
 
   const openGradeModal = (book: ReviewBookDoc) => {
     setSelectedBook(book);
     setSelectedGrade(book.grade ?? null);
-    setFeedbackDraft(book.feedback ?? "");
     setGradeModalOpen(true);
   };
 
@@ -108,7 +135,32 @@ export function GradeBooksTab() {
     setGradeModalOpen(false);
     setSelectedBook(null);
     setSelectedGrade(null);
-    setFeedbackDraft("");
+  };
+
+  const openRejectModal = (book: ReviewBookDoc) => {
+    setSelectedBook(book);
+    setRejectModalOpen(true);
+  };
+
+  const closeRejectModal = () => {
+    setRejectModalOpen(false);
+    if (!gradeModalOpen) setSelectedBook(null);
+  };
+
+  const handleRejectReview = async () => {
+    if (!selectedBook?._id) return;
+    try {
+      await rejectReview({ bookId: selectedBook._id }).unwrap();
+      toast.success("Book sent back to the student for revisions.");
+      closeRejectModal();
+      void refetch();
+    } catch (e: any) {
+      const msg =
+        e?.data?.message ??
+        e?.data?.response?.message ??
+        "Could not return book for revisions.";
+      toast.error(typeof msg === "string" ? msg : "Could not return book for revisions.");
+    }
   };
 
   const handleSubmitGrade = async () => {
@@ -120,15 +172,13 @@ export function GradeBooksTab() {
     try {
       await assignGrade({
         bookId: selectedBook._id,
-        body: {
-          grade: selectedGrade,
-          feedback: feedbackDraft.trim() || undefined,
-        },
+        body: { grade: selectedGrade },
       }).unwrap();
       toast.success(
         isBookGraded(selectedBook) ? "Grade updated." : "Grade submitted."
       );
       closeGradeModal();
+      void refetch();
     } catch (e: any) {
       const msg =
         e?.data?.message ??
@@ -138,12 +188,39 @@ export function GradeBooksTab() {
     }
   };
 
-  const readPdf = (book: ReviewBookDoc) => {
-    if (!book.pdfUrl) {
+  const readPdf = async (book: ReviewBookDoc) => {
+    if (!book.pdfUrl?.trim() && !book.pdfStorageKey?.trim()) {
       toast.message("No PDF is available for this book yet.");
       return;
     }
-    window.open(book.pdfUrl, "_blank", "noopener,noreferrer");
+    setOpeningPdfId(book._id);
+    try {
+      const res = await fetch(`${BASE_URL}/book/${book._id}/review-pdf`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const fallback = resolveBookPdfUrl(book);
+        if (fallback) {
+          window.open(fallback, "_blank", "noopener,noreferrer");
+          return;
+        }
+        toast.error(await readApiErrorMessage(res));
+        return;
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
+    } catch {
+      const fallback = resolveBookPdfUrl(book);
+      if (fallback) {
+        window.open(fallback, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error("Could not open the book PDF.");
+      }
+    } finally {
+      setOpeningPdfId(null);
+    }
   };
 
   return (
@@ -216,7 +293,11 @@ export function GradeBooksTab() {
               >
                 {book.status === "PENDING_REVIEW"
                   ? "Pending review"
-                  : book.status ?? "—"}
+                  : book.status === "DRAFT"
+                    ? "Returned for revisions"
+                    : book.status === "COMPLETED"
+                      ? "Graded"
+                      : book.status ?? "—"}
               </Badge>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -232,40 +313,84 @@ export function GradeBooksTab() {
                 </Badge>
               ) : null}
             </div>
-            {book.feedback ? (
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 relative">
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="h-5 w-5 text-orange-500 mt-1 shrink-0" />
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
-                      Feedback on file:
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                      {book.feedback}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
             <div className="flex flex-wrap gap-4">
               <Button
                 type="button"
                 variant="outline"
                 className="rounded-full border-slate-200 dark:border-slate-800 h-11 px-8 font-bold text-sm"
-                onClick={() => readPdf(book)}
+                onClick={() => void readPdf(book)}
+                disabled={openingPdfId === book._id}
               >
-                Read book
+                {openingPdfId === book._id ? "Opening…" : "Read book"}
               </Button>
-              <Button
-                type="button"
-                className="rounded-full bg-lime-600 hover:bg-lime-700 text-white font-bold h-11 px-8 border-none shadow-none"
-                onClick={() => openGradeModal(book)}
-              >
-                {primaryGradeActionLabel(book)}
-              </Button>
+              {book.status === "PENDING_REVIEW" ? (
+                <>
+                  <Button
+                    type="button"
+                    className="rounded-full bg-lime-600 hover:bg-lime-700 text-white font-bold h-11 px-8 border-none shadow-none"
+                    onClick={() => openGradeModal(book)}
+                  >
+                    Grade book
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 h-11 px-8 font-bold text-sm gap-2"
+                    onClick={() => openRejectModal(book)}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Send back for revisions
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  className="rounded-full bg-lime-600 hover:bg-lime-700 text-white font-bold h-11 px-8 border-none shadow-none"
+                  onClick={() => openGradeModal(book)}
+                >
+                  {primaryGradeActionLabel(book)}
+                </Button>
+              )}
             </div>
           </Card>
         ))}
+
+      <Dialog open={rejectModalOpen} onOpenChange={(open) => !open && closeRejectModal()}>
+        <DialogContent className="sm:max-w-[480px] rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 border-none shadow-2xl">
+          <DialogHeader className="text-left space-y-2">
+            <DialogTitle className="text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
+              Send back for revisions?
+            </DialogTitle>
+            <p className="text-xs font-medium text-slate-400">
+              {selectedBook
+                ? `${selectedBook.title} — ${authorLabel(selectedBook)}`
+                : "—"}
+            </p>
+          </DialogHeader>
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium">
+            The book will return to draft so the student can edit and submit again.
+          </p>
+          <div className="flex gap-3 mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 rounded-full h-12 font-bold"
+              onClick={closeRejectModal}
+              disabled={isRejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 border-none"
+              onClick={() => void handleRejectReview()}
+              disabled={isRejecting}
+            >
+              {isRejecting ? "Sending back…" : "Send back"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={gradeModalOpen} onOpenChange={(open) => !open && closeGradeModal()}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 md:p-12 border-none shadow-2xl custom-scrollbar">
@@ -334,28 +459,6 @@ export function GradeBooksTab() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="space-y-3 text-left">
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Feedback & comments
-              </Label>
-              <Textarea
-                value={feedbackDraft}
-                onChange={(e) => setFeedbackDraft(e.target.value)}
-                placeholder="Optional feedback for the student…"
-                className="min-h-[140px] rounded-3xl bg-slate-50 dark:bg-slate-800/50 border-none p-6 resize-none text-sm font-medium"
-              />
-            </div>
-
-            <div className="bg-orange-50/50 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl p-5 flex items-start gap-4">
-              <div className="h-10 w-10 flex items-center justify-center bg-white dark:bg-slate-800 rounded-xl text-orange-500 shrink-0 shadow-sm">
-                <Info className="h-5 w-5" />
-              </div>
-              <p className="text-[11px] text-orange-600 font-bold leading-relaxed pt-1">
-                Your feedback helps the student improve their writing and
-                supports their authorship journey.
-              </p>
             </div>
 
             <div className="flex gap-4 pt-2">

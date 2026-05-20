@@ -14,7 +14,6 @@ export type BookAvailableForReviewParams = {
 /** Matches backend `AssignBookGradeDto` / `BookGrade`. */
 export type AssignBookGradeBody = {
   grade: "FAIR" | "GOOD" | "EXCELLENT";
-  feedback?: string;
 };
 
 export const bookSlice = createApi({
@@ -40,7 +39,20 @@ export const bookSlice = createApi({
       }),
       invalidatesTags: () => ["Book"],
     }),
+    /** PATCH /api/book/:id/reject — return to student as draft */
+    rejectReview: builder.mutation<any, { bookId: string }>({
+      query: ({ bookId }) => ({
+        url: `/book/${bookId}/reject`,
+        method: "PATCH",
+      }),
+      invalidatesTags: () => ["Book"],
+    }),
   }),
 });
 
-export const { useGetAvailableForReviewQuery, useLazyGetAvailableForReviewQuery, useAssignGradeMutation } = bookSlice;
+export const {
+  useGetAvailableForReviewQuery,
+  useLazyGetAvailableForReviewQuery,
+  useAssignGradeMutation,
+  useRejectReviewMutation,
+} = bookSlice;
