@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Mail, Key, Download, Upload } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Mail, Key, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -7,14 +7,280 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  useInviteStudentBulkCsvMutation,
+  useInviteStudentBulkMutation,
+} from "@/redux/services/apiSlices/invitationSlice";
+import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+
+type BulkInviteRow = {
+  key: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  courseType: string[];
+};
+
+const makeRow = (): BulkInviteRow => ({
+  key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  firstName: "",
+  lastName: "",
+  email: "",
+  courseType: ["Funtology"],
+});
 
 export default function InviteStudent() {
   useEffect(() => {
     document.title = "Invite Students • iFuntology Teacher";
   }, []);
 
+  const { data: subscriptions, refetch: refetchSubscriptions } = useGetMySubscriptionsQuery({ status: "ACTIVE" });
+  const subscriptionsData = subscriptions?.data?.docs ?? [];
   const [sendOpen, setSendOpen] = useState(false);
   const [createdOpen, setCreatedOpen] = useState(false);
+
+  // Form 1: Email invitation (bulk rows)
+  const [emailRows, setEmailRows] = useState<BulkInviteRow[]>([makeRow()]);
+
+  // Form 2: Manual credentials
+  const [manualRows, setManualRows] = useState<BulkInviteRow[]>([makeRow()]);
+
+  // Credentials from MANUAL response (if API returns them)
+  const [createdCredentials, setCreatedCredentials] = useState<{ username?: string; password?: string } | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  const [inviteStudentBulk] = useInviteStudentBulkMutation();
+  const [inviteStudentBulkCsv] = useInviteStudentBulkCsvMutation();
+  const [submittingType, setSubmittingType] = useState<"EMAIL" | "MANUAL" | null>(null);
+  const seatAvailabilityByCourse = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const sub of subscriptionsData) {
+      const courseType = typeof sub?.courseType === "string" ? sub.courseType : "";
+      if (!courseType) continue;
+      const totalSeats = Number(sub?.numberOfSeats ?? 0);
+      const usedSeats = Number(sub?.usedSeats ?? 0);
+      map[courseType] = Math.max(0, totalSeats - usedSeats);
+    }
+    return map;
+  }, [subscriptionsData]);
+  const availableCourses: string[] = useMemo(() => {
+    const fromSubs: string[] = subscriptionsData
+      .map((s: any) => (typeof s?.courseType === "string" ? s.courseType : ""))
+      .filter((c: string) => c.trim().length > 0);
+    const unique: string[] = Array.from(new Set(fromSubs));
+    return unique.length > 0
+      ? unique
+      : ["Funtology", "Barbertology", "Nailtology", "Skintology"];
+  }, [subscriptionsData]);
+
+  const toggleRowCourse = (
+    key: string,
+    value: string,
+    rows: BulkInviteRow[],
+    setRows: React.Dispatch<React.SetStateAction<BulkInviteRow[]>>
+  ) => {
+    const row = rows.find((r) => r.key === key);
+    if (!row) return;
+    const nextCourses = row.courseType.includes(value)
+      ? row.courseType.filter((v) => v !== value)
+      : [...row.courseType, value];
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, courseType: nextCourses } : r)));
+  };
+
+  const validateSeatAvailabilityByRows = (
+    rows: Array<{ courseType: string[] }>
+  ) => {
+    const requestedByCourse: Record<string, number> = {};
+    for (const row of rows) {
+      const selected = Array.isArray(row.courseType) ? row.courseType : [];
+      for (const course of selected) {
+        requestedByCourse[course] = (requestedByCourse[course] ?? 0) + 1;
+      }
+    }
+    for (const [course, requested] of Object.entries(requestedByCourse)) {
+      const available = seatAvailabilityByCourse[course] ?? 0;
+      if (requested > available) {
+        toast.error(`Only ${available} seat(s) available for ${course}.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const updateEmailRow = (key: string, field: "firstName" | "lastName" | "email", value: string) => {
+    setEmailRows((rows) => rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+  };
+
+  const addEmailRow = () => {
+    setEmailRows((rows) => [...rows, makeRow()]);
+  };
+
+  const removeEmailRow = (key: string) => {
+    setEmailRows((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
+  };
+
+  const handleEmailBulkInvitation = async () => {
+    setSubmittingType("EMAIL");
+    const invites = emailRows
+      .map((r) => ({
+        firstName: r.firstName.trim(),
+        lastName: r.lastName.trim(),
+        email: r.email.trim().toLowerCase(),
+        courseType: r.courseType,
+        type: "EMAIL" as const,
+      }))
+      .filter((r) => r.firstName || r.lastName || r.email);
+
+    if (invites.length === 0) {
+      toast.error("Add at least one student with first name, last name, and email.");
+      setSubmittingType(null);
+      return;
+    }
+
+    const invalid = invites.find((r) => !r.firstName || !r.lastName || !r.email);
+    if (invalid) {
+      toast.error("Each student row must have first name, last name, and email.");
+      setSubmittingType(null);
+      return;
+    }
+    const missingCourse = invites.find((r) => !Array.isArray(r.courseType) || r.courseType.length === 0);
+    if (missingCourse) {
+      toast.error("Please select at least one course for each student.");
+      setSubmittingType(null);
+      return;
+    }
+    if (!validateSeatAvailabilityByRows(invites)) {
+      setSubmittingType(null);
+      return;
+    }
+
+    try {
+      const res: any = await inviteStudentBulk(invites).unwrap();
+      if (res?.status) {
+        toast.message(res?.message ?? "Invitations sent.");
+        setSendOpen(true);
+        setEmailRows([makeRow()]);
+        refetchSubscriptions();
+      } else {
+        toast.error(res?.message || "Failed to send invitations");
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || "Failed to send invitations");
+    } finally {
+      setSubmittingType(null);
+    }
+  };
+
+  const handleCsvInvitationUpload = async () => {
+    if (!csvFile) {
+      toast.error("Please choose a CSV file first.");
+      return;
+    }
+
+    const lowerName = csvFile.name.toLowerCase();
+    if (!lowerName.endsWith(".csv")) {
+      toast.error("Only .csv files are supported.");
+      return;
+    }
+
+    setSubmittingType("EMAIL");
+    try {
+      const res: any = await inviteStudentBulkCsv(csvFile).unwrap();
+      if (res?.status) {
+        toast.message(res?.message ?? "CSV invitations sent.");
+        setSendOpen(true);
+        setCsvFile(null);
+        refetchSubscriptions();
+      } else {
+        toast.error(res?.message || "Failed to upload CSV invitations");
+      }
+    } catch (err: any) {
+      const parseErrors: Array<{ row: number; message: string }> =
+        err?.data?.data?.parseErrors ?? [];
+      if (Array.isArray(parseErrors) && parseErrors.length > 0) {
+        const preview = parseErrors
+          .slice(0, 3)
+          .map((e) => `Row ${e.row}: ${e.message}`)
+          .join(" | ");
+        toast.error(`CSV has invalid rows. ${preview}`);
+      } else {
+        toast.error(err?.data?.message || err?.message || "Failed to upload CSV invitations");
+      }
+    } finally {
+      setSubmittingType(null);
+    }
+  };
+
+  const updateManualRow = (key: string, field: "firstName" | "lastName", value: string) => {
+    setManualRows((rows) => rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+  };
+
+  const addManualRow = () => {
+    setManualRows((rows) => [...rows, makeRow()]);
+  };
+
+  const removeManualRow = (key: string) => {
+    setManualRows((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
+  };
+
+  const handleManualBulkInvitation = async () => {
+    setSubmittingType("MANUAL");
+    const body = manualRows
+      .map((r) => ({
+        firstName: r.firstName.trim(),
+        lastName: r.lastName.trim(),
+        courseType: r.courseType,
+        type: "MANUAL" as const,
+      }))
+      .filter((r) => r.firstName || r.lastName);
+
+    if (body.length === 0) {
+      toast.error("Add at least one student with first name and last name.");
+      setSubmittingType(null);
+      return;
+    }
+
+    const invalid = body.find((r) => !r.firstName || !r.lastName);
+    if (invalid) {
+      toast.error("Each student row must have first name and last name.");
+      setSubmittingType(null);
+      return;
+    }
+    const missingCourse = body.find((r) => !Array.isArray(r.courseType) || r.courseType.length === 0);
+    if (missingCourse) {
+      toast.error("Please select at least one course for each student.");
+      setSubmittingType(null);
+      return;
+    }
+    if (!validateSeatAvailabilityByRows(body)) {
+      setSubmittingType(null);
+      return;
+    }
+
+    try {
+      const res: any = await inviteStudentBulk(body).unwrap();
+      if(res.status){
+          toast.message(res.message);
+          const first = Array.isArray(res?.data) ? res.data[0] : res?.data;
+          setCreatedCredentials(first ? {
+            username: first?.username ?? first?.data?.username ?? res?.username,
+            password: first?.password ?? first?.data?.password ?? res?.password,
+          } : null);
+          setCreatedOpen(true);
+          setManualRows([makeRow()]);
+          refetchSubscriptions();
+      }
+      else{
+        toast.error(res?.message || "Failed to create student account");
+      }
+    } catch (err: any) {
+      toast.error(
+        err?.data?.message || err?.message || "Failed to generate credentials"
+      );
+    } finally {
+      setSubmittingType(null);
+    }
+  };
 
   return (
     <DashboardWithSidebarLayout>
@@ -35,43 +301,110 @@ export default function InviteStudent() {
               </div>
 
               <div className="space-y-2">
-                <div>
-                  <label htmlFor="firstNameEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    First Name
-                  </label>
-                  <Input id="firstNameEmail" placeholder="First Name" />
-                </div>
+                {emailRows.map((row, idx) => (
+                  <div key={row.key} className="rounded-md border border-border/60 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Student {idx + 1}</span>
+                      {emailRows.length > 1 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => removeEmailRow(row.key)}
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        First Name
+                      </label>
+                      <Input
+                        placeholder="First Name"
+                        value={row.firstName}
+                        onChange={(e) => updateEmailRow(row.key, "firstName", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Last Name
+                      </label>
+                      <Input
+                        placeholder="Last Name"
+                        value={row.lastName}
+                        onChange={(e) => updateEmailRow(row.key, "lastName", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Email
+                      </label>
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        value={row.email}
+                        onChange={(e) => updateEmailRow(row.key, "email", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Select Course(s)
+                      </label>
+                      <div className="rounded-md border border-border/60 p-2 space-y-2">
+                        {availableCourses.map((course) => (
+                          <label key={course} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={row.courseType.includes(course)}
+                              onChange={() => toggleRowCourse(row.key, course, emailRows, setEmailRows)}
+                            />
+                            {course}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-                <div>
-                  <label htmlFor="lastNameEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Last Name
-                  </label>
-                  <Input id="lastNameEmail" placeholder="Last Name" />
+                <Button type="button" variant="outline" onClick={addEmailRow}>
+                  Add Multiple Students
+                </Button>
+              </div>
+              <div className="rounded-md border border-border/60 p-3 space-y-3">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Bulk upload with CSV
                 </div>
-
-                <div>
-                  <label htmlFor="emailEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Email
-                  </label>
-                  <Input id="emailEmail" placeholder="Email" />
-                </div>
-
-                <div>
-                  <label htmlFor="courseEmail" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Select Course
-                  </label>
-                  <select id="courseEmail" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm">
-                    <option>Funtology</option>
-                  </select>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Required headers: <span className="font-mono">firstName,lastName,email,courseType</span>. For multiple courses use <span className="font-mono">|</span>, e.g. <span className="font-mono">Funtology|Barbertology</span>.
+                </p>
+                <Input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                />
+                {csvFile ? (
+                  <p className="text-xs text-muted-foreground">
+                    Selected file: <span className="font-medium text-foreground">{csvFile.name}</span>
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={submittingType !== null}
+                  onClick={handleCsvInvitationUpload}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {submittingType === "EMAIL" ? "Uploading…" : "Upload CSV & Send Invites"}
+                </Button>
               </div>
               {/* What happens next (left) */}
               <div className="mt-4 rounded-lg border border-border/60 bg-card/30 p-3 text-sm">
                 <div className="mb-2 font-semibold">What happens next:</div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
                   <li>System creates student account</li>
-                  <li>Email sent with activation link</li>
-                  <li>Student clicks link to set password</li>
+                  <li>Email sent with credentials</li>
+                  <li>Student clicks link of site url</li>
                   <li>Student can login immediately</li>
                 </ol>
               </div>
@@ -79,11 +412,10 @@ export default function InviteStudent() {
               <div className="mt-3">
                 <Button
                   variant="brand"
-                  onClick={() => {
-                    setSendOpen(true);
-                  }}
+                  disabled={submittingType !== null}
+                  onClick={handleEmailBulkInvitation}
                 >
-                  Send Email Invitation
+                  {submittingType === "EMAIL" ? "Sending…" : "Send Email Invitations"}
                 </Button>
               </div>
             </div>
@@ -100,35 +432,64 @@ export default function InviteStudent() {
               </div>
 
               <div className="space-y-2">
-                <div>
-                  <label htmlFor="firstNameGen" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    First Name
-                  </label>
-                  <Input id="firstNameGen" placeholder="First Name" />
-                </div>
+                {manualRows.map((row, idx) => (
+                  <div key={row.key} className="rounded-md border border-border/60 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Student {idx + 1}</span>
+                      {manualRows.length > 1 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => removeManualRow(row.key)}
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        First Name
+                      </label>
+                      <Input
+                        placeholder="First Name"
+                        value={row.firstName}
+                        onChange={(e) => updateManualRow(row.key, "firstName", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Last Name
+                      </label>
+                      <Input
+                        placeholder="Last Name"
+                        value={row.lastName}
+                        onChange={(e) => updateManualRow(row.key, "lastName", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Select Course(s)
+                      </label>
+                      <div className="rounded-md border border-border/60 p-2 space-y-2">
+                        {availableCourses.map((course) => (
+                          <label key={course} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={row.courseType.includes(course)}
+                              onChange={() => toggleRowCourse(row.key, course, manualRows, setManualRows)}
+                            />
+                            {course}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-                <div>
-                  <label htmlFor="lastNameGen" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Last Name
-                  </label>
-                  <Input id="lastNameGen" placeholder="Last Name" />
-                </div>
-
-                <div>
-                  <label htmlFor="emailGen" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Email (Optional)
-                  </label>
-                  <Input id="emailGen" placeholder="Email (Optional)" />
-                </div>
-
-                <div>
-                  <label htmlFor="courseGen" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Select Course
-                  </label>
-                  <select id="courseGen" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm">
-                    <option>Funtology</option>
-                  </select>
-                </div>
+                <Button type="button" variant="outline" onClick={addManualRow}>
+                  Add Multiple Students
+                </Button>
               </div>
 
               {/* What happens next (right) */}
@@ -145,17 +506,16 @@ export default function InviteStudent() {
               <div className="mt-3">
                 <Button
                   variant="brand"
-                  onClick={() => {
-                    setCreatedOpen(true);
-                  }}
+                  disabled={submittingType !== null}
+                  onClick={handleManualBulkInvitation}
                 >
-                  Generate Credentials
+                  {submittingType === "MANUAL" ? "Generating…" : "Generate Credentials"}
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+          {/* <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold">Bulk Invitation</div>
@@ -172,7 +532,7 @@ export default function InviteStudent() {
                 </Button>
               </div>
             </div>
-          </div>
+          </div> */}
         </Card>
 
         {/* Dialog: Invitation Sent (screen 17) */}
@@ -194,9 +554,8 @@ export default function InviteStudent() {
             </div>
           </DialogContent>
         </Dialog>
-
         {/* Dialog: Student Account Created (screen 18) */}
-        <Dialog open={createdOpen} onOpenChange={setCreatedOpen}>
+        <Dialog open={createdOpen} onOpenChange={(open) => { setCreatedOpen(open); if (!open) setCreatedCredentials(null); }}>
           <DialogContent>
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-full bg-green-500/10 p-4">
@@ -215,7 +574,7 @@ export default function InviteStudent() {
                     </svg>
                     <div>Username</div>
                   </div>
-                  <div className="font-mono">student_user</div>
+                  <div className="font-mono">{createdCredentials?.username ?? "—"}</div>
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-2">
@@ -224,15 +583,23 @@ export default function InviteStudent() {
                     </svg>
                     <div>Password</div>
                   </div>
-                  <div className="font-mono">GEQVERPAD</div>
+                  <div className="font-mono">{createdCredentials?.password ?? "—"}</div>
                 </div>
               </div>
 
               <div className="w-full">
-                <Button className="w-full" onClick={() => {
-                  navigator.clipboard?.writeText("student_user:GEQVERPAD");
-                  toast.message("Credentials copied to clipboard");
-                }}>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    const text = createdCredentials?.username && createdCredentials?.password
+                      ? `${createdCredentials.username}:${createdCredentials.password}`
+                      : "";
+                    if (text && navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(text);
+                      toast.success("Credentials copied to clipboard");
+                    }
+                  }}
+                >
                   Copy Credentials
                 </Button>
               </div>

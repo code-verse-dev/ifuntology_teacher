@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   User,
   Users,
+  Gift
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,11 +22,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
+import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
+import { useDispatch } from "react-redux";
+import { addUser } from "@/redux/services/Slices/userSlice";
 
 const roleCards = [
-  { key: "admin", label: "Admin", icon: User },
+  { key: "affiliate", label: "Affiliate", icon: Gift },
   { key: "teacher", label: "Teacher / Organization", icon: GraduationCap },
-  { key: "parent", label: "Individual User / Parent", icon: Users },
+  { key: "parent", label: "Individual User", icon: Users },
   { key: "student", label: "Student", icon: School },
 ] as const;
 
@@ -45,11 +49,35 @@ const stats = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [login, { isLoading }] = useLoginMutation();
+  const dispatch = useDispatch();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<typeof roleCards[number]["key"]>("teacher");
 
   useEffect(() => {
     document.title = "Sign In • iFuntology Teacher";
   }, []);
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res: any = await login({ identifier: email, password, role: "teacher" }).unwrap();
+      if (res?.status) {
+        toast.success("Signed in successfully");
+        dispatch(addUser({ user: res?.data?.user }));
+        navigate("/dashboard");
+      }
+      else {
+        toast.error(res?.message || "Something went wrong");
+      }
+    } catch (err: any) {
+      console.log("error----", err);
+      let message = err?.data?.message || err?.message;
+      toast.error(message || "Login failed");
+    }
+  };
 
   return (
     <AuthLayout>
@@ -63,7 +91,7 @@ export default function LoginPage() {
               Welcome Back!
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Your complete education &amp; enrichment platform
+              Your Complete Education &amp; Enrichment Platform
             </p>
           </div>
 
@@ -101,7 +129,7 @@ export default function LoginPage() {
             Sign In
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Access your personalized dashboard.
+            Access Your Personalized Dashboard.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4">
@@ -118,7 +146,7 @@ export default function LoginPage() {
                   }
                   onClick={() => {
                     setSelectedRole(r.key);
-                    toast.message(`${r.label} selected`);
+                    // toast.message(`${r.label} selected`);
                   }}
                 >
                   <span
@@ -137,39 +165,24 @@ export default function LoginPage() {
           </div>
 
           <form
-            className="mt-8 flex flex-1 flex-col space-y-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              toast.success("Signed in (demo)");
-              navigate("/dashboard");
-            }}
+            className="mt-6 space-y-4"
+            onSubmit={handleSubmit}
           >
             <div className="space-y-3">
               <Label htmlFor="email" className="text-sm font-normal text-foreground">
                 Email Address *
               </Label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  placeholder="your@email.com"
-                  className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
-                />
+                <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
               </div>
             </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="password" className="text-sm font-normal text-foreground">
-                Password *
-              </Label>
-              <PasswordField id="password" required placeholder="••••••••" />
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <PasswordField id="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-
             <div className="flex items-center justify-between gap-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                <Checkbox id="remember" />
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox id="remember" disabled={isLoading} />
                 Remember Me
               </label>
               <Link
@@ -179,14 +192,12 @@ export default function LoginPage() {
                 Forgot Password
               </Link>
             </div>
-
-            <Button type="submit" variant="brand" size="pill" className="mt-4 w-full">
-              Sign In
+            <Button type="submit" variant="brand" size="pill" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
-
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don&apos;t Have An Account?{" "}
-              <Link to="/sign-up" className="font-medium text-accent hover:underline">
+            <p className="text-center text-sm text-muted-foreground">
+              Don’t have an account?{" "}
+              <Link to="/sign-up" className="text-accent hover:underline">
                 Register Now
               </Link>
             </p>

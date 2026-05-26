@@ -1,27 +1,82 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
+import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
+import {
+  useLazyGetProductsByCategoryQuery,
+  useLazyGetProductByCourseTypeQuery,
+} from "@/redux/services/apiSlices/productSlice";
+import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
+import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
+import swal from "sweetalert";
 
 export default function RequestQuotation() {
+  type LmsCourseItem = {
+    key: string;
+    courseType: string;
+    noOfKits: string;
+    webSubscriptions: string;
+  };
+  const makeLmsCourseItem = (): LmsCourseItem => ({
+    key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    courseType: "Funtology",
+    noOfKits: "",
+    webSubscriptions: "",
+  });
+
+  const [requestQuote] = useRequestQuoteMutation();
   useEffect(() => {
     document.title = "Request Quotation • iFuntology Teacher";
   }, []);
-
+  const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
+  const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
+  const { data: settingData } = useGetAllSettingsQuery({});
+  const { data: categoriesData } = useGetCategoriesQuery({});
   const navigate = useNavigate();
-  const [serviceType, setServiceType] = useState<string>("LMS");
-
+  const [serviceType, setServiceType] = useState<string>("lms");
+  useEffect(() => {
+    if (settingData && Array.isArray(settingData.data)) {
+      const taxSetting = settingData.data.find(
+        (item: any) => item.type === "tax"
+      );
+      if (
+        taxSetting &&
+        taxSetting.data &&
+        typeof taxSetting.data.percentage === "number"
+      ) {
+        setTaxPercent(taxSetting.data.percentage);
+      }
+      const lmsSetting = settingData.data.find(
+        (item: any) => item.type === "lms"
+      );
+      if (lmsSetting && lmsSetting.data) {
+        if (typeof lmsSetting.data.monthlySubscriptionFee === "number")
+          setMonthlyFee(lmsSetting.data.monthlySubscriptionFee);
+        if (typeof lmsSetting.data.yearlySubscriptionFee === "number")
+          setYearlyFee(lmsSetting.data.yearlySubscriptionFee);
+      }
+    }
+  }, [settingData]);
   // LMS fields
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [kits, setKits] = useState<number>(0);
-  const [students, setStudents] = useState<number>(0);
-  const [webSubs, setWebSubs] = useState<number>(0);
+  const [subscriptionType, setSubscriptionType] = useState<string>("monthly");
+  const [lmsCourses, setLmsCourses] = useState<LmsCourseItem[]>([
+    makeLmsCourseItem(),
+  ]);
+  const [lmsKitPriceMap, setLmsKitPriceMap] = useState<Record<string, number>>({});
 
   // Write to Read fields
   const [bookPrinting, setBookPrinting] = useState<string>("Yes");
@@ -29,24 +84,375 @@ export default function RequestQuotation() {
   const [batchStudents, setBatchStudents] = useState<number>(0);
 
   // Enrichment store fields
-  const [productCategory, setProductCategory] = useState<string>("");
-  const [quantity, setQuantity] = useState<number>(0);
+  const [products, setProducts] = useState([
+    {
+      id: "",
+      category: "",
+      product: "",
+      quantity: "",
+    },
+  ]);
   const [city, setCity] = useState("");
   const [stateVal, setStateVal] = useState("");
   const [country, setCountry] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
   const [zip, setZip] = useState("");
   const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+  } | null>(null);
+  const [checkCoupon, { isLoading: checkingCoupon }] =
+    useCheckCouponMutation();
 
-  // price calc (very simple placeholder)
-  const subtotal = (() => {
-    if (serviceType === "LMS") return kits * 49.99 + webSubs * 9.99;
-    if (serviceType === "WRITE") return subscriptions * 29.99 * batchStudents;
-    if (serviceType === "STORE") return quantity * 50;
-    return 0;
-  })();
-  const tax = +(subtotal * 0.08).toFixed(2);
-  const total = +(subtotal + tax).toFixed(2);
+  const [taxPercent, setTaxPercent] = useState<number>(0);
+  const [monthlyFee, setMonthlyFee] = useState<number>(0);
+  const [yearlyFee, setYearlyFee] = useState<number>(0);
+  const [categoryProducts, setCategoryProducts] = useState<{
+    [key: string]: any[];
+  }>({});
+  // price calc
+  const lmsUnitPrice = subscriptionType === "yearly" ? yearlyFee : monthlyFee;
+  const lmsUnitLabel = subscriptionType === "yearly" ? "Yearly" : "Monthly";
+  const lmsLineItems = lmsCourses.map((item) => {
+    const webQty = Number(item.webSubscriptions) || 0;
+    const kitQty = Number(item.noOfKits) || 0;
+    const kitUnitPrice = lmsKitPriceMap[item.courseType] ?? 0;
+    const webTotal = webQty * lmsUnitPrice;
+    const kitTotal = kitQty * kitUnitPrice;
+    return {
+      ...item,
+      webQty,
+      kitQty,
+      kitUnitPrice,
+      webTotal,
+      kitTotal,
+      lineTotal: webTotal + kitTotal,
+    };
+  });
+  const lmsSubtotal = lmsLineItems.reduce((sum, item) => sum + item.lineTotal, 0);
+
+  const lmsTax = lmsSubtotal * (taxPercent / 100);
+  const lmsTotal = lmsSubtotal + lmsTax;
+
+  // Enrichment store live price: line items from categoryProducts (price per product)
+  const enrichmentLineItems = products
+    .filter(
+      (p) =>
+        p.category &&
+        p.product &&
+        (() => {
+          const q = Number(p.quantity);
+          return !isNaN(q) && q > 0;
+        })()
+    )
+    .map((p) => {
+      const list = categoryProducts[p.category] || [];
+      const prod = list.find((x: any) => x._id === p.product);
+      const unitPrice = typeof prod?.price === "number" ? prod.price : 0;
+      const qty = Number(p.quantity) || 0;
+      const lineTotal = unitPrice * qty;
+      return {
+        name: prod?.name ?? "—",
+        quantity: qty,
+        unitPrice,
+        lineTotal,
+      };
+    });
+  const enrichmentSubtotal = enrichmentLineItems.reduce(
+    (sum, item) => sum + item.lineTotal,
+    0
+  );
+  const enrichmentDiscount = appliedCoupon?.discountAmount ?? 0;
+  const enrichmentAfterDiscount = Math.max(
+    0,
+    enrichmentSubtotal - enrichmentDiscount
+  );
+  const enrichmentTax = enrichmentAfterDiscount * (taxPercent / 100);
+  const enrichmentTotal = enrichmentAfterDiscount + enrichmentTax;
+
   const [submitOpen, setSubmitOpen] = useState(false);
+
+  const availableLmsCourses = useMemo(
+    () => [
+      "Funtology",
+      "Skintology",
+      "Barbertology",
+      "Nailtology",
+      "iTeach iFuntology",
+    ],
+    []
+  );
+
+  const updateLmsCourseItem = (
+    key: string,
+    field: "courseType" | "noOfKits" | "webSubscriptions",
+    value: string
+  ) => {
+    setLmsCourses((rows) =>
+      rows.map((r) => {
+        if (r.key !== key) return r;
+        if (field === "noOfKits") {
+          // Keep legacy behavior: kits and web subscriptions move together.
+          return { ...r, noOfKits: value, webSubscriptions: value };
+        }
+        if (field === "webSubscriptions") {
+          // Keep legacy behavior: web subscriptions and kits move together.
+          return { ...r, webSubscriptions: value, noOfKits: value };
+        }
+        return { ...r, [field]: value };
+      })
+    );
+  };
+
+  const addLmsCourseItem = () => setLmsCourses((rows) => [...rows, makeLmsCourseItem()]);
+  const removeLmsCourseItem = (key: string) =>
+    setLmsCourses((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
+
+  useEffect(() => {
+    const selectedCourseTypes = Array.from(
+      new Set(lmsCourses.map((c) => c.courseType).filter(Boolean))
+    );
+    const missing = selectedCourseTypes.filter((c) => lmsKitPriceMap[c] == null);
+    if (missing.length === 0) return;
+
+    (async () => {
+      for (const course of missing) {
+        try {
+          const res: any = await triggerGetProductByCourseType({
+            courseType: course,
+          }).unwrap();
+          const price = Number(res?.data?.price ?? 0);
+          setLmsKitPriceMap((prev) => ({ ...prev, [course]: price }));
+        } catch {
+          setLmsKitPriceMap((prev) => ({ ...prev, [course]: 0 }));
+        }
+      }
+    })();
+  }, [lmsCourses, lmsKitPriceMap, triggerGetProductByCourseType]);
+
+
+
+  const handleProductChange = async (
+    index: number,
+    field: "category" | "product" | "quantity",
+    value: any
+  ) => {
+    const updatedProducts: any = [...products];
+    updatedProducts[index][field] = value;
+
+    if (field === "category") {
+      updatedProducts[index].product = ""; // reset product
+      updatedProducts[index].id = ""; // reset id
+
+      // If products not already cached
+      if (!categoryProducts[value]) {
+        try {
+          const res: any = await triggerGetProducts({
+            categoryId: value,
+          }).unwrap();
+
+          setCategoryProducts((prev) => ({
+            ...prev,
+            [value]: res.data,
+          }));
+        } catch (error) {
+          console.log("Failed to fetch products", error);
+        }
+      }
+    }
+
+    if (field === "product") {
+      updatedProducts[index].id = value; // store product._id as id
+    }
+
+    setProducts(updatedProducts);
+  };
+  const addProduct = () => {
+    setProducts([
+      ...products,
+      { id: "", category: "", product: "", quantity: "" },
+    ]);
+  };
+  const removeProduct = (index: number) => {
+    const updatedProducts = products.filter((_, i) => i !== index);
+    setProducts(updatedProducts);
+  };
+
+  const isEnrichmentCurrentProductFilled = (() => {
+    const last = products[products.length - 1];
+    if (!last) return false;
+    const hasCategory = Boolean(last.category?.toString().trim());
+    const hasProduct = Boolean(last.product?.toString().trim());
+    const q = Number(last.quantity);
+    const hasValidQuantity = !isNaN(q) && q > 0;
+    return hasCategory && hasProduct && hasValidQuantity;
+  })();
+
+  const handleApplyCoupon = async () => {
+    const code = coupon?.toString().trim();
+    if (!code) {
+      swal("Error", "Please enter a coupon code", "error");
+      return;
+    }
+    try {
+      const res: any = await checkCoupon({
+        code,
+        amount: enrichmentSubtotal.toFixed(2),
+      }).unwrap();
+      if (res?.status && res?.data) {
+        const amount = Number(res.data.amount) || 0;
+        const discountedAmount = Number(res.data.discountedAmount) ?? amount;
+        const discountAmount = Math.max(0, amount - discountedAmount);
+        setAppliedCoupon({ code, discountAmount });
+      } else {
+        swal("Error", res?.message || "Invalid coupon code", "error");
+      }
+    } catch (err: any) {
+      const message =
+        err?.data?.message || err?.message || "Invalid or expired coupon";
+      swal("Error", message, "error");
+    }
+  };
+
+  const handleSubmitQuote = async () => {
+    const validate = () => {
+      if (!orgName || !orgName.toString().trim())
+        return "Organization Name is required";
+
+      if (serviceType === "lms") {
+        if (!email || !email.toString().trim()) return "Email is required";
+        // simple email regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email))
+          return "Please enter a valid email address";
+        if (!address || !address.toString().trim())
+          return "Address is required";
+        if (!subscriptionType) return "Subscription type is required";
+        if (!lmsCourses.length) return "At least one LMS course is required";
+        for (const row of lmsCourses) {
+          if (!row.courseType) return "Course type is required for each LMS row";
+          const kitsNum = Number(row.noOfKits);
+          const webNum = Number(row.webSubscriptions);
+          if (isNaN(kitsNum) || kitsNum <= 0)
+            return "Number of kits must be greater than 0 for each course";
+          if (isNaN(webNum) || webNum <= 0)
+            return "Interactive curriculum quantity must be greater than 0 for each course";
+        }
+      }
+
+      // if (serviceType === "write_to_read") {
+      //   if (subscriptions === null || subscriptions === undefined || Number(subscriptions) <= 0)
+      //     return "Number of Subscriptions must be greater than 0";
+      //   if (batchStudents === null || batchStudents === undefined || Number(batchStudents) <= 0)
+      //     return "Number of Students in Batch must be greater than 0";
+      // }
+
+      if (serviceType === "enrichment_store") {
+        if (!products || products.length === 0) return "At least one product is required";
+        if (!country || !country.toString().trim()) return "Country is required";
+        if (!city || !city.toString().trim()) return "City is required";
+        if (!stateVal || !stateVal.toString().trim()) return "State is required";
+        if (!streetAddress || !streetAddress.toString().trim())
+          return "Street Address is required";
+        if (!zip || !zip.toString().trim()) return "Zip Code is required";
+      }
+
+      return null;
+    };
+
+    const validationError = validate();
+    if (validationError) {
+      swal("Error", validationError, "error");
+      return;
+    }
+
+    let data: any = {
+      serviceType,
+      organizationName: orgName,
+    };
+
+    if (serviceType === "lms") {
+      data = {
+        ...data,
+        email,
+        address,
+        subscriptionType,
+        lmsCourses: lmsCourses.map((row) => ({
+          courseType: row.courseType,
+          subscriptionType,
+          noOfKits: row.noOfKits,
+          webSubscriptions: row.webSubscriptions,
+        })),
+      };
+    } else if (serviceType === "write_to_read") {
+      data = {
+        ...data,
+        bookPrinting,
+        subscriptions: Number(subscriptions),
+        batchStudents: Number(batchStudents),
+      };
+    } else if (serviceType === "enrichment_store") {
+      // map products to expected payload (product id and quantity)
+      data = {
+        ...data,
+        products: products.map((p: any) => ({
+          product: p.id,
+          quantity: Number(p.quantity),
+        })),
+        city,
+        state: stateVal,
+        country,
+        streetAddress,
+        zipCode: zip,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+      };
+    }
+
+    try {
+      const res: any = await requestQuote({
+        data,
+      }).unwrap();
+      if (res?.status) {
+        setSubmitOpen(true);
+      } else {
+        const message =
+          res?.data?.error?.message ||
+          res?.error?.message ||
+          "Something went wrong";
+        swal("Error", message, "error");
+      }
+    } catch (error: any) {
+      console.error("Error updating business status:", error);
+      let message = error?.data?.message || error?.message;
+      if (message) swal("Error", message, "error");
+    }
+  };
+
+  const resetFormFields = () => {
+    if (serviceType === "lms") {
+      setOrgName("");
+      setEmail("");
+      setAddress("");
+      setSubscriptionType("monthly");
+      setLmsCourses([makeLmsCourseItem()]);
+      setLmsKitPriceMap({});
+    } else if (serviceType === "write_to_read") {
+      setBookPrinting("Yes");
+      setSubscriptions(0);
+      setBatchStudents(0);
+    } else if (serviceType === "enrichment_store") {
+      setOrgName("");
+      setProducts([{ id: "", category: "", product: "", quantity: "" }]);
+      setCity("");
+      setStateVal("");
+      setCountry("");
+      setStreetAddress("");
+      setZip("");
+      setCoupon("");
+      setAppliedCoupon(null);
+    }
+  };
 
   return (
     <DashboardWithSidebarLayout>
@@ -58,59 +464,181 @@ export default function RequestQuotation() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="md:col-span-2">
               <div className="mb-3">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Service Type *</label>
-                <select className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={serviceType} onChange={(e) => setServiceType(e.target.value)}>
-                  <option value="LMS">Learning Management System</option>
-                  <option value="WRITE">Write to Read</option>
-                  <option value="STORE">Enrichment Store Products</option>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Service Type *
+                </label>
+                <select
+                  className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value)}
+                >
+                  {/* <option value="lms">Learning Management System</option> */}
+                  <option value="lms">Workforce Readiness Courses</option>
+                  <option value="write_to_read">Write to Read</option>
+                  <option value="enrichment_store">
+                    Enrichment Store Products
+                  </option>
                 </select>
               </div>
 
               {/* Conditional fields */}
-              {serviceType === "LMS" && (
+              {serviceType === "lms" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Organization Name *</label>
-                    <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="Enter Name" />
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Organization Name *
+                    </label>
+                    <Input
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="Enter Name"
+                    />
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Email *</label>
-                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter Email" />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Email *
+                      </label>
+                      <Input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter Email"
+                      />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Address *</label>
-                      <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter Address" />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Address *
+                      </label>
+                      <Input
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter Address"
+                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="space-y-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Number of kits *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={kits} onChange={(e) => setKits(Number(e.target.value))} min={0} />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Subscription Type * (applies to all selected courses)
+                      </label>
+                      <select
+                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        value={subscriptionType}
+                        onChange={(e) => setSubscriptionType(e.target.value)}
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Number of Students *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={students} onChange={(e) => setStudents(Number(e.target.value))} min={0} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Web Subscriptions *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={webSubs} onChange={(e) => setWebSubs(Number(e.target.value))} min={0} />
-                    </div>
+
+                    {lmsCourses.map((row, idx) => (
+                      <div
+                        key={row.key}
+                        className="rounded-md border border-border/50 p-4 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold text-muted-foreground">
+                            Course {idx + 1}
+                          </div>
+                          {lmsCourses.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs"
+                              onClick={() => removeLmsCourseItem(row.key)}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Course Type *
+                            </label>
+                            <select
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.courseType}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "courseType",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              {availableLmsCourses.map((course) => (
+                                <option key={course} value={course}>
+                                  {course}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Interactive Digital Learning Curriculum *
+                            </label>
+                            <input
+                              type="number"
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.webSubscriptions}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "webSubscriptions",
+                                  e.target.value
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Number of kits *
+                            </label>
+                            <input
+                              type="number"
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.noOfKits}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "noOfKits",
+                                  e.target.value
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" onClick={addLmsCourseItem}>
+                      Add Course
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {serviceType === "WRITE" && (
+              {serviceType === "write_to_read" && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Organization Name *</label>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Organization Name *
+                      </label>
                       <Input placeholder="Enter Name" />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Book Printing Requests *</label>
-                      <select className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={bookPrinting} onChange={(e) => setBookPrinting(e.target.value)}>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Book Printing Requests *
+                      </label>
+                      <select
+                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        value={bookPrinting}
+                        onChange={(e) => setBookPrinting(e.target.value)}
+                      >
                         <option>Yes</option>
                         <option>No</option>
                       </select>
@@ -119,57 +647,251 @@ export default function RequestQuotation() {
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Number of Subscriptions *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={subscriptions} onChange={(e) => setSubscriptions(Number(e.target.value))} min={0} />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Number of Subscriptions *
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        value={subscriptions}
+                        onChange={(e) =>
+                          setSubscriptions(Number(e.target.value))
+                        }
+                        min={0}
+                      />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Number of Students in Batch *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={batchStudents} onChange={(e) => setBatchStudents(Number(e.target.value))} min={0} />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Number of Students in Batch *
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        value={batchStudents}
+                        onChange={(e) =>
+                          setBatchStudents(Number(e.target.value))
+                        }
+                        min={0}
+                      />
                     </div>
                   </div>
                 </div>
               )}
 
-              {serviceType === "STORE" && (
+              {serviceType === "enrichment_store" && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Product Category *</label>
-                      <select className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={productCategory} onChange={(e) => setProductCategory(e.target.value)}>
-                        <option value="">Category</option>
-                        <option>Product 1</option>
-                        <option>Product 2</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Quantity *</label>
-                      <input type="number" className="w-full rounded-md border border-border/60 bg-background p-2 text-sm" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} min={0} />
-                    </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Organization Name *
+                    </label>
+                    <Input
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="Enter Name"
+                    />
                   </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-1">
+                    <div className="space-y-4">
+                      {products.map((item, index) => (
+                        <div
+                          key={index}
+                          className="rounded-md border border-border/50 p-4 space-y-3"
+                        >
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                            {/* Category */}
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                Category *
+                              </label>
+                              <select
+                                className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                                value={item.category}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    index,
+                                    "category",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <option value="">Category</option>
+                                {Array.isArray(categoriesData?.data) &&
+                                  categoriesData.data
+                                    .filter(
+                                      (cat: any) =>
+                                        cat.title !==
+                                        "Interactive STEM Kits"
+                                    )
+                                    .map((cat: any) => (
+                                      <option key={cat._id} value={cat._id}>
+                                        {cat.title}
+                                      </option>
+                                    ))}
+                              </select>
+                            </div>
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">City *</label>
-                      <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Enter City" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">State *</label>
-                      <Input value={stateVal} onChange={(e) => setStateVal(e.target.value)} placeholder="Enter State" />
+                            {/* Product */}
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                Product *
+                              </label>
+                              <select
+                                className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                                value={item.product}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    index,
+                                    "product",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <option value="">Select Product</option>
+
+                                {item?.category &&
+                                  categoryProducts[item.category]?.map(
+                                    (prod: any) => (
+                                      <option key={prod._id} value={prod._id}>
+                                        {prod.name}
+                                      </option>
+                                    )
+                                  )}
+                              </select>
+                            </div>
+
+                            {/* Quantity */}
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                Quantity *
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    index,
+                                    "quantity",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          {/* Delete Button */}
+                          {products.length > 1 && (
+                            <div className="text-right">
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(index)}
+                                className="text-sm text-red-500 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Add Button - disabled until current row has category, product, and quantity filled */}
+                      <button
+                        type="button"
+                        onClick={addProduct}
+                        disabled={!isEnrichmentCurrentProductFilled}
+                        className="rounded-md bg-primary px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        + Add Another Product
+                      </button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Country *</label>
-                      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Enter Country" />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Country *
+                      </label>
+                      <Input
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        placeholder="Enter Country"
+                      />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Zip Code *</label>
-                      <Input value={zip} onChange={(e) => setZip(e.target.value)} placeholder="Enter Zip Code" />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        City *
+                      </label>
+                      <Input
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="Enter City"
+                      />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Coupon / Discount Code (optional)</label>
-                      <Input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Enter Coupon / Discount Code" />
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        State *
+                      </label>
+                      <Input
+                        value={stateVal}
+                        onChange={(e) => setStateVal(e.target.value)}
+                        placeholder="Enter State"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Street Address *
+                      </label>
+                      <Input
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        placeholder="Enter Street Address"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Zip Code *
+                      </label>
+                      <Input
+                        value={zip}
+                        onChange={(e) => setZip(e.target.value)}
+                        placeholder="Enter Zip Code"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Coupon / Discount Code (optional)
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={coupon}
+                          onChange={(e) => {
+                            setCoupon(e.target.value);
+                            setAppliedCoupon(null);
+                          }}
+                          placeholder="Enter Coupon / Discount Code"
+                          className="flex-1"
+                        />
+                        {coupon?.toString().trim() && isEnrichmentCurrentProductFilled && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleApplyCoupon}
+                            disabled={checkingCoupon}
+                          >
+                            {checkingCoupon ? "Applying..." : "Apply"}
+                          </Button>
+                        )}
+                      </div>
+                      {appliedCoupon && (
+                        <span className="text-xs text-emerald-600">
+                          Coupon {appliedCoupon.code} applied (−$
+                          {appliedCoupon.discountAmount.toFixed(2)})
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -181,29 +903,88 @@ export default function RequestQuotation() {
           </div>
 
           {/* Payment block below fields */}
-          <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
-            <div className="text-sm font-semibold">Live Price Calculator</div>
-            <div className="mt-2 text-sm text-muted-foreground">Subtotal: ${subtotal.toFixed(2)}</div>
-            <div className="text-sm text-muted-foreground mt-1">Tax (8%): ${tax.toFixed(2)}</div>
-            <div className="mt-3 text-lg font-semibold">Estimated Total: ${total.toFixed(2)}</div>
-          </div>
+          {serviceType === "lms" && (
+            <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+              <div className="text-sm font-semibold">Live Price Calculator</div>
+              <div className="mt-2 space-y-1">
+                {lmsLineItems.map((item) => (
+                  <div key={item.key} className="text-sm text-muted-foreground">
+                    {item.courseType}: {lmsUnitLabel} Subscriptions ({item.webQty} x $
+                    {lmsUnitPrice.toFixed(2)}) + Kits ({item.kitQty} x $
+                    {item.kitUnitPrice.toFixed(2)}) = ${item.lineTotal.toFixed(2)}
+                  </div>
+                ))}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Tax ({taxPercent}%): ${lmsTax.toFixed(2)}
+              </div>
+              <div className="mt-3 text-lg font-semibold">
+                Estimated Total: ${lmsTotal.toFixed(2)}
+              </div>
+            </div>
+          )}
+
+          {serviceType === "enrichment_store" && (
+            <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+              <div className="text-sm font-semibold">Live Price Calculator</div>
+              {enrichmentLineItems.length > 0 ? (
+                <>
+                  <div className="mt-2 space-y-1">
+                    {enrichmentLineItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="text-sm text-muted-foreground"
+                      >
+                        {item.name}: ({item.quantity} x $
+                        {item.unitPrice.toFixed(2)}) = $
+                        {item.lineTotal.toFixed(2)}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Subtotal: ${enrichmentSubtotal.toFixed(2)}
+                  </div>
+                  {appliedCoupon && enrichmentDiscount > 0 && (
+                    <div className="text-sm text-emerald-600">
+                      Discount ({appliedCoupon.code}): −$
+                      {enrichmentDiscount.toFixed(2)}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Tax ({taxPercent}%): ${enrichmentTax.toFixed(2)}
+                  </div>
+                  <div className="mt-3 text-lg font-semibold">
+                    Estimated Total: ${enrichmentTotal.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Add products with category, product, and quantity to see
+                  estimated price.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 flex items-center gap-3">
-            <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-            <Button
-              variant="brand"
-              onClick={() => {
-                // show confirmation modal on submit
-                setSubmitOpen(true);
-              }}
-            >
-              Submit & Download
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Cancel
+            </Button>
+            <Button variant="brand" onClick={handleSubmitQuote}>
+              {/* Submit & Download */}
+              Submit
             </Button>
           </div>
         </Card>
 
         {/* Submission confirmation dialog */}
-        <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
+        <Dialog
+          open={submitOpen}
+          onOpenChange={(open) => {
+            setSubmitOpen(open);
+            if (!open) resetFormFields(); // Reset fields when modal closes
+          }}
+        >
           <DialogContent>
             <div className="mx-auto w-[420px]">
               <div className="flex flex-col items-center gap-4">
@@ -211,15 +992,21 @@ export default function RequestQuotation() {
                   <Check className="h-8 w-8 text-green-500" />
                 </div>
                 <DialogTitle>System Alert</DialogTitle>
-                <DialogDescription>Your quote request has been submitted!</DialogDescription>
+                <DialogDescription>
+                  Your quote request has been submitted!
+                </DialogDescription>
 
                 <div className="w-full text-sm text-muted-foreground">
                   <div className="flex items-center gap-2 py-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
                     <div className="text-sm">Status</div>
-                    <div className="ml-2 text-amber-600 font-medium">Pending</div>
+                    <div className="ml-2 text-amber-600 font-medium">
+                      Pending
+                    </div>
                   </div>
-                  <div className="mt-2 text-sm text-red-600">You will be notified once the admin reviews it.</div>
+                  <div className="mt-2 text-sm text-red-600">
+                    You will be notified once the admin reviews it.
+                  </div>
                 </div>
 
                 <div className="w-full">
@@ -230,7 +1017,8 @@ export default function RequestQuotation() {
                       navigate("/quotes");
                     }}
                   >
-                    Download Quote
+                    {/* Download Quote */}
+                    View Quotes
                   </Button>
                 </div>
               </div>

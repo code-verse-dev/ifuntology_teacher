@@ -1,12 +1,28 @@
-import { Bell, ChevronDown, LogOut, Menu, Moon, Settings, Sun, User, ShoppingCart } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  Menu,
+  Moon,
+  Settings,
+  Sun,
+  User,
+  ShoppingCart,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from "@/components/ui/sheet";
-import { useCart } from "@/context/cart.store";
-import { ImageUrl } from "@/utils/Functions";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { buildCartItems, ImageUrl } from "@/utils/Functions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSidebarOptional } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -16,22 +32,47 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLogoutMutation } from "@/redux/services/apiSlices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { removeUser } from "@/redux/services/Slices/userSlice";
+import { RootState } from "@/redux/store";
+import {
+  useGetCartQuery,
+  useClearCartMutation,
+  useCreateCartMutation,
+} from "@/redux/services/apiSlices/cartSlice";
+import { UPLOADS_URL } from "@/constants/api";
+import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
+import socket from "@/config/socket";
+import { useEffect } from "react";
 
-export default function Topbar({
-  userName = "Tom Felix",
-  role = "Teacher",
-}: {
-  userName?: string;
-  role?: string;
-}) {
+export default function Topbar() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const sidebar = useSidebarOptional();
+  const [logout] = useLogoutMutation();
+  const user = useSelector((state: RootState) => state.user.userData);
+  const dispatch = useDispatch();
 
-  const onLogout = () => {
-    toast.message("Logged out (demo)");
+  const { data: notificationsData, refetch } = useGetAllNotificationsQuery({ isRead: false, limit: 3 });
+  const unreadCount: number = notificationsData?.data?.unreadCount ?? 0;
+  const topNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 3) ?? [];
+
+  const onLogout = async () => {
+    const res = await logout().unwrap();
+    dispatch(removeUser());
     navigate("/login", { replace: true });
   };
+  
+  useEffect(() => {
+    socket.on("notification", (data) => {
+      refetch();
+    });
+    return () => {
+      socket.off("notification");
+    };
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background">
@@ -64,7 +105,7 @@ export default function Topbar({
           {/* Cart — circular white/background with thin border + red badge */}
           <Sheet>
             <SheetTrigger asChild>
-              <div className="relative">
+              <div className="relative cursor-pointer">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -96,25 +137,43 @@ export default function Topbar({
                 >
                   <Bell className="h-4 w-4" />
                 </Button>
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500" aria-hidden />
+                <span
+                  className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500"
+                  aria-hidden
+                />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white" aria-hidden>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </div>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end" className="z-50 w-80 bg-popover p-2 shadow-elev">
-              <DropdownMenuLabel className="px-2">Notifications</DropdownMenuLabel>
-              <div className="px-2 pb-2 text-xs text-muted-foreground">Latest updates and reminders.</div>
+              <div className="flex items-center justify-between px-2 pb-1">
+                <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] font-bold text-red-500">{unreadCount} unread</span>
+                )}
+              </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                <div className="text-sm font-semibold">New booking request</div>
-                <div className="text-xs text-muted-foreground">A student requested a session for next week.</div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 rounded-md py-2">
-                <div className="text-sm font-semibold">Calendar updated</div>
-                <div className="text-xs text-muted-foreground">Availability synced successfully.</div>
-              </DropdownMenuItem>
+              {topNotifs.length === 0 ? (
+                <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No new notifications.
+                </div>
+              ) : (
+                topNotifs.map((n) => (
+                  <DropdownMenuItem key={n._id} className="flex flex-col items-start gap-1 rounded-md py-2 cursor-default focus:bg-accent/50">
+                    <div className="text-sm font-semibold leading-snug">{n.title}</div>
+                    <div className="text-xs text-muted-foreground leading-snug line-clamp-2">{n.content}</div>
+                    <div className="text-[10px] text-muted-foreground/60">{new Date(n.createdAt).toLocaleString()}</div>
+                  </DropdownMenuItem>
+                ))
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="rounded-md">
-                <Link to="/notifications" className="w-full">
-                  View all
+                <Link to="/notifications" className="w-full text-center text-xs font-semibold text-orange-500 hover:text-orange-600 cursor-pointer">
+                  View all notifications
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -129,20 +188,30 @@ export default function Topbar({
                 aria-label="Profile menu"
               >
                 <Avatar className="h-9 w-9 border border-border">
-                  <AvatarFallback className="bg-muted text-foreground text-sm">TF</AvatarFallback>
+                  <AvatarImage src={
+                    user?.image ? `${UPLOADS_URL}${user.image}` : undefined
+                  } />
+                  <AvatarFallback className="bg-muted text-foreground text-sm">{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left sm:block">
-                  <div className="text-sm font-semibold leading-none text-foreground">Hi, {userName}!</div>
-                  <div className="mt-0.5 text-xs leading-none text-primary">{role}</div>
+                  <div className="text-sm font-semibold leading-none text-foreground">
+                    Hi, {user?.firstName}!
+                  </div>
+                  <div className="mt-0.5 text-xs leading-none text-primary">
+                    {user?.role[0]?.toUpperCase() + user?.role?.slice(1)}
+                  </div>
                 </div>
                 <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-50 min-w-56 bg-popover shadow-elev">
+            <DropdownMenuContent
+              align="end"
+              className="z-50 min-w-56 bg-popover shadow-elev"
+            >
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/my-profile" className="flex items-center gap-2">
+                <Link to="/my-profile" className="flex items-center gap-2 cursor-pointer">
                   <User className="h-4 w-4" />
                   Profile
                 </Link>
@@ -152,7 +221,10 @@ export default function Topbar({
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={onLogout} className="flex items-center gap-2">
+              <DropdownMenuItem
+                onSelect={onLogout}
+                className="flex items-center gap-2"
+              >
                 <LogOut className="h-4 w-4" />
                 Logout
               </DropdownMenuItem>
@@ -176,41 +248,98 @@ export default function Topbar({
 }
 
 function CartBadge() {
-  const { totalCount } = useCart();
-  if (!totalCount) return null;
+  // const { totalCount } = useCart();
+  const { data: cartData, isLoading } = useGetCartQuery();
+  if (isLoading || !cartData?.data?.items?.length) return null;
+
+  // Sum all quantities
+  const totalQty = cartData.data.items.reduce(
+    (sum: number, item: any) => sum + item.quantity,
+    0
+  );
   return (
     <div className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white">
-      {totalCount}
+      {totalQty}
     </div>
   );
 }
 
 function CartSheet() {
-  const { items, totalAmount, updateQty, removeItem, clear } = useCart();
+  const [createCart, { isLoading: updatingCart }] = useCreateCartMutation();
   const navigate = useNavigate();
+  const { data: cartData, isLoading } = useGetCartQuery();
+  const items = cartData?.data?.items || [];
+
+  const [clearCartMutation, { isLoading: clearingCart }] =
+    useClearCartMutation();
+
+  const updateQty = async (
+    productId: string,
+    action: "increment" | "decrement"
+  ) => {
+    const updatedItems = buildCartItems(productId, cartData, action);
+    try {
+      await createCart({ items: updatedItems }).unwrap();
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      await clearCartMutation().unwrap();
+      toast.success("Cart cleared successfully");
+    } catch (err: any) {
+      console.error("Failed to clear cart:", err);
+    }
+  };
 
   return (
     // make sure the sheet content can shrink and the inner list can scroll
     <div className="mt-4 flex h-full flex-col min-h-0">
       <div className="flex-1 space-y-3 overflow-auto min-h-0 pb-6">
         {items.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Your cart is empty.</div>
+          <div className="text-sm text-muted-foreground">
+            Your cart is empty.
+          </div>
         ) : (
-          items.map((it) => (
-            <div key={it.id} className="flex items-center gap-3 rounded-md border border-border/60 p-3">
-              <img src={ImageUrl(it.image ?? "product-1.png")} alt={it.title} className="h-14 w-14 rounded-md object-cover" />
+          items.map((it: any) => (
+            <div
+              key={it.product._id}
+              className="flex items-center gap-3 rounded-md border border-border/60 p-3"
+            >
+              <img
+                src={UPLOADS_URL + it.product.image}
+                alt={it.product.name}
+                className="h-14 w-14 rounded-md object-cover"
+              />
               <div className="flex-1">
-                <div className="font-medium">{it.title}</div>
-                <div className="text-sm text-muted-foreground">{it.qty} × ${it.price.toFixed(2)}</div>
+                <div className="font-medium">{it.product.name}</div>
+                <div className="text-sm text-muted-foreground">
+                  {it?.quantity} × ${it?.product?.price.toFixed(2)}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <div className="text-sm font-semibold">${(it.qty * it.price).toFixed(2)}</div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => updateQty(it.id, it.qty - 1)}>-</Button>
-                  <div className="text-sm">{it.qty}</div>
-                  <Button size="sm" variant="ghost" onClick={() => updateQty(it.id, it.qty + 1)}>+</Button>
+                <div className="text-sm font-semibold">
+                  ${it.total.toFixed(2)}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => removeItem(it.id)}>Remove</Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => updateQty(it.product._id, "decrement")}
+                  >
+                    -
+                  </Button>
+                  <div className="text-sm">{it.quantity}</div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => updateQty(it.product._id, "increment")}
+                  >
+                    +
+                  </Button>
+                </div>
               </div>
             </div>
           ))
@@ -219,13 +348,26 @@ function CartSheet() {
       <div className="sticky bottom-0 bg-background border-t border-border/60 p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">Total</div>
-          <div className="text-lg font-semibold">${totalAmount.toFixed(2)}</div>
+          {/* <div className="text-lg font-semibold">${totalAmount.toFixed(2)}</div> */}
+          <div className="text-lg font-semibold">${cartData?.data?.total}</div>
         </div>
         <div className="flex gap-2">
           <SheetClose asChild>
-            <Button className="flex-1" variant="accent" onClick={() => navigate("/enrichment-store/checkout")}>Checkout</Button>
+            <Button
+              className="flex-1"
+              variant="accent"
+              onClick={() => navigate("/enrichment-store/checkout")}
+            >
+              Checkout
+            </Button>
           </SheetClose>
-          <Button variant="outline" onClick={() => clear()}>Clear</Button>
+          <Button
+            variant="outline"
+            onClick={clearCart}
+            disabled={updatingCart || isLoading || clearingCart}
+          >
+            Clear Cart
+          </Button>
         </div>
       </div>
     </div>

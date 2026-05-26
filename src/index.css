@@ -235,3 +235,22 @@ All colors MUST be HSL.
     box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -2px rgba(0, 0, 0, 0.25);
   }
 }
+
+.ant-pagination li{
+  background-color: #fff;
+}
+.ant-pagination li a{
+  color: #000 !important;
+}
+
+/* Hide arrows in Chrome, Safari, Edge */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide arrows in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

@@ -5,7 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { GraduationCap, Check } from "lucide-react";
+import { GraduationCap, Check, Loader2 } from "lucide-react";
+import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
+import { useGetCoursesQuery } from "@/redux/services/apiSlices/courseSlice";
+import { useGetProductByCourseTypeQuery } from "@/redux/services/apiSlices/productSlice";
+import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+import { useNavigate } from "react-router-dom";
+import { useUtilizePurchaseOrderMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import { toast } from "sonner";
 
 type SubscriptionPlan = {
     id: string;
@@ -25,19 +32,9 @@ type SubscriptionPlan = {
     };
 };
 
-const plans: SubscriptionPlan[] = [
+const PLANS_THEMES: { name: string; theme: SubscriptionPlan["theme"] }[] = [
     {
-        id: "funtology",
         name: "Funtology",
-        price: "$299.99",
-        priceValue: 299.99,
-        duration: "/ 12 months",
-        features: [
-            "Web-based access",
-            "Interactive lessons",
-            "Quizzes & Tests",
-            "Student progress tracking",
-        ],
         theme: {
             bg: "bg-pink-50",
             border: "border-pink-300",
@@ -49,17 +46,7 @@ const plans: SubscriptionPlan[] = [
         },
     },
     {
-        id: "barbertology",
         name: "Barbertology",
-        price: "$299.99",
-        priceValue: 299.99,
-        duration: "/ 12 months",
-        features: [
-            "Web-based access",
-            "Interactive lessons",
-            "Quizzes & Tests",
-            "Student progress tracking",
-        ],
         theme: {
             bg: "bg-[#FDF8E8]",
             border: "border-[#D4B36A]",
@@ -71,17 +58,7 @@ const plans: SubscriptionPlan[] = [
         },
     },
     {
-        id: "nailtology",
         name: "Nailtology",
-        price: "$299.99",
-        priceValue: 299.99,
-        duration: "/ 12 months",
-        features: [
-            "Web-based access",
-            "Interactive lessons",
-            "Quizzes & Tests",
-            "Student progress tracking",
-        ],
         theme: {
             bg: "bg-teal-50",
             border: "border-teal-300",
@@ -93,17 +70,7 @@ const plans: SubscriptionPlan[] = [
         },
     },
     {
-        id: "skintology",
         name: "Skintology",
-        price: "$299.99",
-        priceValue: 299.99,
-        duration: "/ 12 months",
-        features: [
-            "Web-based access",
-            "Interactive lessons",
-            "Quizzes & Tests",
-            "Student progress tracking",
-        ],
         theme: {
             bg: "bg-green-50",
             border: "border-green-300",
@@ -114,17 +81,237 @@ const plans: SubscriptionPlan[] = [
             checkColor: "text-green-500",
         },
     },
+    {
+        name: "iTeach iFuntology",
+        theme: {
+            bg: "bg-purple-50",
+            border: "border-purple-300",
+            iconBg: "bg-purple-500",
+            iconColor: "text-white",
+            titleColor: "text-foreground",
+            priceColor: "text-purple-600",
+            checkColor: "text-purple-500",
+        },
+    },
 ];
 
+const defaultTheme: SubscriptionPlan["theme"] = {
+    bg: "bg-slate-50",
+    border: "border-slate-300",
+    iconBg: "bg-slate-500",
+    iconColor: "text-white",
+    titleColor: "text-foreground",
+    priceColor: "text-slate-600",
+    checkColor: "text-slate-500",
+};
+
+function getThemeForCourseType(courseType: string): SubscriptionPlan["theme"] {
+    const found = PLANS_THEMES.find(
+        (p) => p.name.toLowerCase() === (courseType ?? "").toLowerCase()
+    );
+    return found?.theme ?? defaultTheme;
+}
+
+const HARDCODED_DURATION = "/ 12 months";
+const HARDCODED_PRICE = "$299.99";
+const HARDCODED_PRICE_VALUE = 299.99;
+
+function CourseCard({
+    course,
+    monthlyFee,
+    taxPercent,
+    onSelect,
+    activeSubscriptionId,
+    onViewCourse,
+}: {
+    course: any;
+    monthlyFee: number;
+    taxPercent: number;
+    onSelect: (course: any) => void;
+    activeSubscriptionId: string | null;
+    onViewCourse: (subscriptionId: string) => void;
+}) {
+    const courseType = course?.courseType ?? "Funtology";
+    const { data: productByCourse } = useGetProductByCourseTypeQuery({
+        courseType,
+    });
+    const theme = getThemeForCourseType(courseType);
+    const features = Array.isArray(course?.features) ? course.features : [];
+    const kitPrice = Number(productByCourse?.data?.price) || 0;
+    const qty = 12;
+    const subtotal = qty * monthlyFee + qty * kitPrice;
+    const tax = subtotal * (taxPercent / 100);
+    const total = subtotal + tax;
+
+    return (
+        <Card
+            className={`relative overflow-hidden rounded-2xl border-2 p-8 shadow-sm ${theme.bg} ${theme.border}`}
+        >
+            <div className="flex flex-col h-full justify-between">
+                <div>
+                    <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-xl shadow-sm ${theme.iconBg} ${theme.iconColor}`}>
+                        <GraduationCap className="h-8 w-8" />
+                    </div>
+
+                    <h3 className="mb-2 text-2xl font-bold text-slate-900">
+                        {courseType}
+                    </h3>
+                    <div className="mb-6 flex items-baseline">
+                        <span className={`text-3xl font-bold ${theme.priceColor}`}>
+                            ${total.toFixed(2)}
+                        </span>
+                        <span className="ml-2 text-sm text-slate-600 font-medium">
+                            {HARDCODED_DURATION}
+                        </span>
+                    </div>
+
+                    <ul className="mb-8 space-y-3">
+                        {features.map((feature: string, i: number) => (
+                            <li key={i} className="flex items-center gap-3">
+                                <Check className={`h-5 w-5 ${theme.checkColor}`} />
+                                <span className="text-sm font-medium text-slate-700">{feature}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <Button
+                    className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-base shadow-lg"
+                    onClick={() =>
+                        activeSubscriptionId
+                            ? onViewCourse(activeSubscriptionId)
+                            : onSelect(course)
+                    }
+                >
+                    {activeSubscriptionId ? "View Course" : "Subscribe Now"}
+                </Button>
+            </div>
+        </Card>
+    );
+}
+
 export default function SubscribetoLMS() {
+    const navigate = useNavigate();
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
+    const [subscriptionType, setSubscriptionType] = useState<string>("MONTHLY");
+    const [isPODialogOpen, setIsPODialogOpen] = useState(false);
+    const [poNumber, setPoNumber] = useState("");
+    const [utilizePurchaseOrder, { isLoading: isUtilizingPO }] = useUtilizePurchaseOrderMutation();
+    const { data: settingData } = useGetAllSettingsQuery({});
+    const [monthlyFee, setMonthlyFee] = useState<number>(0);
+    const [yearlyFee, setYearlyFee] = useState<number>(0);
+    const [taxPercent, setTaxPercent] = useState<number>(0);
+    const { data: coursesResponse, isLoading: coursesLoading } = useGetCoursesQuery();
+    const { data: mySubscriptions } = useGetMySubscriptionsQuery({ status: "ACTIVE" });
+    const subscriptionsDocs = mySubscriptions?.data?.docs ?? [];
+    const activeSubscriptionByCourseType: Record<string, { _id: string }> = {};
+    subscriptionsDocs.forEach((sub: any) => {
+        const ct = sub?.courseType ?? sub?.course?.courseType;
+        if (ct) activeSubscriptionByCourseType[ct] = { _id: sub._id };
+    });
+
+    const courseList = Array.isArray(coursesResponse?.data)
+        ? [...coursesResponse.data].sort(
+              (a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+          )
+        : [];
+
+    // const courseTypeForPrice = selectedPlan?.name ?? "Funtology";
+    const [courseTypeForPrice, setCourseTypeForPrice] = useState("Funtology");
+    const { data: productByCourse } = useGetProductByCourseTypeQuery(
+        { courseType: courseTypeForPrice },
+        { skip: !selectedPlan }
+    );
+
+    useEffect(() => {
+        if (settingData && Array.isArray(settingData.data)) {
+            const taxSetting = settingData.data.find(
+                (item: any) => item.type === "tax"
+            );
+            if (
+                taxSetting &&
+                taxSetting.data &&
+                typeof taxSetting.data.percentage === "number"
+            ) {
+                setTaxPercent(taxSetting.data.percentage);
+            }
+            const lmsSetting = settingData.data.find(
+                (item: any) => item.type === "lms"
+            );
+            if (lmsSetting && lmsSetting.data) {
+                if (typeof lmsSetting.data.monthlySubscriptionFee === "number")
+                    setMonthlyFee(lmsSetting.data.monthlySubscriptionFee);
+                if (typeof lmsSetting.data.yearlySubscriptionFee === "number")
+                    setYearlyFee(lmsSetting.data.yearlySubscriptionFee);
+            }
+        }
+    }, [settingData]);
 
     useEffect(() => {
         document.title = "Subscribe to LMS • iFuntology Teacher";
     }, []);
 
-    const totalAmount = selectedPlan ? selectedPlan.priceValue * numStudents : 0;
+    // LMS price calc (same logic as requestQuotation when type is lms)
+    const lmsUnitPrice = subscriptionType === "YEARLY" ? yearlyFee : monthlyFee;
+    const lmsUnitLabel = subscriptionType === "YEARLY" ? "YEARLY" : "MONTHLY";
+    const lmsQty = Math.max(0, Number(numStudents) || 0);
+    const kitPrice = Number(productByCourse?.data?.price) || 0;
+    const lmsSubtotal = lmsQty * lmsUnitPrice + lmsQty * kitPrice;
+    const lmsTax = lmsSubtotal * (taxPercent / 100);
+    const lmsTotal = lmsSubtotal + lmsTax;
+
+    const handleSelectCourse = (course: any) => {
+        setSelectedPlan({
+            id: course._id,
+            name: course.courseType ?? "Course",
+            price: HARDCODED_PRICE,
+            priceValue: HARDCODED_PRICE_VALUE,
+            duration: HARDCODED_DURATION,
+            features: Array.isArray(course.features) ? course.features : [],
+            theme: getThemeForCourseType(course.courseType ?? ""),
+        });
+        setCourseTypeForPrice(course.courseType);
+    };
+    const handlePayWithCreditCard = () => {
+        navigate("/payment", {
+            state: {
+                total: lmsTotal,
+                subscriptionType: subscriptionType,
+                numberOfSeats: numStudents,
+                courseType: courseTypeForPrice,
+                type: "SUBSCRIPTION"
+            },
+        });
+    };
+
+    const handlePurchaseViaPO = async () => {
+        if (!poNumber.trim()) {
+            toast.error("Please enter a PO number.");
+            return;
+        }
+        try {
+            const res: any = await utilizePurchaseOrder({
+                serviceType: "lms",
+                poNumber: poNumber.trim(),
+                subscriptionType: subscriptionType.toLowerCase(),
+                courseType: courseTypeForPrice,
+                noOfStudents: numStudents,
+            }).unwrap();
+            if (res.status) {
+                toast.success(res.message ?? "Purchase order applied successfully.");
+                setIsPODialogOpen(false);
+                setSelectedPlan(null);
+                setPoNumber("");
+                navigate("/my-courses", { state: { from: "/subscribe-to-lms" } });
+            } else {
+                toast.error(res.message ?? "Failed to apply purchase order.");
+            }
+        } catch (error: any) {
+            toast.error(error?.data?.message ?? "Failed to apply purchase order.");
+        }
+    };
+
 
     return (
         <DashboardWithSidebarLayout>
@@ -133,52 +320,32 @@ export default function SubscribetoLMS() {
 
                 {/* Subscription Cards Grid */}
                 <div className="max-w-4xl">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {plans.map((plan) => (
-                            <Card
-                                key={plan.id}
-                                className={`relative overflow-hidden rounded-2xl border-2 p-8 shadow-sm ${plan.theme.bg} ${plan.theme.border}`}
-                            >
-                                <div className="flex flex-col h-full justify-between">
-                                    <div>
-                                        {/* Icon */}
-                                        <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-xl shadow-sm ${plan.theme.iconBg} ${plan.theme.iconColor}`}>
-                                            <GraduationCap className="h-8 w-8" />
-                                        </div>
-
-                                        {/* Title & Price */}
-                                        <h3 className="mb-2 text-2xl font-bold text-slate-900">{plan.name}</h3>
-                                        <div className="mb-6 flex items-baseline">
-                                            <span className={`text-3xl font-bold ${plan.theme.priceColor}`}>
-                                                {plan.price}
-                                            </span>
-                                            <span className="ml-2 text-sm text-slate-600 font-medium">
-                                                {plan.duration}
-                                            </span>
-                                        </div>
-
-                                        {/* Features */}
-                                        <ul className="mb-8 space-y-3">
-                                            {plan.features.map((feature, i) => (
-                                                <li key={i} className="flex items-center gap-3">
-                                                    <Check className={`h-5 w-5 ${plan.theme.checkColor}`} />
-                                                    <span className="text-sm font-medium text-slate-700">{feature}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    {/* Button */}
-                                    <Button
-                                        className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-base shadow-lg"
-                                        onClick={() => setSelectedPlan(plan)}
-                                    >
-                                        Subscribe Now
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                    {coursesLoading ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-4">
+                            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">Loading courses...</p>
+                        </div>
+                    ) : courseList.length === 0 ? (
+                        <div className="py-12 text-center text-muted-foreground">
+                            No courses available.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {courseList.map((course: any) => (
+                                <CourseCard
+                                    key={course._id}
+                                    course={course}
+                                    monthlyFee={monthlyFee}
+                                    taxPercent={taxPercent}
+                                    onSelect={handleSelectCourse}
+                                    activeSubscriptionId={
+                                        activeSubscriptionByCourseType[course?.courseType]?._id ?? null
+                                    }
+                                    onViewCourse={(id) => navigate(`/my-courses/${course?.courseType}`)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Subscription Dialog */}
@@ -192,6 +359,20 @@ export default function SubscribetoLMS() {
                         </DialogHeader>
 
                         <div className="p-6 pt-2 space-y-6">
+                            <div className="space-y-3">
+                                <Label className="text-sm font-medium">
+                                    Subscription Type <span className="text-red-500">*</span>
+                                </Label>
+                                <select
+                                    className="w-full h-12 rounded-xl border border-border/60 bg-white dark:bg-secondary/50 px-3 text-sm"
+                                    value={subscriptionType}
+                                    onChange={(e) => setSubscriptionType(e.target.value)}
+                                >
+                                    <option value="MONTHLY">Monthly</option>
+                                    <option value="YEARLY">Yearly</option>
+                                </select>
+                            </div>
+
                             <div className="space-y-3">
                                 <Label htmlFor="students" className="text-sm font-medium">
                                     Number of Students <span className="text-red-500">*</span>
@@ -209,31 +390,44 @@ export default function SubscribetoLMS() {
                                 </p>
                             </div>
 
-                            {/* Calculation Summary Box */}
+                            {/* Calculation Summary Box (same logic as requestQuotation LMS) */}
                             <div className="rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50/50 dark:bg-orange-950/20 p-4 space-y-2 text-sm">
                                 <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                                    <span>Subscription:</span>
-                                    <span className="font-medium">${selectedPlan?.priceValue.toFixed(2)}</span>
+                                    <span>{lmsUnitLabel} Subscriptions ({lmsQty} × ${lmsUnitPrice.toFixed(2)}):</span>
+                                    <span className="font-medium">${(lmsQty * lmsUnitPrice).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                                    <span>Students:</span>
-                                    <span className="font-medium">{numStudents}</span>
+                                    <span>{selectedPlan?.name} Kits ({lmsQty} × ${kitPrice.toFixed(2)}):</span>
+                                    <span className="font-medium">${(lmsQty * kitPrice).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                                    <span>Subtotal:</span>
+                                    <span className="font-medium">${lmsSubtotal.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                                    <span>Tax ({taxPercent}%):</span>
+                                    <span className="font-medium">${lmsTax.toFixed(2)}</span>
                                 </div>
                                 <div className="my-2 border-t border-orange-200/60 dark:border-orange-500/30" />
                                 <div className="flex justify-between font-bold text-orange-600 dark:text-orange-400 text-base">
                                     <span>Total</span>
-                                    <span>${totalAmount.toFixed(2)}</span>
+                                    <span>${lmsTotal.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
 
                         <DialogFooter className="p-6 pt-0 gap-3 sm:gap-4 flex-col sm:flex-row">
-                            <Button variant="outline" className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground" onClick={() => setSelectedPlan(null)}>
-                                Request via PO
+                            <Button
+                                variant="outline"
+                                className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground"
+                                onClick={() => { setSelectedPlan(null); setIsPODialogOpen(true); }}
+                            >
+                                Purchase via PO
                             </Button>
                             <Button
                                 variant="gradient-green"
                                 className="w-full rounded-full"
+                                onClick={handlePayWithCreditCard}
                             >
                                 Pay with Credit Card
                             </Button>
@@ -241,6 +435,50 @@ export default function SubscribetoLMS() {
                     </DialogContent>
                 </Dialog>
             </section>
+
+            {/* Purchase via PO Dialog */}
+            <Dialog open={isPODialogOpen} onOpenChange={(open) => { setIsPODialogOpen(open); if (!open) setPoNumber(""); }}>
+                <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden bg-white/95 dark:bg-popover/95 backdrop-blur-xl">
+                    <DialogHeader className="p-6 pb-2">
+                        <DialogTitle className="text-xl font-bold">Purchase via PO</DialogTitle>
+                        <DialogDescription>
+                            Enter your Purchase Order number to complete the subscription.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 pt-2 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">
+                                PO Number <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                                placeholder="Enter PO number"
+                                value={poNumber}
+                                onChange={(e) => setPoNumber(e.target.value)}
+                                className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"
+                                disabled={isUtilizingPO}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="p-6 pt-0 gap-3 sm:gap-4 flex-col sm:flex-row">
+                        <Button
+                            variant="outline"
+                            className="w-full rounded-full border-slate-300 dark:border-border dark:text-foreground"
+                            onClick={() => { setIsPODialogOpen(false); setPoNumber(""); }}
+                            disabled={isUtilizingPO}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="gradient-green"
+                            className="w-full rounded-full"
+                            onClick={handlePurchaseViaPO}
+                            disabled={isUtilizingPO}
+                        >
+                            {isUtilizingPO ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardWithSidebarLayout>
     );
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -7,13 +7,32 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useForgetPasswordMutation } from "@/redux/services/apiSlices/authSlice";
 
 export default function ForgotPasswordPage() {
+  const [forgetpassword, { isLoading }] = useForgetPasswordMutation();
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     document.title = "Forgot Password • iFuntology Teacher";
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res: any = await forgetpassword({ data: { email , type:"teacher"} }).unwrap();
+      if (res?.status) {
+        toast.success("Recovery email sent");
+        navigate("/verify-otp", { state: { email } });
+      }
+      else{
+        toast.error(res?.message || "Something went wrong");
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to send recovery email");
+    }
+  };
 
   return (
     <AuthLayout>
@@ -30,9 +49,7 @@ export default function ForgotPasswordPage() {
             <form
               className="mt-6 space-y-5"
               onSubmit={(e) => {
-                e.preventDefault();
-                toast.success("Recovery email sent (demo)");
-                navigate("/recover-password");
+                handleSubmit(e);
               }}
             >
               <div className="space-y-3">
@@ -47,6 +64,9 @@ export default function ForgotPasswordPage() {
                     required
                     placeholder="your@email.com"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -55,8 +75,9 @@ export default function ForgotPasswordPage() {
                 type="submit"
                 size="pill"
                 className="w-full bg-gradient-count-down text-white shadow-elev hover:opacity-95"
+                disabled={isLoading}
               >
-                Continue
+                {isLoading ? "Sending..." : "Continue"}
               </Button>
 
               <div className="text-center">

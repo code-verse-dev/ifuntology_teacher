@@ -3,6 +3,7 @@ import {
   BookOpen,
   Box,
   ClipboardList,
+  FileText,
   Gift,
   GraduationCap,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   Ticket,
   UserCog,
   Users,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -73,7 +75,7 @@ export default function DashboardSidebar() {
     { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
-    { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
+    // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
   ];
 
   const ecommerce: Item[] = [
@@ -85,6 +87,7 @@ export default function DashboardSidebar() {
     { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
+    { title: "Video Library", url: "/video-library", icon: Video },
   ];
 
   const readToWrite: Item[] = [
@@ -93,10 +96,11 @@ export default function DashboardSidebar() {
 
   const affiliateProgram: Item[] = [
     { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
+    { title: "Surveys", url: "/surveys", icon: FileText },
   ];
 
   const communication: Item[] = [
-    { title: "Chat", icon: MessagesSquare },
+    { title: "Chat", url: "/messages", icon: MessagesSquare },
   ];
 
   const support: Item[] = [
