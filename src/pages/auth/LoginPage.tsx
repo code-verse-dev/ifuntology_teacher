@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   User,
   Users,
+  Gift
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,14 +22,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
-import { useForgetPasswordMutation, useLoginMutation } from "@/redux/services/apiSlices/authSlice";
+import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
 import { useDispatch } from "react-redux";
 import { addUser } from "@/redux/services/Slices/userSlice";
 
 const roleCards = [
-  { key: "admin", label: "Admin", icon: User },
+  { key: "affiliate", label: "Affiliate", icon: Gift },
   { key: "teacher", label: "Teacher / Organization", icon: GraduationCap },
-  { key: "parent", label: "Individual User / Parent", icon: Users },
+  { key: "parent", label: "Individual User", icon: Users },
   { key: "student", label: "Student", icon: School },
 ] as const;
 

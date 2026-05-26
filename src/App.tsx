@@ -63,6 +63,7 @@ import { getBasename } from "./utils/Functions";
 import { useEffect } from "react";
 import socket from "@/config/socket";
 import MessagesPage from "./pages/messages";
+import VideoLibraryPage from "./pages/videoLibrary";
 
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
@@ -334,6 +335,14 @@ const App = () => {
                   <InviteStudent />
                 </ProtectedRoute>
               } />
+              <Route
+                path="/video-library"
+                element={
+                  <ProtectedRoute>
+                    <VideoLibraryPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/surveys" element={
                 <ProtectedRoute>
                   <SurveysList />
