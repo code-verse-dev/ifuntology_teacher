@@ -6,7 +6,7 @@ import { CartProvider } from "@/context/cart";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { Provider, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RecoverPasswordPage from "./pages/auth/RecoverPasswordPage";
