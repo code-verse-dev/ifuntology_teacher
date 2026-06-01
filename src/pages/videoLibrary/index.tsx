@@ -1,74 +1,48 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
-import { Play, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { GraduationCap, Loader2, Play, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UPLOADS_URL } from "@/constants/api";
+import {
+  useGetAccessibleCourseTypesQuery,
+  useGetVideosByCourseTypeQuery,
+} from "@/redux/services/apiSlices/vidLibrarySlice";
 
+const PAGE_SIZE = 10;
 
 type LibraryVideo = {
   id: string;
   title: string;
-  description: string;
+  courseType: string;
   src: string;
-  thumbnail: string;
-  duration: string;
+  thumbnail?: string;
 };
 
-/** Small, widely reachable sample files for local/demo playback */
-const DUMMY_VIDEOS: LibraryVideo[] = [
-  {
-    id: "1",
-    title: "Welcome to iFuntology Teacher",
-    description: "A quick tour of your teacher dashboard and main menu.",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-    thumbnail: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
-    duration: "0:10",
-  },
-  {
-    id: "2",
-    title: "How to invite students",
-    description: "Step-by-step guide to email and manual student invitations.",
-    src: "https://www.w3schools.com/html/movie.mp4",
-    thumbnail: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg",
-    duration: "0:12",
-  },
-  {
-    id: "3",
-    title: "Booking a session with admin",
-    description: "Request sessions, pick time slots, and join approved meetings.",
-    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnail: "https://picsum.photos/seed/ifunto-session/640/360",
-    duration: "0:15",
-  },
-  {
-    id: "4",
-    title: "Using the enrichment store",
-    description: "Browse products, build a cart, and complete checkout.",
-    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    thumbnail: "https://picsum.photos/seed/ifunto-store/640/360",
-    duration: "0:15",
-  },
-  {
-    id: "5",
-    title: "LMS course overview",
-    description: "Subscribe to LMS, assign courses, and track student progress.",
-    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    thumbnail: "https://picsum.photos/seed/ifunto-lms/640/360",
-    duration: "1:00",
-  },
-  {
-    id: "6",
-    title: "Write to Read batch setup",
-    description: "Create batches and invite students to Write to Read.",
-    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    thumbnail: "https://picsum.photos/seed/ifunto-wtr/640/360",
-    duration: "0:15",
-  },
-];
+type VidDoc = {
+  _id: string;
+  courseType: string;
+  fileUrl: string;
+  videoThumbnail?: string;
+  title?: string;
+};
+
+function mapVidDoc(doc: VidDoc): LibraryVideo {
+  return {
+    id: doc._id,
+    title: doc.title?.trim() || `${doc.courseType} video`,
+    courseType: doc.courseType,
+    src: `${UPLOADS_URL}${doc.fileUrl}`,
+    thumbnail: doc.videoThumbnail ? `${UPLOADS_URL}${doc.videoThumbnail}` : undefined,
+  };
+}
 
 function VideoLibraryCard({ item }: { item: LibraryVideo }) {
   const [playing, setPlaying] = useState(false);
+  const [durationLabel, setDurationLabel] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const startPlayback = () => {
@@ -78,7 +52,6 @@ function VideoLibraryCard({ item }: { item: LibraryVideo }) {
     setPlaying(true);
     el.controls = true;
 
-    // Must call play() in the same user-gesture turn (not in useEffect).
     const playPromise = el.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
@@ -97,6 +70,15 @@ function VideoLibraryCard({ item }: { item: LibraryVideo }) {
     setPlaying(false);
   };
 
+  const handleLoadedMetadata = () => {
+    const el = videoRef.current;
+    if (!el || !Number.isFinite(el.duration)) return;
+    const total = Math.floor(el.duration);
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    setDurationLabel(`${mins}:${secs.toString().padStart(2, "0")}`);
+  };
+
   return (
     <Card className="overflow-hidden rounded-2xl border border-border/60 bg-card/50 shadow-sm transition-shadow hover:shadow-md">
       <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
@@ -104,7 +86,7 @@ function VideoLibraryCard({ item }: { item: LibraryVideo }) {
           ref={videoRef}
           className={cn(
             "h-full w-full bg-black",
-            playing ? "object-contain" : "object-cover"
+            playing ? "object-contain" : "object-cover",
           )}
           poster={item.thumbnail}
           src={item.src}
@@ -113,6 +95,7 @@ function VideoLibraryCard({ item }: { item: LibraryVideo }) {
           controls={playing}
           title={item.title}
           onEnded={handleEnded}
+          onLoadedMetadata={handleLoadedMetadata}
         >
           Your browser does not support the video tag.
         </video>
@@ -136,24 +119,83 @@ function VideoLibraryCard({ item }: { item: LibraryVideo }) {
                 Play video
               </span>
             </button>
-            <span className="pointer-events-none absolute bottom-2 right-2 z-10 rounded-md bg-black/75 px-2 py-0.5 text-[11px] font-medium text-white">
-              {item.duration}
-            </span>
+            {durationLabel ? (
+              <span className="pointer-events-none absolute bottom-2 right-2 z-10 rounded-md bg-black/75 px-2 py-0.5 text-[11px] font-medium text-white">
+                {durationLabel}
+              </span>
+            ) : null}
           </>
         )}
       </div>
       <div className="space-y-1 border-t border-border/60 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-900 dark:text-white">{item.title}</h2>
-        <p className="text-xs leading-relaxed text-muted-foreground">{item.description}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{item.courseType}</p>
       </div>
     </Card>
   );
 }
 
 export default function VideoLibraryPage() {
+  const [selectedCourseType, setSelectedCourseType] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  const {
+    data: courseTypesRes,
+    isLoading: courseTypesLoading,
+    isError: courseTypesError,
+    refetch: refetchCourseTypes,
+  } = useGetAccessibleCourseTypesQuery();
+
+  const courseTypes: string[] = useMemo(
+    () => courseTypesRes?.data?.courseTypes ?? [],
+    [courseTypesRes],
+  );
+
   useEffect(() => {
     document.title = "Video Library • iFuntology Teacher";
   }, []);
+
+  useEffect(() => {
+    if (!courseTypes.length) {
+      setSelectedCourseType(null);
+      return;
+    }
+    if (!selectedCourseType || !courseTypes.includes(selectedCourseType)) {
+      setSelectedCourseType(courseTypes[0]);
+      setPage(1);
+    }
+  }, [courseTypes, selectedCourseType]);
+
+  const {
+    data: videosRes,
+    isLoading: videosLoading,
+    isFetching: videosFetching,
+    isError: videosError,
+    refetch: refetchVideos,
+  } = useGetVideosByCourseTypeQuery(
+    { courseType: selectedCourseType!, page, limit: PAGE_SIZE },
+    { skip: !selectedCourseType },
+  );
+
+  const listData = videosRes?.data;
+  const videos: LibraryVideo[] = useMemo(
+    () => (listData?.docs ?? []).map((doc: VidDoc) => mapVidDoc(doc)),
+    [listData?.docs],
+  );
+  const totalPages = Math.max(1, Number(listData?.totalPages) || 1);
+  const totalDocs =
+    listData?.totalDocs != null ? Number(listData.totalDocs) : videos.length;
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const handleCourseChange = (courseType: string) => {
+    setSelectedCourseType(courseType);
+    setPage(1);
+  };
+
+  const showVideosLoader = videosLoading || (videosFetching && !videos.length);
 
   return (
     <DashboardWithSidebarLayout>
@@ -162,7 +204,7 @@ export default function VideoLibraryPage() {
           <div
             className={cn(
               "flex h-11 w-11 items-center justify-center rounded-xl",
-              "bg-lime-500/15 text-lime-600 dark:text-lime-400"
+              "bg-lime-500/15 text-lime-600 dark:text-lime-400",
             )}
           >
             <Video className="h-6 w-6" />
@@ -172,16 +214,144 @@ export default function VideoLibraryPage() {
               Video Library
             </h1>
             <p className="text-sm text-muted-foreground">
-              Click a thumbnail to play. Sample training videos for teachers.
+              Training videos for your active LMS subscriptions.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {DUMMY_VIDEOS.map((item) => (
-            <VideoLibraryCard key={item.id} item={item} />
-          ))}
-        </div>
+        {courseTypesLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading your courses…
+          </div>
+        )}
+
+        {courseTypesError && (
+          <Card className="rounded-2xl border border-border/60 p-6">
+            <p className="text-sm text-muted-foreground">Could not load your subscribed courses.</p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 rounded-full"
+              onClick={() => refetchCourseTypes()}
+            >
+              Retry
+            </Button>
+          </Card>
+        )}
+
+        {!courseTypesLoading && !courseTypesError && courseTypes.length === 0 && (
+          <Card className="rounded-2xl border border-dashed border-border/60 p-8 text-center">
+            <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground" />
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+              No active LMS subscriptions
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+              Subscribe to an LMS course to unlock videos for that program in your library.
+            </p>
+            <Button asChild variant="brand" size="pill" className="mt-6">
+              <Link to="/subscribe-to-lms">Subscribe to LMS</Link>
+            </Button>
+          </Card>
+        )}
+
+        {courseTypes.length > 0 && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {courseTypes.map((ct) => {
+                const active = ct === selectedCourseType;
+                return (
+                  <Button
+                    key={ct}
+                    type="button"
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    className={cn(
+                      "rounded-full",
+                      active && "bg-lime-600 hover:bg-lime-600/90 text-white",
+                    )}
+                    onClick={() => handleCourseChange(ct)}
+                  >
+                    {ct}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {selectedCourseType && totalDocs > 0 ? (
+              <p className="text-xs font-medium text-muted-foreground">
+                {totalDocs} video{totalDocs === 1 ? "" : "s"} in {selectedCourseType} • page {page}{" "}
+                of {totalPages}
+              </p>
+            ) : null}
+
+            {showVideosLoader && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading videos…
+              </div>
+            )}
+
+            {videosError && (
+              <Card className="rounded-2xl border border-border/60 p-6">
+                <p className="text-sm text-muted-foreground">Could not load videos for this course.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 rounded-full"
+                  onClick={() => refetchVideos()}
+                >
+                  Retry
+                </Button>
+              </Card>
+            )}
+
+            {!showVideosLoader && !videosError && videos.length === 0 && (
+              <Card className="rounded-2xl border border-dashed border-border/60 p-8 text-center">
+                <Video className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No videos have been added for {selectedCourseType} yet.
+                </p>
+              </Card>
+            )}
+
+            {!videosError && videos.length > 0 && (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {videos.map((item) => (
+                  <VideoLibraryCard key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+
+            {!videosError && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={page <= 1 || videosFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={page >= totalPages || videosFetching}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </section>
     </DashboardWithSidebarLayout>
   );
