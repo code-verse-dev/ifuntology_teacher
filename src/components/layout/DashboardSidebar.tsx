@@ -11,6 +11,7 @@ import {
   Package,
   PenTool,
   Receipt,
+  ShoppingBag,
   Store,
   Ticket,
   UserCog,
@@ -73,6 +74,7 @@ export default function DashboardSidebar() {
 
   const booking: Item[] = [
     { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
+    { title: "Shop", url: "/shop", icon: ShoppingBag },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
     // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },

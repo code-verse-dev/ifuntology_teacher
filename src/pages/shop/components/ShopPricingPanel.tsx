@@ -1,0 +1,262 @@
+import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { ShopEligibility } from "@/redux/services/apiSlices/shopSlice";
+
+type PricingData = {
+  lms?: {
+    lmsCourses?: {
+      courseType: string;
+      kitsTotal: number;
+      subscriptionTotal: number;
+      total: number;
+    }[];
+    kitsTotal?: number;
+    subscriptionTotal?: number;
+    total?: number;
+  };
+  enrichment?: {
+    products?: { name: string; quantity: number; price: number; total: number }[];
+    subtotal?: number;
+    total?: number;
+  };
+  wtr?: {
+    lineTotal?: number;
+    subscriberKind?: string;
+    subscriptionType?: string;
+    numberOfSeats?: number;
+    noOfSubscriptions?: number;
+  };
+  subtotalBeforeTax?: number;
+  taxAmount?: number;
+  grandTotal?: number;
+  eligibility?: ShopEligibility;
+};
+
+type Props = {
+  pricing: PricingData | null;
+  eligibility: ShopEligibility | null;
+  isLoading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+  canPreview: boolean;
+  canSubmit: boolean;
+  submitBlockReason?: string | null;
+  onPayNow: () => void;
+  onRequestQuote: () => void;
+  isQuoteLoading: boolean;
+};
+
+const fmt = (n: number | undefined) =>
+  typeof n === "number" && !Number.isNaN(n) ? `$${n.toFixed(2)}` : "—";
+
+export default function ShopPricingPanel({
+  pricing,
+  eligibility,
+  isLoading,
+  error,
+  onRefresh,
+  canPreview,
+  canSubmit,
+  submitBlockReason,
+  onPayNow,
+  onRequestQuote,
+  isQuoteLoading,
+}: Props) {
+  const resolvedEligibility = eligibility ?? pricing?.eligibility ?? null;
+  // Only block when eligibility explicitly failed; preview may still be refreshing.
+  const canProceed =
+    resolvedEligibility == null ? true : resolvedEligibility.canProceed;
+  const hasTotal =
+    typeof pricing?.grandTotal === "number" && pricing.grandTotal > 0;
+  const actionsDisabled = !canSubmit || !canProceed || !hasTotal;
+
+  return (
+    <Card className="sticky top-6 rounded-2xl border border-border/60 p-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base font-semibold">Pricing preview</h2>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 rounded-full text-xs"
+          onClick={onRefresh}
+          disabled={!canPreview || isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          Update
+        </Button>
+      </div>
+
+      <p className="mt-1 text-xs text-muted-foreground">
+        Server-calculated totals based on your current selections.
+      </p>
+
+      {resolvedEligibility && !resolvedEligibility.canProceed && (
+        <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-800 dark:text-amber-200">
+          <div className="flex gap-2 font-medium">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>Cannot proceed with current selection</span>
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
+            {resolvedEligibility.messages.map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs opacity-90">
+            Remove conflicting sections or change course selections, then update
+            pricing.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {!pricing && !error && !isLoading && (
+        <div className="mt-6 rounded-lg border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
+          Enable at least one section and fill in the required fields, then
+          update pricing to see your estimate.
+        </div>
+      )}
+
+      {isLoading && !pricing && (
+        <div className="mt-6 flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Calculating…
+        </div>
+      )}
+
+      {pricing && (
+        <div className="mt-5 space-y-4">
+          {pricing.lms && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Workforce Readiness Courses
+              </div>
+              {(pricing.lms.lmsCourses ?? []).map((course, idx) => (
+                <div
+                  key={`${course.courseType}-${idx}`}
+                  className="text-sm text-muted-foreground"
+                >
+                  {course.courseType}: kits {fmt(course.kitsTotal)} + subs{" "}
+                  {fmt(course.subscriptionTotal)} = {fmt(course.total)}
+                </div>
+              ))}
+              <div className="text-sm font-medium">
+                LMS subtotal: {fmt(pricing.lms.total)}
+              </div>
+            </div>
+          )}
+
+          {pricing.enrichment && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Enrichment store
+              </div>
+              {(pricing.enrichment.products ?? []).map((item, idx) => (
+                <div key={idx} className="text-sm text-muted-foreground">
+                  {item.name}: {item.quantity} × {fmt(item.price)} ={" "}
+                  {fmt(item.total)}
+                </div>
+              ))}
+              <div className="text-sm font-medium">
+                Enrichment subtotal: {fmt(pricing.enrichment.total)}
+              </div>
+            </div>
+          )}
+
+          {pricing.wtr && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Write to Read
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {pricing.wtr.subscriberKind} · {pricing.wtr.subscriptionType}
+                {pricing.wtr.numberOfSeats
+                  ? ` · ${pricing.wtr.numberOfSeats} seats`
+                  : pricing.wtr.noOfSubscriptions
+                    ? ` · ${pricing.wtr.noOfSubscriptions} subscription(s)`
+                    : ""}
+              </div>
+              <div className="text-sm font-medium">
+                WTR subtotal: {fmt(pricing.wtr.lineTotal)}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1 border-t border-border/60 pt-4">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Subtotal (before tax)</span>
+              <span>{fmt(pricing.subtotalBeforeTax)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Tax</span>
+              <span>{fmt(pricing.taxAmount)}</span>
+            </div>
+            <div className="flex justify-between pt-1 text-lg font-bold">
+              <span>Estimated total</span>
+              <span>{fmt(pricing.grandTotal)}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t border-border/60 pt-4">
+            <Button
+              type="button"
+              variant="brand"
+              className="w-full"
+              disabled={actionsDisabled}
+              onClick={onPayNow}
+            >
+              Pay now
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={actionsDisabled || isQuoteLoading}
+              onClick={onRequestQuote}
+            >
+              {isQuoteLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting quote…
+                </>
+              ) : (
+                "Request quote"
+              )}
+            </Button>
+            {!canSubmit && submitBlockReason && (
+              <p className="text-center text-xs text-muted-foreground">
+                {submitBlockReason}
+              </p>
+            )}
+            {!canSubmit && !submitBlockReason && (
+              <p className="text-center text-xs text-muted-foreground">
+                Complete all required fields for enabled sections to pay or
+                request a quote.
+              </p>
+            )}
+            {canSubmit && !canProceed && (
+              <p className="text-center text-xs text-amber-600">
+                Resolve eligibility issues above before continuing.
+              </p>
+            )}
+            {canSubmit && canProceed && !hasTotal && (
+              <p className="text-center text-xs text-muted-foreground">
+                Update pricing to see your total before continuing.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
