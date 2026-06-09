@@ -97,7 +97,7 @@ export default function DashboardSidebar() {
   ];
 
   const affiliateProgram: Item[] = [
-    { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
+    // { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
     { title: "Surveys", url: "/surveys", icon: FileText },
   ];
 
