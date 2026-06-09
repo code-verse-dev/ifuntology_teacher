@@ -65,6 +65,7 @@ export const productSlice = createApi({
 export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
+  useLazyGetProductByIdQuery,
   useGetProductsByCategoryQuery,
   useLazyGetProductsByCategoryQuery,
   useGetProductByCourseTypeQuery,

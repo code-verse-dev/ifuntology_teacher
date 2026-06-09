@@ -16,9 +16,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import {
+  useGetProductsQuery,
+  useLazyGetProductByIdQuery,
   useLazyGetProductsByCategoryQuery,
   useLazyGetProductByCourseTypeQuery,
 } from "@/redux/services/apiSlices/productSlice";
+import { useGetCharacterCatalogQuery } from "@/redux/services/apiSlices/characterSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { quoteSlice } from "@/redux/services/apiSlices/quoteSlice";
 import {
@@ -27,7 +30,12 @@ import {
   usePreviewShopPricingMutation,
 } from "@/redux/services/apiSlices/shopSlice";
 import ShopPricingPanel from "./components/ShopPricingPanel";
+import ShopSectionPreview, {
+  type ShopPreviewItem,
+} from "./components/ShopSectionPreview";
 import { buildPreviewPayload, buildSubmitPayload } from "./shopPayload";
+import { pickRandom, resolveAssetUrl } from "./utils/resolveAssetUrl";
+import { UPLOADS_URL } from "@/constants/api";
 import { cn } from "@/lib/utils";
 import swal from "sweetalert";
 
@@ -107,6 +115,11 @@ export default function ShopPage() {
   const { data: categoriesData } = useGetCategoriesQuery({});
   const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
   const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
+  const [triggerGetProductById] = useLazyGetProductByIdQuery();
+  const { data: enrichmentProductsData, isLoading: enrichmentProductsLoading } =
+    useGetProductsQuery({ page: 1, limit: 32 });
+  const { data: characterCatalog, isLoading: characterCatalogLoading } =
+    useGetCharacterCatalogQuery();
   const [checkCoupon, { isLoading: checkingCoupon }] = useCheckCouponMutation();
   const [previewShopPricing, { isLoading: previewLoading }] =
     usePreviewShopPricingMutation();
@@ -116,6 +129,15 @@ export default function ShopPage() {
   const [categoryProducts, setCategoryProducts] = useState<{
     [key: string]: any[];
   }>({});
+
+  const [lmsPreviewItems, setLmsPreviewItems] = useState<ShopPreviewItem[]>([]);
+  const [lmsImagesLoading, setLmsImagesLoading] = useState(false);
+  const [enrichmentPreviewItems, setEnrichmentPreviewItems] = useState<
+    ShopPreviewItem[]
+  >([]);
+  const [productThumbnails, setProductThumbnails] = useState<
+    Record<string, { name: string; image?: string }>
+  >({});
 
   const updateLmsCourseItem = (
     key: string,
@@ -154,22 +176,62 @@ export default function ShopPage() {
     if (field === "category") {
       updated[index].product = "";
       updated[index].id = "";
-      if (!categoryProducts[value]) {
-        try {
-          const res: any = await triggerGetProducts({
-            categoryId: value,
-          }).unwrap();
-          setCategoryProducts((prev) => ({
-            ...prev,
-            [value]: res.data,
-          }));
-        } catch {
-          /* ignore */
+      try {
+        const res: any = await triggerGetProducts({
+          categoryId: value,
+        }).unwrap();
+        const list = Array.isArray(res?.data) ? res.data : [];
+        setCategoryProducts((prev) => ({
+          ...prev,
+          [value]: list,
+        }));
+        const selectedId = updated[index].product;
+        if (selectedId) {
+          const match = list.find(
+            (p: any) => String(p._id) === String(selectedId)
+          );
+          if (match?.image) {
+            setProductThumbnails((prev) => ({
+              ...prev,
+              [selectedId]: { name: match.name, image: match.image },
+            }));
+          }
         }
+      } catch {
+        /* ignore */
       }
     }
     if (field === "product") {
       updated[index].id = value;
+      if (value) {
+        const fromList = categoryProducts[updated[index].category]?.find(
+          (p: any) => String(p._id) === String(value)
+        );
+        if (fromList?.image) {
+          setProductThumbnails((prev) => ({
+            ...prev,
+            [value]: { name: fromList.name, image: fromList.image },
+          }));
+        } else {
+          triggerGetProductById(value)
+            .unwrap()
+            .then((res: any) => {
+              const prod = res?.data;
+              if (prod?._id) {
+                setProductThumbnails((prev) => ({
+                  ...prev,
+                  [String(prod._id)]: {
+                    name: prod.name,
+                    image: prod.image,
+                  },
+                }));
+              }
+            })
+            .catch(() => {
+              /* ignore */
+            });
+        }
+      }
     }
     setProducts(updated);
   };
@@ -374,19 +436,89 @@ export default function ShopPage() {
   }, [canPreview, runPreview, previewPayload]);
 
   useEffect(() => {
-    const selected = Array.from(
-      new Set(lmsCourses.map((c) => c.courseType).filter(Boolean))
-    );
+    const courseTypes = includeLms
+      ? Array.from(new Set(lmsCourses.map((c) => c.courseType).filter(Boolean)))
+      : pickRandom([...LMS_COURSES], 4);
+
+    let cancelled = false;
+
     (async () => {
-      for (const course of selected) {
+      setLmsImagesLoading(true);
+      const items: ShopPreviewItem[] = [];
+
+      for (const courseType of courseTypes) {
         try {
-          await triggerGetProductByCourseType({ courseType: course }).unwrap();
+          const res: any = await triggerGetProductByCourseType({
+            courseType,
+          }).unwrap();
+          const product = res?.data;
+          const src = resolveAssetUrl(product?.image);
+          if (src) {
+            items.push({
+              src,
+              label: courseType,
+              alt: product?.name ?? courseType,
+            });
+          }
         } catch {
-          /* ignore */
+          /* no kit image for this course */
         }
       }
+
+      if (!cancelled) {
+        setLmsPreviewItems(items.slice(0, 4));
+        setLmsImagesLoading(false);
+      }
     })();
-  }, [lmsCourses, triggerGetProductByCourseType]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [includeLms, lmsCourses, triggerGetProductByCourseType]);
+
+  useEffect(() => {
+    const docs =
+      enrichmentProductsData?.data?.docs?.filter((p: any) => p?.image) ?? [];
+    if (!docs.length) {
+      setEnrichmentPreviewItems([]);
+      return;
+    }
+    setEnrichmentPreviewItems(
+      pickRandom(docs, 4).map((p: any) => ({
+        src: UPLOADS_URL + p.image,
+        label: p.name,
+        alt: p.name,
+      }))
+    );
+  }, [enrichmentProductsData]);
+
+  const wtrPreviewItems = useMemo((): ShopPreviewItem[] => {
+    if (!characterCatalog?.length) return [];
+
+    const pool: ShopPreviewItem[] = [];
+    for (const category of characterCatalog) {
+      const iconSrc = resolveAssetUrl(category.iconPath);
+      if (iconSrc) {
+        pool.push({
+          src: iconSrc,
+          label: category.name,
+          alt: category.iconTooltip ?? category.name,
+        });
+      }
+      for (const variation of category.variations ?? []) {
+        const src = resolveAssetUrl(variation.imagePath);
+        if (src) {
+          pool.push({
+            src,
+            label: variation.label || category.name,
+            alt: variation.label || category.name,
+          });
+        }
+      }
+    }
+
+    return pickRandom(pool, 4);
+  }, [characterCatalog]);
 
   const SectionHeader = ({
     title,
@@ -463,6 +595,11 @@ export default function ShopPage() {
                 icon={GraduationCap}
                 enabled={includeLms}
                 onToggle={setIncludeLms}
+              />
+              <ShopSectionPreview
+                items={lmsPreviewItems}
+                loading={lmsImagesLoading}
+                className={cn(!includeLms && "opacity-70")}
               />
 
               {includeLms && (
@@ -620,15 +757,58 @@ export default function ShopPage() {
                 enabled={includeEnrichment}
                 onToggle={setIncludeEnrichment}
               />
+              <ShopSectionPreview
+                items={enrichmentPreviewItems}
+                loading={enrichmentProductsLoading}
+                className={cn(!includeEnrichment && "opacity-70")}
+              />
 
               {includeEnrichment && (
                 <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
-                  {products.map((item, index) => (
+                  {products.map((item, index) => {
+                    const selectedProduct =
+                      item.category && item.product
+                        ? categoryProducts[item.category]?.find(
+                            (p: any) => String(p._id) === String(item.product)
+                          )
+                        : null;
+                    const thumbnailMeta =
+                      item.product ? productThumbnails[item.product] : null;
+                    const selectedProductName =
+                      thumbnailMeta?.name ?? selectedProduct?.name;
+                    const selectedProductImage = resolveAssetUrl(
+                      thumbnailMeta?.image ?? selectedProduct?.image
+                    );
+
+                    return (
                     <div
                       key={index}
                       className="rounded-xl border border-border/50 p-4 space-y-3"
                     >
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="flex items-start gap-3">
+                        {item.product && (
+                          <div className="shrink-0">
+                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
+                              {selectedProductImage ? (
+                                <img
+                                  src={selectedProductImage}
+                                  alt={selectedProductName ?? "Selected product"}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[9px] text-muted-foreground">
+                                  …
+                                </div>
+                              )}
+                            </div>
+                            {selectedProductName && (
+                              <p className="mt-1 max-w-16 truncate text-[9px] text-muted-foreground">
+                                {selectedProductName}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3">
                         <div>
                           <Label className="text-xs text-muted-foreground">
                             Category
@@ -688,6 +868,7 @@ export default function ShopPage() {
                             }
                           />
                         </div>
+                        </div>
                       </div>
                       {products.length > 1 && (
                         <div className="text-right">
@@ -701,7 +882,8 @@ export default function ShopPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <Button type="button" variant="outline" onClick={addProduct}>
                     Add product
                   </Button>
@@ -799,6 +981,11 @@ export default function ShopPage() {
                 icon={PenTool}
                 enabled={includeWtr}
                 onToggle={setIncludeWtr}
+              />
+              <ShopSectionPreview
+                items={wtrPreviewItems}
+                loading={characterCatalogLoading}
+                className={cn(!includeWtr && "opacity-70")}
               />
 
               {includeWtr && (
