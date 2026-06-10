@@ -144,7 +144,7 @@ export default function LoginPage() {
                       : "flex flex-col items-center justify-center gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-3 py-4 text-sm font-semibold text-muted-foreground transition hover:border-border hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   }
                   onClick={() => {
-                    window.location.href = r.link;
+                    window.open(r.link, "_blank", "noopener,noreferrer");
                   }}
                 >
                   <span
