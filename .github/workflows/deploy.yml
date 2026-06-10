@@ -43,9 +43,9 @@ jobs:
           server: ${{ vars.SERVER }}
           username: ${{ vars.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           local-dir: ./dist/
-          server-dir: /${{ vars.SERVER_DIR }}/
+          server-dir: /public_html/${{ vars.SERVER_DIR }}/
 
   health-check:
     name: Health Check
