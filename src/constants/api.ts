@@ -3,7 +3,7 @@ const { hostname } = window.location;
 const servers = {
   local: "http://localhost:3030",
   customDev: "https://react.customdev.solutions:3030",
-  live: "",
+  live: "https://react.customdev.solutions:3030",
 };
 
 function normalizeApiBase(raw: string | undefined): string {
@@ -23,8 +23,12 @@ if (!URL) {
     hostname.includes("local")
   ) {
     URL = servers.local;
-  } else {
+  }
+  else if (hostname.includes("erp.ifuntology.com")) {
     URL = servers.live;
+  }
+  else {
+    URL = servers.local;
   }
 }
 if (!URL && import.meta.env.DEV) {
