@@ -3,7 +3,7 @@ const { hostname } = window.location;
 const servers = {
   local: "http://localhost:3030",
   customDev: "https://react.customdev.solutions:3030",
-  live: "https://react.customdev.solutions:3030",
+  live: "https://api-erp.ifuntology.com",
 };
 
 function normalizeApiBase(raw: string | undefined): string {
