@@ -27,10 +27,10 @@ import { useDispatch } from "react-redux";
 import { addUser } from "@/redux/services/Slices/userSlice";
 
 const roleCards = [
-  { key: "affiliate", label: "Affiliate", icon: Gift },
-  { key: "teacher", label: "Teacher / Organization", icon: GraduationCap },
-  { key: "parent", label: "Individual User", icon: Users },
-  { key: "student", label: "Student", icon: School },
+  { key: "affiliate", label: "Affiliate", icon: Gift, link: "https://affiliate-erp.ifuntology.com/login" },
+  { key: "teacher", label: "Teacher / Organization", icon: GraduationCap, link: "https://teacher-erp.ifuntology.com/login" },
+  { key: "parent", label: "Individual User", icon: Users, link: "https://user-erp.ifuntology.com/login" },
+  { key: "student", label: "Student", icon: School, link: "https://student-erp.ifuntology.com/login" },
 ] as const;
 
 const features = [
@@ -53,7 +53,6 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<typeof roleCards[number]["key"]>("teacher");
 
   useEffect(() => {
     document.title = "Sign In • iFuntology Teacher";
@@ -134,7 +133,7 @@ export default function LoginPage() {
 
           <div className="mt-8 grid grid-cols-2 gap-4">
             {roleCards.map((r) => {
-              const selected = r.key === selectedRole;
+              const selected = r.key === "teacher";
               return (
                 <button
                   key={r.key}
@@ -145,8 +144,7 @@ export default function LoginPage() {
                       : "flex flex-col items-center justify-center gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-3 py-4 text-sm font-semibold text-muted-foreground transition hover:border-border hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   }
                   onClick={() => {
-                    setSelectedRole(r.key);
-                    // toast.message(`${r.label} selected`);
+                    window.location.href = r.link;
                   }}
                 >
                   <span
