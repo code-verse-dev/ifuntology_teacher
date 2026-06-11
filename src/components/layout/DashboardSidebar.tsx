@@ -1,10 +1,8 @@
 import {
-  BadgeDollarSign,
   BookOpen,
   Box,
   ClipboardList,
   FileText,
-  Gift,
   GraduationCap,
   LayoutDashboard,
   MessagesSquare,
@@ -19,7 +17,6 @@ import {
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
-
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
 import { NavLink } from "@/components/NavLink";
 import {

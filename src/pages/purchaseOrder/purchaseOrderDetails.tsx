@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGetPurchaseOrderByQuoteIdQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
 import { formatDate } from "@/lib/utils";
+import QuotationReportDownload from "./quotationReport/QuotationReportDownload";
 
 const formatAmount = (value: number | string | undefined): string => {
   if (value === undefined || value === null) return "—";
@@ -24,11 +25,14 @@ export default function PurchaseOrderDetails() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
 
+  const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
+  const purchaseOrderData = purchaseOrder?.data;
+  const quoteApproved =
+    String(purchaseOrderData?.quote?.status ?? "").toLowerCase() === "approved";
+
   useEffect(() => {
     document.title = `${purchaseOrderData?.poNumber ?? "Purchase Order"} • Purchase Order Details`;
-  }, [id]);
-  const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
-  let purchaseOrderData = purchaseOrder?.data;
+  }, [purchaseOrderData?.poNumber]);
 
   return (
     <DashboardWithSidebarLayout>
@@ -41,9 +45,9 @@ export default function PurchaseOrderDetails() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* <Button variant="accent">Pay Invoice</Button> */}
-            <Button variant="ghost">Download</Button>
-            <Button variant="ghost">Copy PO</Button>
+            {quoteApproved && purchaseOrderData ? (
+              <QuotationReportDownload purchaseOrder={purchaseOrderData} />
+            ) : null}
             <Button variant="outline" onClick={() => navigate(-1)}>Close</Button>
           </div>
         </div>
