@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,10 @@ import {
 } from "@/redux/services/apiSlices/productSlice";
 import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
+import {
+  useGetMyWtrSubscriptionQuery,
+  useGetWtrPricingByPlanQuery,
+} from "@/redux/services/apiSlices/paymentSlice";
 import swal from "sweetalert";
 
 export default function RequestQuotation() {
@@ -77,11 +81,10 @@ export default function RequestQuotation() {
     makeLmsCourseItem(),
   ]);
   const [lmsKitPriceMap, setLmsKitPriceMap] = useState<Record<string, number>>({});
-
-  // Write to Read fields
-  const [bookPrinting, setBookPrinting] = useState<string>("Yes");
-  const [subscriptions, setSubscriptions] = useState<number>(0);
-  const [batchStudents, setBatchStudents] = useState<number>(0);
+  // Write to Read fields (teacher classroom — aligned with shop)
+  const [wtrSubscriptionType, setWtrSubscriptionType] = useState("yearly");
+  const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("1");
+  const [wtrBookPrinting, setWtrBookPrinting] = useState(false);
 
   // Enrichment store fields
   const [products, setProducts] = useState([
@@ -171,6 +174,23 @@ export default function RequestQuotation() {
   const enrichmentTax = enrichmentAfterDiscount * (taxPercent / 100);
   const enrichmentTotal = enrichmentAfterDiscount + enrichmentTax;
 
+  const wtrBilling =
+    wtrSubscriptionType === "yearly" ? ("YEARLY" as const) : ("MONTHLY" as const);
+  const { data: wtrPricingRes } = useGetWtrPricingByPlanQuery(
+    { subscriberKind: "TEACHER", billing: wtrBilling },
+    { skip: serviceType !== "write_to_read" }
+  );
+  const { data: myWtrSubRes } = useGetMyWtrSubscriptionQuery(undefined, {
+    skip: serviceType !== "write_to_read",
+  });
+  const wtrUnitPrice = Number(wtrPricingRes?.data?.amount ?? 0);
+  const wtrSeats = Math.max(0, Number(wtrNumberOfSeats) || 0);
+  const wtrSubtotal = wtrUnitPrice * wtrSeats;
+  const wtrTax = wtrSubtotal * (taxPercent / 100);
+  const wtrTotal = wtrSubtotal + wtrTax;
+  const hasActiveWtrSub =
+    myWtrSubRes?.status && myWtrSubRes?.data?.status === "ACTIVE";
+
   const [submitOpen, setSubmitOpen] = useState(false);
 
   const availableLmsCourses = useMemo(
@@ -230,8 +250,6 @@ export default function RequestQuotation() {
       }
     })();
   }, [lmsCourses, lmsKitPriceMap, triggerGetProductByCourseType]);
-
-
 
   const handleProductChange = async (
     index: number,
@@ -341,12 +359,18 @@ export default function RequestQuotation() {
         }
       }
 
-      // if (serviceType === "write_to_read") {
-      //   if (subscriptions === null || subscriptions === undefined || Number(subscriptions) <= 0)
-      //     return "Number of Subscriptions must be greater than 0";
-      //   if (batchStudents === null || batchStudents === undefined || Number(batchStudents) <= 0)
-      //     return "Number of Students in Batch must be greater than 0";
-      // }
+      if (serviceType === "write_to_read") {
+        const seats = Number(wtrNumberOfSeats);
+        if (!Number.isFinite(seats) || seats < 1) {
+          return "Number of student seats must be at least 1";
+        }
+        if (hasActiveWtrSub) {
+          return "You already have an active Write to Read subscription";
+        }
+        if (!wtrUnitPrice) {
+          return "Write to Read pricing is not available for the selected plan";
+        }
+      }
 
       if (serviceType === "enrichment_store") {
         if (!products || products.length === 0) return "At least one product is required";
@@ -388,9 +412,9 @@ export default function RequestQuotation() {
     } else if (serviceType === "write_to_read") {
       data = {
         ...data,
-        bookPrinting,
-        subscriptions: Number(subscriptions),
-        batchStudents: Number(batchStudents),
+        bookPrintingRequests: wtrBookPrinting ? "true" : "false",
+        wtrSubscriptionType,
+        wtrNumberOfSeats: String(wtrNumberOfSeats),
       };
     } else if (serviceType === "enrichment_store") {
       // map products to expected payload (product id and quantity)
@@ -438,9 +462,10 @@ export default function RequestQuotation() {
       setLmsCourses([makeLmsCourseItem()]);
       setLmsKitPriceMap({});
     } else if (serviceType === "write_to_read") {
-      setBookPrinting("Yes");
-      setSubscriptions(0);
-      setBatchStudents(0);
+      setOrgName("");
+      setWtrSubscriptionType("yearly");
+      setWtrNumberOfSeats("1");
+      setWtrBookPrinting(false);
     } else if (serviceType === "enrichment_store") {
       setOrgName("");
       setProducts([{ id: "", category: "", product: "", quantity: "" }]);
@@ -577,24 +602,6 @@ export default function RequestQuotation() {
                           </div>
                           <div>
                             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                              Interactive Digital Learning Curriculum *
-                            </label>
-                            <input
-                              type="number"
-                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                              value={row.webSubscriptions}
-                              onChange={(e) =>
-                                updateLmsCourseItem(
-                                  row.key,
-                                  "webSubscriptions",
-                                  e.target.value
-                                )
-                              }
-                              min={0}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
                               Number of kits *
                             </label>
                             <input
@@ -611,6 +618,25 @@ export default function RequestQuotation() {
                               min={0}
                             />
                           </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                              Interactive Digital Learning Curriculum *
+                            </label>
+                            <input
+                              type="number"
+                              className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              value={row.webSubscriptions}
+                              onChange={(e) =>
+                                updateLmsCourseItem(
+                                  row.key,
+                                  "webSubscriptions",
+                                  e.target.value
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+
                         </div>
                       </div>
                     ))}
@@ -623,58 +649,59 @@ export default function RequestQuotation() {
 
               {serviceType === "write_to_read" && (
                 <div className="space-y-3">
+                  {hasActiveWtrSub && (
+                    <p className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      You already have an active Write to Read subscription and
+                      cannot request another quote.
+                    </p>
+                  )}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Organization / Teacher Name *
+                    </label>
+                    <Input
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="School or organization name"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Organization Name *
-                      </label>
-                      <Input placeholder="Enter Name" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Book Printing Requests *
+                        Subscription type *
                       </label>
                       <select
                         className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={bookPrinting}
-                        onChange={(e) => setBookPrinting(e.target.value)}
+                        value={wtrSubscriptionType}
+                        onChange={(e) => setWtrSubscriptionType(e.target.value)}
                       >
-                        <option>Yes</option>
-                        <option>No</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
                       </select>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Number of Subscriptions *
+                        Number of student seats *
                       </label>
                       <input
                         type="number"
+                        min={1}
                         className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={subscriptions}
-                        onChange={(e) =>
-                          setSubscriptions(Number(e.target.value))
-                        }
-                        min={0}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Number of Students in Batch *
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={batchStudents}
-                        onChange={(e) =>
-                          setBatchStudents(Number(e.target.value))
-                        }
-                        min={0}
+                        value={wtrNumberOfSeats}
+                        onChange={(e) => setWtrNumberOfSeats(e.target.value)}
                       />
                     </div>
                   </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={wtrBookPrinting}
+                      onChange={(e) => setWtrBookPrinting(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    Include book printing requests
+                  </label>
                 </div>
               )}
 
@@ -921,6 +948,31 @@ export default function RequestQuotation() {
               <div className="mt-3 text-lg font-semibold">
                 Estimated Total: ${lmsTotal.toFixed(2)}
               </div>
+            </div>
+          )}
+
+          {serviceType === "write_to_read" && (
+            <div className="mt-6 rounded-md border border-border/60 bg-card/30 p-4">
+              <div className="text-sm font-semibold">Live Price Calculator</div>
+              {wtrSeats > 0 && wtrUnitPrice > 0 ? (
+                <>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    {wtrSubscriptionType === "yearly" ? "Yearly" : "Monthly"}{" "}
+                    plan: {wtrSeats} seat{wtrSeats === 1 ? "" : "s"} × $
+                    {wtrUnitPrice.toFixed(2)} = ${wtrSubtotal.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Tax ({taxPercent}%): ${wtrTax.toFixed(2)}
+                  </div>
+                  <div className="mt-3 text-lg font-semibold">
+                    Estimated Total: ${wtrTotal.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Enter student seats to see estimated pricing.
+                </div>
+              )}
             </div>
           )}
 
