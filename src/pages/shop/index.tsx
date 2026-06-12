@@ -47,7 +47,6 @@ type LmsCourseItem = {
   webSubscriptions: string;
 };
 
-import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 
 const makeLmsCourseItem = (): LmsCourseItem => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
