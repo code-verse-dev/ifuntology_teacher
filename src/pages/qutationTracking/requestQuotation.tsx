@@ -36,9 +36,11 @@ export default function RequestQuotation() {
   });
 
   const [requestQuote] = useRequestQuoteMutation();
+  
   useEffect(() => {
     document.title = "Request Quotation • iFuntology Teacher";
   }, []);
+
   const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
   const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
   const { data: settingData } = useGetAllSettingsQuery({});
