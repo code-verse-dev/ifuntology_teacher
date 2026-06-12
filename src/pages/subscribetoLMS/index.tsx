@@ -93,6 +93,18 @@ const PLANS_THEMES: { name: string; theme: SubscriptionPlan["theme"] }[] = [
             checkColor: "text-purple-500",
         },
     },
+    {
+        name: "iFuntology Braiding",
+        theme: {
+            bg: "bg-orange-50",
+            border: "border-orange-300",
+            iconBg: "bg-orange-500",
+            iconColor: "text-white",
+            titleColor: "text-foreground",
+            priceColor: "text-orange-600",
+            checkColor: "text-orange-500",
+        },
+    },
 ];
 
 const defaultTheme: SubscriptionPlan["theme"] = {

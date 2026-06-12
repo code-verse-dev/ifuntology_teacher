@@ -20,6 +20,7 @@ import {
 import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import swal from "sweetalert";
+import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 
 export default function RequestQuotation() {
   type LmsCourseItem = {
@@ -175,16 +176,7 @@ export default function RequestQuotation() {
 
   const [submitOpen, setSubmitOpen] = useState(false);
 
-  const availableLmsCourses = useMemo(
-    () => [
-      "Funtology",
-      "Skintology",
-      "Barbertology",
-      "Nailtology",
-      "iTeach iFuntology",
-    ],
-    []
-  );
+  const availableLmsCourses = LMS_COURSE_TYPES;
 
   const updateLmsCourseItem = (
     key: string,

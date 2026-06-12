@@ -38,6 +38,7 @@ import { pickRandom, resolveAssetUrl } from "./utils/resolveAssetUrl";
 import { UPLOADS_URL } from "@/constants/api";
 import { cn } from "@/lib/utils";
 import swal from "sweetalert";
+import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 
 type LmsCourseItem = {
   key: string;
@@ -46,13 +47,7 @@ type LmsCourseItem = {
   webSubscriptions: string;
 };
 
-const LMS_COURSES = [
-  "Funtology",
-  "Skintology",
-  "Barbertology",
-  "Nailtology",
-  "iTeach iFuntology",
-];
+import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 
 const makeLmsCourseItem = (): LmsCourseItem => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -438,7 +433,7 @@ export default function ShopPage() {
   useEffect(() => {
     const courseTypes = includeLms
       ? Array.from(new Set(lmsCourses.map((c) => c.courseType).filter(Boolean)))
-      : pickRandom([...LMS_COURSES], 4);
+      : pickRandom([...LMS_COURSE_TYPES], 4);
 
     let cancelled = false;
 
@@ -690,7 +685,7 @@ export default function ShopPage() {
                               )
                             }
                           >
-                            {LMS_COURSES.map((c) => (
+                            {LMS_COURSE_TYPES.map((c) => (
                               <option key={c} value={c}>
                                 {c}
                               </option>
