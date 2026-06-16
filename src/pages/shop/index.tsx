@@ -976,12 +976,7 @@ export default function ShopPage() {
                 enabled={includeWtr}
                 onToggle={setIncludeWtr}
               />
-              <ShopSectionPreview
-                items={wtrPreviewItems}
-                loading={characterCatalogLoading}
-                className={cn(!includeWtr && "opacity-70")}
-              />
-
+              
               {includeWtr && (
                 <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
                   {eligibility?.wtrConflict && (
