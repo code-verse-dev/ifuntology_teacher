@@ -277,7 +277,7 @@ export default function DashboardHomePage() {
           <div className="relative p-6 sm:p-8">
             <div className="max-w-3xl">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Welcome back, {user?.firstName}! 
+                Welcome Back, {user?.firstName}! 
               </h1>
               <p className="mt-2 text-sm text-white/80 sm:text-base">
                 Here’s what’s happening with your classes today.
