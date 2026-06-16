@@ -216,9 +216,11 @@ export default function Topbar() {
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem disabled className="flex items-center gap-2">
+              <DropdownMenuItem className="flex items-center gap-2">
+                <Link to="/my-profile" className="flex items-center gap-2 cursor-pointer">
                 <Settings className="h-4 w-4" />
                 Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
