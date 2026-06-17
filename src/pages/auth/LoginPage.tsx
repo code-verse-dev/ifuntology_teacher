@@ -85,7 +85,15 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           {/* Logo and Welcome Back — outside the box */}
           <div>
-            <IfuntologyMark logoOnly size="large" />
+            <a
+              href="https://erp.ifuntology.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block cursor-pointer"
+              aria-label="Open iFuntology ERP"
+            >
+              <IfuntologyMark logoOnly size="large" />
+            </a>
             <h1 className="mt-5 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl">
               Welcome Back!
             </h1>
