@@ -359,8 +359,20 @@ export default function SignUpPage() {
                 disabled={isLoading}
               />
               I Agree to the{" "}
-              <span className="text-accent hover:underline">Privacy Policy</span>{" "}
-              &amp; <span className="text-accent hover:underline">Terms</span>.
+              <a
+                href="https://erp.ifuntology.com/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              &amp; <a
+                href="https://erp.ifuntology.com/terms-and-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >Terms</a>.
             </label>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
