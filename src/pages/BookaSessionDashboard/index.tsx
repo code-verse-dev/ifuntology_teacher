@@ -35,6 +35,7 @@ import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySli
 import {
   useCreateSessionMutation,
   useGetMySessionsQuery,
+  useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
@@ -67,12 +68,6 @@ interface MyEvent {
   teacherHosted?: boolean;
 }
 
-interface Query {
-  from?: string;
-  to?: string;
-  status: string;
-}
-
 export default function BookaSessionDashboard() {
   const [createSession, { isLoading: bookingLoading, error, isSuccess }] =
     useCreateSessionMutation();
@@ -88,11 +83,6 @@ export default function BookaSessionDashboard() {
   const lastDayStr = format(lastDayOfMonth, "yyyy-MM-dd");
 
   const [purpose, setPurpose] = useState("");
-  const [queryOptions, setQueryOptions] = useState<Query>({
-    from: todayStr,
-    to: lastDayStr,
-    status: "approved",
-  });
   const navigate = useNavigate();
 
   const EVENT_COLORS = ["#fce7f3", "#fef3c7", "#dcfce7"];
@@ -114,15 +104,24 @@ export default function BookaSessionDashboard() {
   );
   const slots = data?.data || [];
 
+  const { data: mySessionsData } = useGetMySessionsQuery({
+    from: todayStr,
+    to: lastDayStr,
+    status: "approved",
+  });
+
   const {
-    data: mySessionsData,
-    error: mySessionsError,
-    isLoading: mySessionsLoading,
-  } = useGetMySessionsQuery(queryOptions);
+    data: upcomingSessionsData,
+    isLoading: upcomingSessionsLoading,
+  } = useGetTeacherUpcomingSessionsQuery({
+    from: todayStr,
+    limit: 10,
+  });
 
   const upcomingSession =
-    mySessionsData?.data?.docs && mySessionsData.data.docs.length > 0
-      ? mySessionsData.data.docs[0]
+    upcomingSessionsData?.data?.docs &&
+    upcomingSessionsData.data.docs.length > 0
+      ? upcomingSessionsData.data.docs[0]
       : null;
 
   const handleMeetingAction = async () => {
@@ -578,7 +577,7 @@ export default function BookaSessionDashboard() {
                   Discuss LMS implementation
                 </div>
               </div> */}
-              {mySessionsLoading ? (
+              {upcomingSessionsLoading ? (
                 <div className="text-sm text-muted-foreground">
                   Loading upcoming sessions...
                 </div>
