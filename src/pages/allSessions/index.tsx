@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   useGetMySessionsQuery,
+  useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
   useGetInviteableStudentsQuery,
@@ -96,15 +97,12 @@ export default function MyOrdersPage() {
     useSetSessionInvitesMutation();
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const upcomingRangeEnd = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
   const {
     data: upcomingSessionsData,
     isLoading: upcomingSessionsLoading,
-  } = useGetMySessionsQuery({
+  } = useGetTeacherUpcomingSessionsQuery({
     from: todayStr,
-    to: upcomingRangeEnd,
-    status: "approved",
     limit: 10,
     page: 1,
   });

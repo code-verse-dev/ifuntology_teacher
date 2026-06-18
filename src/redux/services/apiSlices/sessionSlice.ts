@@ -25,6 +25,17 @@ export const sessionSlice = createApi({
       }),
       providesTags: ["Session"],
     }),
+    getTeacherUpcomingSessions: builder.query<
+      any,
+      { from?: string; to?: string; page?: number; limit?: number }
+    >({
+      query: ({ from, to, page, limit }) => ({
+        url: "/session/my/upcoming",
+        method: "GET",
+        params: { from, to, page, limit },
+      }),
+      providesTags: ["Session"],
+    }),
     joinMeeting: builder.mutation<any, string>({
       query: (sessionId) => ({
         url: `/session/join-meeting/${sessionId}`,
@@ -86,6 +97,7 @@ export const sessionSlice = createApi({
 export const {
   useCreateSessionMutation,
   useGetMySessionsQuery,
+  useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
   useCreateTeacherHostedSessionMutation,
