@@ -11,7 +11,8 @@ import {
     FileText,
     CheckCircle2,
     Lock,
-    Download
+    Download,
+    Eye
 } from "lucide-react";
 import {
     Accordion,
@@ -53,6 +54,13 @@ export default function CourseDetails() {
         } catch {
             window.open(UPLOADS_URL + fileUrl, "_blank");
         }
+    };
+
+    const canPreviewPdf = (lesson: any) => lesson?.allowPdfPreview ?? false;
+    const canDownloadPdf = (lesson: any) => lesson?.allowPdfDownload ?? true;
+
+    const handlePreviewPdf = (fileUrl: string) => {
+        window.open(`${UPLOADS_URL}${fileUrl}`, "_blank", "noopener,noreferrer");
     };
 
     return (
@@ -187,15 +195,31 @@ export default function CourseDetails() {
                                                             View Lesson
                                                         </Button>}
                                                         {lesson.type === 'PDF' && (
-                                                            <Button
-                                                                size="sm"
-                                                                className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1"
-                                                                onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
-                                                                disabled={!lesson?.fileUrl}
-                                                            >
-                                                                <Download className="h-3 w-3" />
-                                                                Download
-                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                {canPreviewPdf(lesson) && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="rounded-full text-xs h-8 px-4 gap-1"
+                                                                        onClick={() => lesson?.fileUrl && handlePreviewPdf(lesson.fileUrl)}
+                                                                        disabled={!lesson?.fileUrl}
+                                                                    >
+                                                                        <Eye className="h-3 w-3" />
+                                                                        Preview
+                                                                    </Button>
+                                                                )}
+                                                                {canDownloadPdf(lesson) && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1"
+                                                                        onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
+                                                                        disabled={!lesson?.fileUrl}
+                                                                    >
+                                                                        <Download className="h-3 w-3" />
+                                                                        Download
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         )}
                                                         {lesson.type === 'QUIZ' && <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4">
                                                             Preview Quiz

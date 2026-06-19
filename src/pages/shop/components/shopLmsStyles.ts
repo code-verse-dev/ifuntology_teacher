@@ -23,17 +23,21 @@ export const lmsCoursePills = [
   {
     label: "Funtology",
     className: "bg-gradient-to-b from-[#c6285c] to-[#7b1538] shadow-[0_4px_12px_rgba(123,21,56,0.45)]",
+    link: "https://erp.ifuntology.com/courses/funtology",
   },
   {
     label: "Barbertology",
     className: "bg-gradient-to-b from-[#c9a227] to-[#7a5f12] shadow-[0_4px_12px_rgba(122,95,18,0.4)]",
+    link: "https://erp.ifuntology.com/courses/barbertology",
   },
   {
     label: "Nailtology",
     className: "bg-gradient-to-b from-[#00838f] to-[#004d56] shadow-[0_4px_12px_rgba(0,77,86,0.4)]",
+    link: "https://erp.ifuntology.com/courses/nailtology",
   },
   {
     label: "Skintology",
     className: "bg-gradient-to-b from-[#43a047] to-[#1b5e20] shadow-[0_4px_12px_rgba(27,94,32,0.4)]",
+    link: "https://erp.ifuntology.com/courses/skintology",
   },
 ] as const;

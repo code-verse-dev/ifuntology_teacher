@@ -401,15 +401,18 @@ export default function ShopPage() {
               footer={
                 <div className="mt-6 grid max-w-[360px] grid-cols-2 gap-3">
                   {lmsCoursePills.map((pill) => (
-                    <span
+                    <a
                       key={pill.label}
+                      href={pill.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className={cn(
-                        "rounded-md px-3 py-3 text-center text-sm font-bold tracking-wide text-white font-serif",
+                        "rounded-md px-3 py-3 text-center text-sm font-bold tracking-wide text-white font-serif transition-opacity hover:opacity-90",
                         pill.className
                       )}
                     >
                       {pill.label}
-                    </span>
+                    </a>
                   ))}
                 </div>
               }
