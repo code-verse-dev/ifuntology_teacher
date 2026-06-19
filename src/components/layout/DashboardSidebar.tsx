@@ -85,7 +85,7 @@ export default function DashboardSidebar() {
   ];
 
   const learningManagement: Item[] = [
-    { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
+    { title: "Learning Management", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
     { title: "Video Library", url: "/video-library", icon: Video },
