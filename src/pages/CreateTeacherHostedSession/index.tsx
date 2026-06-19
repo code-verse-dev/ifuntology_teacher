@@ -109,7 +109,7 @@ export default function CreateTeacherHostedSession() {
   }, [startTime, endTime]);
 
   useEffect(() => {
-    document.title = "Create your session • iFuntology Teacher";
+    document.title = "Classroom Sessions • iFuntology Teacher";
   }, []);
 
   const toggleStudent = (id: string, checked: boolean) => {
@@ -194,23 +194,21 @@ export default function CreateTeacherHostedSession() {
       toast.error(e?.data?.message || e?.message || "Could not create session");
     }
   };
-  console.log(students, 'students');
+
   return (
     <DashboardWithSidebarLayout>
       <section className="mx-auto w-full max-w-3xl space-y-6">
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="ghost" size="sm" onClick={() => navigate("/book-a-session")}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => navigate("/book-a-session/classroom")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
         </div>
 
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Create your own session</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Classroom Sessions</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Set the date and times yourself (no availability lookup). Times are saved in 24-hour
-            format for the server; the preview below shows them in 12-hour form. You can invite
-            students now or later from My Sessions.
+            Create your own Zoom session, set the date and time, and invite enrolled students.
           </p>
         </div>
 
@@ -390,7 +388,7 @@ export default function CreateTeacherHostedSession() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => navigate("/book-a-session")}>
+            <Button type="button" variant="outline" onClick={() => navigate("/book-a-session/classroom")}>
               Cancel
             </Button>
             <Button

@@ -4,7 +4,7 @@ import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 export const sessionSlice = createApi({
   reducerPath: "sessionApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Session"],
+  tagTypes: ["Session", "ClassroomAccess"],
   endpoints: (builder) => ({
     createSession: builder.mutation({
       query: (body) => ({
@@ -35,6 +35,13 @@ export const sessionSlice = createApi({
         params: { from, to, page, limit },
       }),
       providesTags: ["Session"],
+    }),
+    getClassroomAccess: builder.query<any, void>({
+      query: () => ({
+        url: "/session/classroom-access",
+        method: "GET",
+      }),
+      providesTags: ["ClassroomAccess"],
     }),
     joinMeeting: builder.mutation<any, string>({
       query: (sessionId) => ({
@@ -98,6 +105,7 @@ export const {
   useCreateSessionMutation,
   useGetMySessionsQuery,
   useGetTeacherUpcomingSessionsQuery,
+  useGetClassroomAccessQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
   useCreateTeacherHostedSessionMutation,

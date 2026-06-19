@@ -1,6 +1,8 @@
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import type { ShopEligibility } from "@/redux/services/apiSlices/shopSlice";
 
 type PricingData = {
@@ -28,7 +30,10 @@ type PricingData = {
     noOfSubscriptions?: number;
   };
   subtotalBeforeTax?: number;
+  shippingAmount?: number;
   taxAmount?: number;
+  taxExempt?: boolean;
+  taxRatePercent?: number;
   grandTotal?: number;
   eligibility?: ShopEligibility;
 };
@@ -42,6 +47,8 @@ type Props = {
   canPreview: boolean;
   canSubmit: boolean;
   submitBlockReason?: string | null;
+  taxExempt: boolean;
+  onTaxExemptChange: (value: boolean) => void;
   onPayNow: () => void;
   onRequestQuote: () => void;
   isQuoteLoading: boolean;
@@ -59,6 +66,8 @@ export default function ShopPricingPanel({
   canPreview,
   canSubmit,
   submitBlockReason,
+  taxExempt,
+  onTaxExemptChange,
   onPayNow,
   onRequestQuote,
   isQuoteLoading,
@@ -72,14 +81,14 @@ export default function ShopPricingPanel({
   const actionsDisabled = !canSubmit || !canProceed || !hasTotal;
 
   return (
-    <Card className="sticky top-6 rounded-2xl border border-border/60 p-5">
+    <Card className="sticky top-6 rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">Pricing preview</h2>
+        <h2 className="text-lg font-bold text-foreground">Pricing preview</h2>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="h-8 gap-1.5 rounded-full text-xs"
+          className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
           onClick={onRefresh}
           disabled={!canPreview || isLoading}
         >
@@ -92,7 +101,7 @@ export default function ShopPricingPanel({
         </Button>
       </div>
 
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         Server-calculated totals based on your current selections.
       </p>
 
@@ -121,7 +130,7 @@ export default function ShopPricingPanel({
       )}
 
       {!pricing && !error && !isLoading && (
-        <div className="mt-6 rounded-lg border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
+        <div className="mt-6 rounded-xl border border-sky-100 bg-sky-50 px-4 py-5 text-center text-sm leading-relaxed text-sky-900/80 dark:border-sky-900/30 dark:bg-sky-950/20 dark:text-sky-100/80">
           Enable at least one section and fill in the required fields, then
           update pricing to see your estimate.
         </div>
@@ -146,7 +155,7 @@ export default function ShopPricingPanel({
                   key={`${course.courseType}-${idx}`}
                   className="text-sm text-muted-foreground"
                 >
-                  {course.courseType}: kits {fmt(course.kitsTotal)} + subs{" "}
+                  {course.courseType}: kits {fmt(course.kitsTotal)} + monthly subs{" "}
                   {fmt(course.subscriptionTotal)} = {fmt(course.total)}
                 </div>
               ))}
@@ -194,16 +203,44 @@ export default function ShopPricingPanel({
 
           <div className="space-y-1 border-t border-border/60 pt-4">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Subtotal (before tax)</span>
+              <span>Subtotal</span>
               <span>{fmt(pricing.subtotalBeforeTax)}</span>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Tax</span>
+              <span>Shipping</span>
+              <span>{fmt(pricing.shippingAmount)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>
+                Tax
+                {pricing.taxExempt
+                  ? " (exempt)"
+                  : typeof pricing.taxRatePercent === "number"
+                    ? ` (${pricing.taxRatePercent}%)`
+                    : ""}
+              </span>
               <span>{fmt(pricing.taxAmount)}</span>
             </div>
             <div className="flex justify-between pt-1 text-lg font-bold">
               <span>Estimated total</span>
               <span>{fmt(pricing.grandTotal)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3">
+            <Checkbox
+              id="shop-tax-exempt"
+              checked={taxExempt}
+              onCheckedChange={(checked) => onTaxExemptChange(checked === true)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="shop-tax-exempt" className="cursor-pointer text-sm font-medium">
+                Tax exempt
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Check this box if this order qualifies for tax exemption. Tax will
+                not be charged when selected.
+              </p>
             </div>
           </div>
 

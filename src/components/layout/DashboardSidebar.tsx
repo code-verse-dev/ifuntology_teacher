@@ -2,7 +2,6 @@ import {
   BadgeDollarSign,
   BookOpen,
   Box,
-  ClipboardList,
   FileText,
   Gift,
   GraduationCap,
@@ -21,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
+import BookSessionSidebarGroup from "@/components/layout/BookSessionSidebarGroup";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -73,7 +73,6 @@ export default function DashboardSidebar() {
   const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
 
   const booking: Item[] = [
-    { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
     { title: "Shop", url: "/shop", icon: ShoppingBag },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
@@ -143,6 +142,7 @@ export default function DashboardSidebar() {
           <SidebarGroupLabel>BOOKING & QUOTES</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <BookSessionSidebarGroup />
               {booking.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <MenuLink item={item} />

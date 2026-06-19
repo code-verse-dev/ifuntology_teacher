@@ -1,17 +1,24 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
+/*
+import { useMemo } from "react";
 import {
   Calendar,
   dateFnsLocalizer,
   EventProps,
   DayPropGetter,
 } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "./calendar-custom.css";
+*/
+import { format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+/*
 import { CSSProperties } from "react";
+*/
 import {
   Dialog,
   DialogContent,
@@ -23,18 +30,20 @@ import {
   Clock,
   Monitor,
   Trash2,
+  /*
   Check,
-  Video,
   ChevronLeft,
   ChevronRight,
+  */
+  Video,
   Loader2,
-  Sparkles,
 } from "lucide-react";
-import "./calendar-custom.css";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
 import {
   useCreateSessionMutation,
+  /*
   useGetMySessionsQuery,
+  */
   useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
@@ -43,6 +52,7 @@ import { toast } from "sonner";
 import swal from "sweetalert";
 import { useNavigate } from "react-router-dom";
 
+/*
 const locales = {
   "en-US": enUS,
 };
@@ -54,6 +64,7 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+*/
 
 // Event interface matching the calendar's expected structure + custom fields
 interface MyEvent {
@@ -79,16 +90,20 @@ export default function BookaSessionDashboard() {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
+  /*
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   const lastDayStr = format(lastDayOfMonth, "yyyy-MM-dd");
+  */
 
   const [purpose, setPurpose] = useState("");
   const navigate = useNavigate();
 
+  /*
   const EVENT_COLORS = ["#fce7f3", "#fef3c7", "#dcfce7"];
 
   const getRandomColor = () =>
     EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)];
+  */
 
   const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null);
 
@@ -104,11 +119,13 @@ export default function BookaSessionDashboard() {
   );
   const slots = data?.data || [];
 
+  /*
   const { data: mySessionsData } = useGetMySessionsQuery({
     from: todayStr,
     to: lastDayStr,
     status: "approved",
   });
+  */
 
   const {
     data: upcomingSessionsData,
@@ -153,7 +170,7 @@ export default function BookaSessionDashboard() {
   };
 
   useEffect(() => {
-    document.title = "Book a Session • iFuntology Teacher";
+    document.title = "Book With Admin • iFuntology Teacher";
   }, []);
 
   const to12Hour = (time: string) => {
@@ -163,6 +180,7 @@ export default function BookaSessionDashboard() {
     return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
   };
 
+  /*
   const events: MyEvent[] = useMemo(() => {
     if (!mySessionsData?.data?.docs) return [];
 
@@ -171,7 +189,7 @@ export default function BookaSessionDashboard() {
 
       return {
         id: session._id,
-        title: session.platform, // shown in calendar cell
+        title: session.platform,
         start: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
         end: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
         platform: session.platform,
@@ -188,6 +206,7 @@ export default function BookaSessionDashboard() {
       };
     });
   }, [mySessionsData]);
+
   const handleSelectSlot = ({ start }: { start: Date }) => {
     setSelectedDate(format(start, "yyyy-MM-dd"));
   };
@@ -201,7 +220,7 @@ export default function BookaSessionDashboard() {
 
     const eventOnDay = events.find((ev) => {
       const evDate = new Date(ev.start);
-      evDate.setHours(0, 0, 0, 0); // normalize
+      evDate.setHours(0, 0, 0, 0);
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
       return evDate.getTime() === d.getTime();
@@ -236,7 +255,7 @@ export default function BookaSessionDashboard() {
 
     return { style };
   };
-  // Custom Event Component
+
   const EventComponent = ({ event }: EventProps<MyEvent>) => {
     return (
       <div className="flex flex-col gap-1 p-1 text-xs text-foreground">
@@ -244,10 +263,7 @@ export default function BookaSessionDashboard() {
           {event.platform === "Zoom Meeting" ? (
             <Video className="h-3 w-3 text-blue-600" />
           ) : (
-            // Simple placeholder for Google Meet icon color/shape
             <div className="h-3 w-3 rounded-full bg-green-500" />
-            // Or use an icon like Video but styled differently.
-            // Keeping it simple with Lucide 'Video' for now or the same Video icon.
           )}
           <span>{event.title}</span>
         </div>
@@ -255,9 +271,7 @@ export default function BookaSessionDashboard() {
           <Check className="h-3 w-3 text-green-600 mt-[1px]" />
           <span>
             {event.teacherHosted ? (
-              <>
-                Your session ({event.timeRange})
-              </>
+              <>Your session ({event.timeRange})</>
             ) : (
               <>
                 Confirmed: {event.platform.split(" ")[0]} with <br />
@@ -270,7 +284,6 @@ export default function BookaSessionDashboard() {
     );
   };
 
-  // Custom Toolbar
   const CustomToolbar = (toolbar: any) => {
     const goToBack = () => {
       toolbar.onNavigate("PREV");
@@ -310,6 +323,7 @@ export default function BookaSessionDashboard() {
       </div>
     );
   };
+  */
 
   const formatTimeRange = (start: string, end: string) => {
     const to12Hour = (time: string) => {
@@ -383,21 +397,12 @@ export default function BookaSessionDashboard() {
       <section className="mx-auto w-full  space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold">Book a Session</h1>
+            <h1 className="text-2xl font-extrabold">Book With Admin</h1>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Request a session with an admin for approval, or create your own Zoom session and invite
-              students when you are ready.
+              Request a session with an admin for approval. Choose a date, time slot,
+              and platform — we will notify you once it is confirmed.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="shrink-0 rounded-full border-orange-500/50 text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/40"
-            onClick={() => navigate("/book-a-session/create-own")}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Create your own session
-          </Button>
         </div>
 
         <Card className="rounded-2xl border border-border/60 p-6">
@@ -499,7 +504,16 @@ export default function BookaSessionDashboard() {
                 <label className="text-sm font-semibold text-foreground">
                   Select Date <span className="text-red-500">*</span>
                 </label>
-                <div className="text-lg font-bold">December, 2025</div>
+                <input
+                  type="date"
+                  min={todayStr}
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setSelectedSlot(null);
+                  }}
+                  className="w-full rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
               </div>
             </div>
 
@@ -652,6 +666,7 @@ export default function BookaSessionDashboard() {
             </div>
           </div>
 
+          {/*
           <div className="rounded-md border border-border/60 bg-white/50 dark:bg-card/30 p-4 h-[800px]">
             <Calendar
               localizer={localizer}
@@ -671,6 +686,7 @@ export default function BookaSessionDashboard() {
               onSelectEvent={(event) => setSelectedEvent(event)}
             />
           </div>
+          */}
           {/* Bottom Section: Purpose + Actions */}
           <div className="mt-8 rounded-xl border border-border/60 bg-background p-6 space-y-6">
             {/* Purpose */}
