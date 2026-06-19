@@ -9,7 +9,7 @@ export type CreatePaymentIntentBody =
 export const paymentSlice = createApi({
   reducerPath: "paymentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Payment", "Cart", "Subscription", "Cards", "WtrSubscription", "PrintOrder"],
+  tagTypes: ["Payment", "Cart", "Subscription", "Cards", "WtrSubscription", "PrintOrder", "ClassroomAccess"],
   endpoints: (builder) => ({
     paymentConfig: builder.query<any, any>({
       query: () => ({
@@ -118,6 +118,23 @@ export const paymentSlice = createApi({
       }),
       invalidatesTags: ["Cards"],
     }),
+    createClassroomSessionIntent: builder.mutation<any, void>({
+      query: () => ({
+        url: "/payment/create-classroom-session-intent",
+        method: "POST",
+      }),
+    }),
+    confirmClassroomSessionPayment: builder.mutation<
+      any,
+      { paymentIntentId: string }
+    >({
+      query: (body) => ({
+        url: "/payment/classroom-session-payment",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["ClassroomAccess", "Payment"],
+    }),
   }),
 });
 
@@ -133,4 +150,6 @@ export const {
   useGetMyWtrSubscriptionQuery,
   useDeleteSavedPaymentMethodMutation,
   useConfirmWtrPrintPaymentMutation,
+  useCreateClassroomSessionIntentMutation,
+  useConfirmClassroomSessionPaymentMutation,
 } = paymentSlice;

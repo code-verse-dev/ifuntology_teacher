@@ -1,4 +1,15 @@
 import type { ShopPreviewPayload } from "@/redux/services/apiSlices/shopSlice";
+import {
+  isValidLmsKitQuantity,
+  LMS_KIT_QUANTITY_ERROR,
+} from "./utils/lmsKitQuantity";
+
+export type CatalogSelectedProduct = {
+  name: string;
+  image?: string;
+  price: number;
+  quantity: string;
+};
 
 export type ShopFormState = {
   organizationName: string;
@@ -7,13 +18,13 @@ export type ShopFormState = {
   includeWtr: boolean;
   lmsEmail: string;
   lmsAddress: string;
-  lmsSubscriptionType: string;
   lmsCourses: {
     courseType: string;
     noOfKits: string;
     webSubscriptions: string;
   }[];
   products: { id: string; quantity: string }[];
+  catalogSelectedProducts: Record<string, CatalogSelectedProduct>;
   city: string;
   stateVal: string;
   country: string;
@@ -23,7 +34,69 @@ export type ShopFormState = {
   wtrSubscriptionType: string;
   wtrNumberOfSeats: string;
   wtrBookPrinting: boolean;
+  taxExempt: boolean;
 };
+
+function getMergedEnrichmentProducts(state: ShopFormState) {
+  const quantities = new Map<string, number>();
+
+  for (const row of state.products) {
+    if (!row.id || Number(row.quantity) <= 0) continue;
+    quantities.set(
+      row.id,
+      (quantities.get(row.id) ?? 0) + Number(row.quantity)
+    );
+  }
+
+  for (const [productId, meta] of Object.entries(state.catalogSelectedProducts)) {
+    const qty = Number(meta.quantity);
+    if (qty <= 0) continue;
+    quantities.set(productId, (quantities.get(productId) ?? 0) + qty);
+  }
+
+  return Array.from(quantities.entries()).map(([product, quantity]) => ({
+    product,
+    quantity,
+  }));
+}
+
+function isLmsCourseRowPreviewReady(row: ShopFormState["lmsCourses"][number]) {
+  return (
+    row.courseType &&
+    Number(row.noOfKits) > 0 &&
+    Number(row.webSubscriptions) > 0 &&
+    isValidLmsKitQuantity(row.noOfKits) &&
+    isValidLmsKitQuantity(row.webSubscriptions)
+  );
+}
+
+function validateLmsCourseQuantities(
+  courses: ShopFormState["lmsCourses"]
+): string | null {
+  for (let i = 0; i < courses.length; i++) {
+    const row = courses[i];
+    const hasQuantity =
+      row.noOfKits.trim().length > 0 || row.webSubscriptions.trim().length > 0;
+    if (!hasQuantity) continue;
+    if (
+      !isValidLmsKitQuantity(row.noOfKits) ||
+      !isValidLmsKitQuantity(row.webSubscriptions)
+    ) {
+      return `Course ${i + 1}: ${LMS_KIT_QUANTITY_ERROR}`;
+    }
+  }
+  return null;
+}
+
+function finalizePayload(
+  payload: ShopPreviewPayload,
+  state: ShopFormState
+): ShopPreviewPayload {
+  if (state.taxExempt) {
+    payload.taxExempt = true;
+  }
+  return payload;
+}
 
 export function buildPreviewPayload(
   state: ShopFormState
@@ -36,58 +109,55 @@ export function buildPreviewPayload(
   const payload: ShopPreviewPayload = {
     organizationName: state.organizationName.trim(),
   };
+  let hasPreviewSection = false;
 
   if (state.includeLms) {
-    const validCourses = state.lmsCourses.filter(
-      (row) =>
-        row.courseType &&
-        Number(row.noOfKits) > 0 &&
-        Number(row.webSubscriptions) > 0
-    );
-    if (!validCourses.length) return null;
-    payload.lms = {
-      email: state.lmsEmail.trim() || "preview@example.com",
-      address: state.lmsAddress.trim() || "Preview",
-      lmsCourses: validCourses.map((row) => ({
-        courseType: row.courseType,
-        subscriptionType: state.lmsSubscriptionType,
-        noOfKits: row.noOfKits,
-        webSubscriptions: row.webSubscriptions,
-      })),
-    };
+    const validCourses = state.lmsCourses.filter(isLmsCourseRowPreviewReady);
+    if (validCourses.length) {
+      hasPreviewSection = true;
+      payload.lms = {
+        email: state.lmsEmail.trim() || "preview@example.com",
+        address: state.lmsAddress.trim() || "Preview",
+        lmsCourses: validCourses.map((row) => ({
+          courseType: row.courseType,
+          subscriptionType: "monthly",
+          noOfKits: row.noOfKits,
+          webSubscriptions: row.webSubscriptions,
+        })),
+      };
+    }
   }
 
   if (state.includeEnrichment) {
-    const validProducts = state.products
-      .filter((p) => p.id && Number(p.quantity) > 0)
-      .map((p) => ({
-        product: p.id,
-        quantity: Number(p.quantity),
-      }));
-    if (!validProducts.length) return null;
-    payload.enrichment = {
-      products: validProducts,
-      city: state.city.trim() || undefined,
-      streetAddress: state.streetAddress.trim() || undefined,
-      state: state.stateVal.trim() || undefined,
-      country: state.country.trim() || undefined,
-      zipCode: state.zip.trim() || undefined,
-      couponCode: state.appliedCoupon ?? undefined,
-    };
+    const validProducts = getMergedEnrichmentProducts(state);
+    if (validProducts.length) {
+      hasPreviewSection = true;
+      payload.enrichment = {
+        products: validProducts,
+        city: state.city.trim() || undefined,
+        streetAddress: state.streetAddress.trim() || undefined,
+        state: state.stateVal.trim() || undefined,
+        country: state.country.trim() || undefined,
+        zipCode: state.zip.trim() || undefined,
+        couponCode: state.appliedCoupon ?? undefined,
+      };
+    }
   }
 
   if (state.includeWtr) {
     const seats = Number(state.wtrNumberOfSeats);
-    if (!seats || seats < 1) return null;
-    payload.wtr = {
-      subscriberKind: "TEACHER",
-      subscriptionType: state.wtrSubscriptionType as "monthly" | "yearly",
-      numberOfSeats: seats,
-      bookPrintingRequests: state.wtrBookPrinting,
-    };
+    if (seats && seats >= 1) {
+      hasPreviewSection = true;
+      payload.wtr = {
+        subscriberKind: "TEACHER",
+        subscriptionType: state.wtrSubscriptionType as "monthly" | "yearly",
+        numberOfSeats: seats,
+        bookPrintingRequests: state.wtrBookPrinting,
+      };
+    }
   }
 
-  return payload;
+  return hasPreviewSection ? finalizePayload(payload, state) : null;
 }
 
 export function buildSubmitPayload(
@@ -118,6 +188,10 @@ export function buildSubmitPayload(
     if (!state.lmsAddress.trim()) {
       return { payload: null, error: "Address is required for LMS" };
     }
+    const lmsQuantityError = validateLmsCourseQuantities(state.lmsCourses);
+    if (lmsQuantityError) {
+      return { payload: null, error: lmsQuantityError };
+    }
     const validCourses = state.lmsCourses.filter(
       (row) =>
         row.courseType &&
@@ -132,7 +206,7 @@ export function buildSubmitPayload(
       address: state.lmsAddress.trim(),
       lmsCourses: validCourses.map((row) => ({
         courseType: row.courseType,
-        subscriptionType: state.lmsSubscriptionType,
+        subscriptionType: "monthly",
         noOfKits: row.noOfKits,
         webSubscriptions: row.webSubscriptions,
       })),
@@ -140,12 +214,7 @@ export function buildSubmitPayload(
   }
 
   if (state.includeEnrichment) {
-    const validProducts = state.products
-      .filter((p) => p.id && Number(p.quantity) > 0)
-      .map((p) => ({
-        product: p.id,
-        quantity: Number(p.quantity),
-      }));
+    const validProducts = getMergedEnrichmentProducts(state);
     if (!validProducts.length) {
       return { payload: null, error: "Add at least one enrichment product" };
     }
@@ -191,5 +260,5 @@ export function buildSubmitPayload(
     };
   }
 
-  return { payload, error: null };
+  return { payload: finalizePayload(payload, state), error: null };
 }

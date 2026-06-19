@@ -3,6 +3,7 @@ import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 
 export type ShopPreviewPayload = {
   organizationName: string;
+  taxExempt?: boolean;
   lms?: {
     email: string;
     address: string;
