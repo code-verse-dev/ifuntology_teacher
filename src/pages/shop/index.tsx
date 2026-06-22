@@ -413,7 +413,7 @@ export default function ShopPage() {
             <ShopSectionCard
               variant="lms"
               title="Workforce Readiness Courses"
-              description="LMS kits and interactive digital curriculum"
+              description="Learning Management System kits and interactive digital curriculum"
               icon={GraduationCap}
               enabled={includeLms}
               onToggle={setIncludeLms}
@@ -492,8 +492,8 @@ export default function ShopPage() {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                    <div>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Course Type</label>
                       <select
                         className={lmsCourseFieldSelect}
@@ -509,7 +509,7 @@ export default function ShopPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Kit type</label>
                       <select
                         className={lmsCourseFieldSelect}
@@ -529,7 +529,7 @@ export default function ShopPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Number of kits</label>
                       <input
                         type="number"
@@ -545,7 +545,7 @@ export default function ShopPage() {
                         placeholder="12, 24, 15, 30…"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Interactive Qty</label>
                       <input
                         type="number"
@@ -566,7 +566,7 @@ export default function ShopPage() {
                       />
                     </div>
                     {qtyError && (
-                      <p className="text-xs font-medium text-rose-600 sm:col-span-3">
+                      <p className="text-xs font-medium text-rose-600 sm:col-span-2">
                         {qtyError}
                       </p>
                     )}
