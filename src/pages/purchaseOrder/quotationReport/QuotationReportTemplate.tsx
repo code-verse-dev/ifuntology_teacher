@@ -84,7 +84,7 @@ const QuotationReportTemplate = forwardRef<HTMLDivElement, Props>(
               <span style={{ fontWeight: 700 }}>DATE:</span> {data.date}
             </div>
             <div style={{ marginBottom: 12 }}>
-              <span style={{ fontWeight: 700 }}>INVOICE #:</span>{" "}
+              <span style={{ fontWeight: 700 }}>Quote #/Invoice #:</span>{" "}
               {data.invoiceNumber}
             </div>
             <div>Make All Checks Payable To:</div>
