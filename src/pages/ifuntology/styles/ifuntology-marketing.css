@@ -1,0 +1,368 @@
+@import url("https://fonts.googleapis.com/css2?family=Poly:ital@0;1&display=swap");
+
+.ifuntology-marketing {
+  --ifi-bg: #060d18;
+  --ifi-card: rgba(12, 24, 42, 0.72);
+  --ifi-card-border: rgba(255, 255, 255, 0.08);
+  --ifi-accent: #7cb342;
+  --ifi-accent-soft: rgba(124, 179, 66, 0.15);
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(22, 74, 130, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(124, 179, 66, 0.12), transparent 50%),
+    var(--ifi-bg);
+}
+
+.ifuntology-marketing .ifi-page {
+  position: relative;
+  z-index: 1;
+}
+
+/* Typography */
+.ifuntology-marketing .font-banner {
+  font-family: "Poly", ui-serif, Georgia, serif;
+}
+
+.ifuntology-marketing .text-gradient-green {
+  background: linear-gradient(180deg, #b8d96a 0%, #7cb342 50%, #4a7c2a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.ifuntology-marketing .ifi-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(124, 179, 66, 0.35);
+  background: var(--ifi-accent-soft);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8d96a;
+}
+
+.ifuntology-marketing .ifi-section-header {
+  margin-bottom: 1.5rem;
+}
+
+.ifuntology-marketing .ifi-section-title {
+  margin-top: 0.75rem;
+  font-size: clamp(1.375rem, 2.5vw, 1.875rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f8fafc;
+}
+
+.ifuntology-marketing .ifi-section-desc {
+  margin-top: 0.625rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #94a3b8;
+}
+
+/* Cards */
+.ifuntology-marketing .ifi-card {
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid var(--ifi-card-border);
+  background: var(--ifi-card);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.ifuntology-marketing .ifi-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.ifuntology-marketing .ifi-hero-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(4, 12, 21, 0.88) 0%,
+    rgba(22, 74, 130, 0.45) 50%,
+    rgba(4, 12, 21, 0.92) 100%
+  );
+  pointer-events: none;
+}
+
+.ifuntology-marketing .ifi-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.ifuntology-marketing .ifi-section-card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--ifi-card-border);
+  background: linear-gradient(
+    145deg,
+    rgba(14, 28, 48, 0.9) 0%,
+    rgba(8, 16, 30, 0.95) 100%
+  );
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 640px) {
+  .ifuntology-marketing .ifi-section-card {
+    padding: 2rem 2.25rem;
+  }
+}
+
+.ifuntology-marketing .ifi-section-index {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: var(--ifi-accent-soft);
+  border: 1px solid rgba(124, 179, 66, 0.3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b8d96a;
+  margin-bottom: 0.75rem;
+}
+
+.ifuntology-marketing .ifi-image-frame {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.ifuntology-marketing .ifi-image-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ifuntology-marketing .ifi-prose p {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.ifuntology-marketing .ifi-prose p + p {
+  margin-top: 1rem;
+}
+
+.ifuntology-marketing .ifi-bullet-list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ifuntology-marketing .ifi-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.ifuntology-marketing .ifi-bullet-icon {
+  margin-top: 0.125rem;
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(124, 179, 66, 0.2);
+  color: #86efac;
+}
+
+/* Highlight card */
+.ifuntology-marketing .ifi-highlight-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.ifuntology-marketing .ifi-highlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 45%
+  );
+  pointer-events: none;
+}
+
+/* Module cards */
+.ifuntology-marketing .ifi-module-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid var(--ifi-card-border);
+  background: linear-gradient(160deg, rgba(16, 32, 54, 0.95), rgba(8, 18, 32, 0.98));
+  padding: 1.5rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.ifuntology-marketing .ifi-module-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(124, 179, 66, 0.25);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* Connection pills */
+.ifuntology-marketing .ifi-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* CTA */
+.ifuntology-marketing .ifi-cta-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(124, 179, 66, 0.2);
+  background: linear-gradient(
+    135deg,
+    rgba(14, 28, 48, 0.95) 0%,
+    rgba(22, 74, 130, 0.25) 50%,
+    rgba(8, 16, 30, 0.98) 100%
+  );
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 640px) {
+  .ifuntology-marketing .ifi-cta-card {
+    padding: 3rem 2.5rem;
+  }
+}
+
+/* Buttons */
+.ifuntology-marketing .green-button,
+.ifuntology-marketing .orange-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  border: 0;
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ifuntology-marketing .green-button {
+  background: linear-gradient(135deg, #8bc34a, #558b2f);
+}
+
+.ifuntology-marketing .orange-button {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+}
+
+.ifuntology-marketing .green-button:hover,
+.ifuntology-marketing .orange-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  color: #ffffff !important;
+}
+
+/* WTR audience cards */
+.ifuntology-marketing .ifi-audience-card {
+  position: relative;
+  overflow: visible;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(160deg, rgba(14, 28, 48, 0.9), rgba(6, 14, 26, 0.95));
+  min-height: 18rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+/* Stats */
+.ifuntology-marketing .ifi-stat-card {
+  border-radius: 1.5rem;
+  border: 1px solid var(--ifi-card-border);
+  background: linear-gradient(
+    160deg,
+    rgba(14, 28, 48, 0.95),
+    rgba(22, 74, 130, 0.2) 50%,
+    rgba(8, 16, 30, 0.98)
+  );
+  padding: 2rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.ifuntology-marketing .ifi-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Animations */
+@keyframes ifuntology-wtr-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes ifuntology-wtr-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(4px, -6px) rotate(1.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ifuntology-marketing .wtr-float {
+    animation: ifuntology-wtr-float 5s ease-in-out infinite;
+  }
+
+  .ifuntology-marketing .wtr-drift {
+    animation: ifuntology-wtr-drift 7s ease-in-out infinite;
+  }
+}

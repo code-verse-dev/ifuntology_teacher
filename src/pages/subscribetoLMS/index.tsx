@@ -195,7 +195,7 @@ function CourseCard({
                             : onSelect(course)
                     }
                 >
-                    {activeSubscriptionId ? "View Course" : "Subscribe Now"}
+                    {activeSubscriptionId ? "View Course" : "Enroll Now"}
                 </Button>
             </div>
         </Card>
@@ -273,17 +273,10 @@ export default function SubscribetoLMS() {
     const lmsTax = lmsSubtotal * (taxPercent / 100);
     const lmsTotal = lmsSubtotal + lmsTax;
 
-    const handleSelectCourse = (course: any) => {
-        setSelectedPlan({
-            id: course._id,
-            name: course.courseType ?? "Course",
-            price: HARDCODED_PRICE,
-            priceValue: HARDCODED_PRICE_VALUE,
-            duration: HARDCODED_DURATION,
-            features: Array.isArray(course.features) ? course.features : [],
-            theme: getThemeForCourseType(course.courseType ?? ""),
+    const handleSubscribeNow = (course: any) => {
+        navigate("/shop", {
+            state: { prefillLmsCourseType: course?.courseType ?? "Funtology" },
         });
-        setCourseTypeForPrice(course.courseType);
     };
     const handlePayWithCreditCard = () => {
         navigate("/payment", {
@@ -349,7 +342,7 @@ export default function SubscribetoLMS() {
                                     course={course}
                                     monthlyFee={monthlyFee}
                                     taxPercent={taxPercent}
-                                    onSelect={handleSelectCourse}
+                                    onSelect={handleSubscribeNow}
                                     activeSubscriptionId={
                                         activeSubscriptionByCourseType[course?.courseType]?._id ?? null
                                     }

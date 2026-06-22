@@ -18,6 +18,9 @@ import {
 import { toast } from "sonner";
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
 import BookSessionSidebarGroup from "@/components/layout/BookSessionSidebarGroup";
+import FuntologyBusinessBuilderSidebarItem from "@/components/layout/FuntologyBusinessBuilderSidebarItem";
+import FuntologyGlobalInstituteSidebarItem from "@/components/layout/FuntologyGlobalInstituteSidebarItem";
+import IfuntologySidebarGroup from "@/components/layout/IfuntologySidebarGroup";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -145,6 +148,17 @@ export default function DashboardSidebar() {
                   <MenuLink item={item} />
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>IFUNTOLOGY</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <IfuntologySidebarGroup />
+              <FuntologyGlobalInstituteSidebarItem />
+              <FuntologyBusinessBuilderSidebarItem />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

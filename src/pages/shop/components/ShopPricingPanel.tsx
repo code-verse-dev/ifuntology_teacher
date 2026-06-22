@@ -9,6 +9,7 @@ type PricingData = {
   lms?: {
     lmsCourses?: {
       courseType: string;
+      kitVariant?: string;
       kitsTotal: number;
       subscriptionTotal: number;
       total: number;
@@ -155,7 +156,13 @@ export default function ShopPricingPanel({
                   key={`${course.courseType}-${idx}`}
                   className="text-sm text-muted-foreground"
                 >
-                  {course.courseType}: kits {fmt(course.kitsTotal)} + monthly subs{" "}
+                  {course.courseType}
+                  {course.kitVariant === "BUNDLE_4_IN_1"
+                    ? " · Bundle Kit 4 in 1"
+                    : course.kitVariant
+                      ? " · Standard Kits"
+                      : ""}
+                  : kits {fmt(course.kitsTotal)} + curriculum{" "}
                   {fmt(course.subscriptionTotal)} = {fmt(course.total)}
                 </div>
               ))}
@@ -188,7 +195,10 @@ export default function ShopPricingPanel({
                 Write to Read
               </div>
               <div className="text-sm text-muted-foreground">
-                {pricing.wtr.subscriberKind} · {pricing.wtr.subscriptionType}
+                {pricing.wtr.subscriberKind}
+                {pricing.wtr.subscriptionType
+                  ? ` · ${pricing.wtr.subscriptionType}`
+                  : " · lifetime"}
                 {pricing.wtr.numberOfSeats
                   ? ` · ${pricing.wtr.numberOfSeats} seats`
                   : pricing.wtr.noOfSubscriptions
