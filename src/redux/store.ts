@@ -31,6 +31,7 @@ import { printOrderSlice } from "./services/apiSlices/printOrderSlice";
 import { vidLibrarySlice } from "./services/apiSlices/vidLibrarySlice";
 import { shopSlice } from "./services/apiSlices/shopSlice";
 import { characterSlice } from "./services/apiSlices/characterSlice";
+import { lessonSlice } from "./services/apiSlices/lessonSlice";
 
 
 const rootReducer = combineReducers({
@@ -63,6 +64,7 @@ const rootReducer = combineReducers({
   [vidLibrarySlice.reducerPath]: vidLibrarySlice.reducer,
   [shopSlice.reducerPath]: shopSlice.reducer,
   [characterSlice.reducerPath]: characterSlice.reducer,
+  [lessonSlice.reducerPath]: lessonSlice.reducer,
 });
 
 const persistConfig = {
@@ -97,6 +99,7 @@ const persistConfig = {
     vidLibrarySlice.reducerPath,
     shopSlice.reducerPath,
     characterSlice.reducerPath,
+    lessonSlice.reducerPath,
   ],
 };
 
@@ -135,7 +138,8 @@ export const store = configureStore({
       .concat(printOrderSlice.middleware)
       .concat(vidLibrarySlice.middleware)
       .concat(shopSlice.middleware)
-      .concat(characterSlice.middleware),
+      .concat(characterSlice.middleware)
+      .concat(lessonSlice.middleware),
 });
 
 setupListeners(store.dispatch);

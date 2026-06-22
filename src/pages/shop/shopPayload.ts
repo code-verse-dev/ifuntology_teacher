@@ -1,5 +1,8 @@
 import type { ShopPreviewPayload } from "@/redux/services/apiSlices/shopSlice";
 import {
+  type LmsKitVariant,
+} from "@/constants/lmsKitVariants";
+import {
   isValidLmsKitQuantity,
   LMS_KIT_QUANTITY_ERROR,
 } from "./utils/lmsKitQuantity";
@@ -20,6 +23,7 @@ export type ShopFormState = {
   lmsAddress: string;
   lmsCourses: {
     courseType: string;
+    kitVariant: LmsKitVariant;
     noOfKits: string;
     webSubscriptions: string;
   }[];
@@ -31,7 +35,6 @@ export type ShopFormState = {
   streetAddress: string;
   zip: string;
   appliedCoupon: string | null;
-  wtrSubscriptionType: string;
   wtrNumberOfSeats: string;
   wtrBookPrinting: boolean;
   taxExempt: boolean;
@@ -120,7 +123,7 @@ export function buildPreviewPayload(
         address: state.lmsAddress.trim() || "Preview",
         lmsCourses: validCourses.map((row) => ({
           courseType: row.courseType,
-          subscriptionType: "monthly",
+          kitVariant: row.kitVariant,
           noOfKits: row.noOfKits,
           webSubscriptions: row.webSubscriptions,
         })),
@@ -150,7 +153,6 @@ export function buildPreviewPayload(
       hasPreviewSection = true;
       payload.wtr = {
         subscriberKind: "TEACHER",
-        subscriptionType: state.wtrSubscriptionType as "monthly" | "yearly",
         numberOfSeats: seats,
         bookPrintingRequests: state.wtrBookPrinting,
       };
@@ -206,7 +208,7 @@ export function buildSubmitPayload(
       address: state.lmsAddress.trim(),
       lmsCourses: validCourses.map((row) => ({
         courseType: row.courseType,
-        subscriptionType: "monthly",
+        kitVariant: row.kitVariant,
         noOfKits: row.noOfKits,
         webSubscriptions: row.webSubscriptions,
       })),
@@ -254,7 +256,6 @@ export function buildSubmitPayload(
     }
     payload.wtr = {
       subscriberKind: "TEACHER",
-      subscriptionType: state.wtrSubscriptionType as "monthly" | "yearly",
       numberOfSeats: seats,
       bookPrintingRequests: state.wtrBookPrinting,
     };

@@ -59,8 +59,8 @@ export default function CourseDetails() {
     const canPreviewPdf = (lesson: any) => lesson?.allowPdfPreview ?? false;
     const canDownloadPdf = (lesson: any) => lesson?.allowPdfDownload ?? true;
 
-    const handlePreviewPdf = (fileUrl: string) => {
-        window.open(`${UPLOADS_URL}${fileUrl}`, "_blank", "noopener,noreferrer");
+    const handlePreviewPdf = (lessonId: string) => {
+        navigate(`/my-courses/pdf/${lessonId}`);
     };
 
     return (
@@ -104,6 +104,22 @@ export default function CourseDetails() {
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                                 {course?.description ?? "—"}
                             </p>
+
+                            <div className="mt-6">
+                                <Button
+                                    variant="outline"
+                                    className="w-full rounded-full py-4 font-semibold"
+                                    onClick={() =>
+                                        window.open(
+                                            "https://funtologyenrichmentsupplies.com/interactive-science-kits/",
+                                            "_blank",
+                                            "noopener,noreferrer"
+                                        )
+                                    }
+                                >
+                                    Interactive Classroom Kits
+                                </Button>
+                            </div>
                         </Card>
 
                         {/* Progress Card */}
@@ -201,8 +217,8 @@ export default function CourseDetails() {
                                                                         size="sm"
                                                                         variant="outline"
                                                                         className="rounded-full text-xs h-8 px-4 gap-1"
-                                                                        onClick={() => lesson?.fileUrl && handlePreviewPdf(lesson.fileUrl)}
-                                                                        disabled={!lesson?.fileUrl}
+                                                                        onClick={() => lesson?._id && handlePreviewPdf(lesson._id)}
+                                                                        disabled={!lesson?._id || !lesson?.fileUrl}
                                                                     >
                                                                         <Eye className="h-3 w-3" />
                                                                         Preview

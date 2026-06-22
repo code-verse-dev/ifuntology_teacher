@@ -28,7 +28,7 @@ type ShopSectionCardProps = {
 export const shopFieldLabel =
   "text-xs font-semibold text-white/95 tracking-wide";
 export const shopFieldInput =
-  "mt-1.5 h-11 w-full rounded-lg border-0 bg-white px-4 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-white/60";
+  "mt-1.5 h-11 w-full rounded-lg border-0 bg-white px-4 text-sm text-black shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-white/60 placeholder:text-slate-400";
 export const shopFieldSelect = shopFieldInput;
 
 export default function ShopSectionCard({

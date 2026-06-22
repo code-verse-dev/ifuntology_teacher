@@ -436,6 +436,7 @@ export default function BookaSessionDashboard() {
                   >
                     <option value="">Select Platform</option>
                     <option>Zoom Meeting</option>
+                    <option>Call</option>
                     {/* <option>Google Meet</option> */}
                   </select>
 
@@ -477,6 +478,9 @@ export default function BookaSessionDashboard() {
                     </option>
                     <option value="Nailtology Fundamentals">
                       Nailtology Fundamentals
+                    </option>
+                    <option value="Others">
+                      Others
                     </option>
                   </select>
 

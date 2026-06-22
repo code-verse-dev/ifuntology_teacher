@@ -1,6 +1,8 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 
+import type { LmsKitVariant } from "@/constants/lmsKitVariants";
+
 export type ShopPreviewPayload = {
   organizationName: string;
   taxExempt?: boolean;
@@ -9,7 +11,7 @@ export type ShopPreviewPayload = {
     address: string;
     lmsCourses: {
       courseType: string;
-      subscriptionType: string;
+      kitVariant?: LmsKitVariant;
       noOfKits: string;
       webSubscriptions: string;
     }[];

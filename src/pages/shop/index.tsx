@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Check, GraduationCap, PenTool, Store } from "lucide-react";
 import {
   Dialog,
@@ -51,11 +51,17 @@ import { getLmsKitQuantityError } from "./utils/lmsKitQuantity";
 import { cn } from "@/lib/utils";
 import swal from "sweetalert";
 import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
+import {
+  DEFAULT_LMS_KIT_VARIANT,
+  LMS_KIT_VARIANTS,
+  type LmsKitVariant,
+} from "@/constants/lmsKitVariants";
 import { ImageUrl } from "@/utils/Functions";
 
 type LmsCourseItem = {
   key: string;
   courseType: string;
+  kitVariant: LmsKitVariant;
   noOfKits: string;
   webSubscriptions: string;
 };
@@ -63,24 +69,20 @@ type LmsCourseItem = {
 const makeLmsCourseItem = (): LmsCourseItem => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   courseType: "Funtology",
+  kitVariant: DEFAULT_LMS_KIT_VARIANT,
   noOfKits: "",
   webSubscriptions: "",
 });
 
 export default function ShopPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const user = useSelector((state: any) => state.user.userData);
 
   useEffect(() => {
     document.title = "Shop • iFuntology Teacher";
   }, []);
-
-  useEffect(() => {
-    if (user?.email) {
-      setLmsEmail((prev) => prev || user.email);
-    }
-  }, [user?.email]);
 
   const [includeLms, setIncludeLms] = useState(true);
   const [includeEnrichment, setIncludeEnrichment] = useState(false);
@@ -109,10 +111,32 @@ export default function ShopPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   // WTR
-  const [wtrSubscriptionType, setWtrSubscriptionType] = useState("yearly");
   const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("1");
   const [wtrBookPrinting, setWtrBookPrinting] = useState(false);
   const [taxExempt, setTaxExempt] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      setLmsEmail((prev) => prev || user.email);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    const prefillCourseType = (location.state as { prefillLmsCourseType?: string })
+      ?.prefillLmsCourseType;
+    if (!prefillCourseType) return;
+
+    setIncludeLms(true);
+    setLmsCourses([
+      {
+        key: `${Date.now()}-prefill`,
+        courseType: prefillCourseType,
+        kitVariant: DEFAULT_LMS_KIT_VARIANT,
+        noOfKits: "12",
+        webSubscriptions: "12",
+      },
+    ]);
+  }, [location.state]);
 
   const [pricing, setPricing] = useState<any>(null);
   const [eligibility, setEligibility] = useState<ShopEligibility | null>(null);
@@ -128,7 +152,7 @@ export default function ShopPage() {
 
   const updateLmsCourseItem = (
     key: string,
-    field: "courseType" | "noOfKits" | "webSubscriptions",
+    field: "courseType" | "kitVariant" | "noOfKits" | "webSubscriptions",
     value: string
   ) => {
     setLmsCourses((rows) =>
@@ -216,7 +240,6 @@ export default function ShopPage() {
       streetAddress,
       zip,
       appliedCoupon,
-      wtrSubscriptionType,
       wtrNumberOfSeats,
       wtrBookPrinting,
       taxExempt,
@@ -236,7 +259,6 @@ export default function ShopPage() {
       streetAddress,
       zip,
       appliedCoupon,
-      wtrSubscriptionType,
       wtrNumberOfSeats,
       wtrBookPrinting,
       taxExempt,
@@ -470,7 +492,7 @@ export default function ShopPage() {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className={lmsCourseCardLabel}>Course Type</label>
                       <select
@@ -483,6 +505,26 @@ export default function ShopPage() {
                         {LMS_COURSE_TYPES.map((c) => (
                           <option key={c} value={c}>
                             {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={lmsCourseCardLabel}>Kit type</label>
+                      <select
+                        className={lmsCourseFieldSelect}
+                        value={row.kitVariant}
+                        onChange={(e) =>
+                          updateLmsCourseItem(
+                            row.key,
+                            "kitVariant",
+                            e.target.value
+                          )
+                        }
+                      >
+                        {LMS_KIT_VARIANTS.map((kit) => (
+                          <option key={kit.value} value={kit.value}>
+                            {kit.label}
                           </option>
                         ))}
                       </select>
@@ -618,23 +660,11 @@ export default function ShopPage() {
               imageSrc={ImageUrl("shop-section-3.png")}
               tagline="Everything You Need to Learn Beyond Limits"
             >
-              {eligibility?.wtrConflict && (
-                <p className="flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-2 text-xs text-amber-800">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  You already have an active Write to Read subscription.
-                </p>
-              )}
-              <div>
-                <label className={shopFieldLabel}>Subscription Type</label>
-                <select
-                  className={shopFieldSelect}
-                  value={wtrSubscriptionType}
-                  onChange={(e) => setWtrSubscriptionType(e.target.value)}
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
-              </div>
+              <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-700">
+                Lifetime access. Additional seats are added to your existing
+                subscription when you already have Write to Read from an LMS
+                purchase.
+              </p>
               <div>
                 <label className={shopFieldLabel}>No of Student Seats</label>
                 <input
