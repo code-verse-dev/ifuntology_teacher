@@ -31,7 +31,7 @@ export default function IfuntologySidebarGroup() {
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip="iFuntology" isActive={isActiveSection}>
             <Sparkles className="h-4 w-4" />
-            {!collapsed && <span>iFuntology</span>}
+            {!collapsed && <span>iFuntology Courses </span>}
             {!collapsed && (
               <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
             )}
