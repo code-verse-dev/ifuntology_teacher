@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { useGetMyWtrSubscriptionQuery } from "@/redux/services/apiSlices/paymentSlice";
-import WriteToRead from "./index";
 
 type LocationState = { fromWtrPayment?: boolean };
 
@@ -76,5 +75,5 @@ export default function WriteToReadGate() {
     return <Navigate to="/write-to-read/subscribe" replace />;
   }
 
-  return <WriteToRead />;
+  return <Outlet />;
 }
