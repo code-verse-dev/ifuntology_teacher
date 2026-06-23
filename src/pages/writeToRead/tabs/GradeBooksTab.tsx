@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { TabsContent } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, RotateCcw, Star } from "lucide-react";
+import { ArrowLeft, BookOpen, RotateCcw, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useAssignGradeMutation,
@@ -21,6 +21,9 @@ import {
   type AssignBookGradeBody,
 } from "@/redux/services/apiSlices/bookSlice";
 import { BASE_URL, SOCKET_URL } from "@/constants/api";
+import PublicFlipBookViewer from "../PublicFlipBookViewer";
+import { bookPageAspect } from "../bookPreview";
+import "../public-flipbook.css";
 
 type ReviewBookDoc = {
   _id: string;
@@ -31,6 +34,8 @@ type ReviewBookDoc = {
   submittedAt?: string;
   pdfUrl?: string;
   pdfStorageKey?: string;
+  coverWidthPx?: number;
+  coverHeightPx?: number;
   grade?: AssignBookGradeBody["grade"];
   owner?:
     | string
@@ -124,6 +129,27 @@ export function GradeBooksTab() {
   >(null);
   const [openingPdfId, setOpeningPdfId] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [flipbookPreview, setFlipbookPreview] = useState<{
+    title: string;
+    pdfUrl: string;
+    coverWidthPx?: number;
+    coverHeightPx?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (flipbookPreview?.pdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(flipbookPreview.pdfUrl);
+      }
+    };
+  }, [flipbookPreview?.pdfUrl]);
+
+  const closeFlipbookPreview = () => {
+    if (flipbookPreview?.pdfUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(flipbookPreview.pdfUrl);
+    }
+    setFlipbookPreview(null);
+  };
 
   const openGradeModal = (book: ReviewBookDoc) => {
     setSelectedBook(book);
@@ -198,23 +224,32 @@ export function GradeBooksTab() {
       const res = await fetch(`${BASE_URL}/book/${book._id}/review-pdf`, {
         credentials: "include",
       });
-      if (!res.ok) {
-        const fallback = resolveBookPdfUrl(book);
-        if (fallback) {
-          window.open(fallback, "_blank", "noopener,noreferrer");
+      let pdfUrl: string | null = null;
+      if (res.ok) {
+        const blob = await res.blob();
+        pdfUrl = URL.createObjectURL(blob);
+      } else {
+        pdfUrl = resolveBookPdfUrl(book);
+        if (!pdfUrl) {
+          toast.error(await readApiErrorMessage(res));
           return;
         }
-        toast.error(await readApiErrorMessage(res));
-        return;
       }
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
+      setFlipbookPreview({
+        title: book.title,
+        pdfUrl,
+        coverWidthPx: book.coverWidthPx,
+        coverHeightPx: book.coverHeightPx,
+      });
     } catch {
       const fallback = resolveBookPdfUrl(book);
       if (fallback) {
-        window.open(fallback, "_blank", "noopener,noreferrer");
+        setFlipbookPreview({
+          title: book.title,
+          pdfUrl: fallback,
+          coverWidthPx: book.coverWidthPx,
+          coverHeightPx: book.coverHeightPx,
+        });
       } else {
         toast.error("Could not open the book PDF.");
       }
@@ -224,6 +259,7 @@ export function GradeBooksTab() {
   };
 
   return (
+    <>
     <TabsContent
       value="grade"
       className="space-y-6 mt-0 outline-none text-left"
@@ -486,5 +522,26 @@ export function GradeBooksTab() {
         </DialogContent>
       </Dialog>
     </TabsContent>
+
+    {flipbookPreview ? (
+      <div className="public-flipbook-shell">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="fixed left-4 top-4 z-50 rounded-full border-white/15 bg-black/40 text-white backdrop-blur hover:bg-black/60"
+          onClick={closeFlipbookPreview}
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back
+        </Button>
+        <PublicFlipBookViewer
+          fileUrl={flipbookPreview.pdfUrl}
+          title={flipbookPreview.title}
+          pageAspect={bookPageAspect(flipbookPreview)}
+        />
+      </div>
+    ) : null}
+    </>
   );
 }
