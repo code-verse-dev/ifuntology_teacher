@@ -17,7 +17,13 @@ export const lmsCourseCardLabel =
 export const lmsCourseFieldInput =
   "mt-2.5 h-12 w-full min-w-0 rounded-xl border-0 bg-white px-4 text-base font-medium text-slate-700 shadow-[0_2px_10px_rgba(30,80,140,0.1)] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#4a90e2]/35";
 
-export const lmsCourseFieldSelect = `${lmsCourseFieldInput} appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22%3E%3Cpath d=%22m6 9 6 6 6-6%22/%3E%3C/svg%3E')] bg-[length:14px] bg-[right_12px_center] bg-no-repeat pr-10`;
+export const lmsCourseFieldSelectWrap = "relative mt-2.5";
+
+export const lmsCourseFieldSelect =
+  "h-12 w-full min-w-0 cursor-pointer appearance-none rounded-xl border border-[#b8cfe8] bg-[#f8fbff] pl-4 pr-10 text-base font-medium text-slate-700 shadow-[inset_0_1px_2px_rgba(30,80,140,0.06)] outline-none focus-visible:border-[#4a90e2] focus-visible:ring-2 focus-visible:ring-[#4a90e2]/35";
+
+export const lmsCourseFieldSelectIcon =
+  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a7099]";
 
 export const lmsCoursePills = [
   {

@@ -73,6 +73,33 @@ function isLmsCourseRowPreviewReady(row: ShopFormState["lmsCourses"][number]) {
   );
 }
 
+export function hasPreviewReadySection(state: ShopFormState): boolean {
+  if (state.includeLms && state.lmsCourses.some(isLmsCourseRowPreviewReady)) {
+    return true;
+  }
+  if (
+    state.includeEnrichment &&
+    getMergedEnrichmentProducts(state).length > 0
+  ) {
+    return true;
+  }
+  if (state.includeWtr && Number(state.wtrNumberOfSeats) >= 1) {
+    return true;
+  }
+  return false;
+}
+
+/** User-facing reason preview cannot run yet (when a section looks ready). */
+export function getPreviewBlockReason(state: ShopFormState): string | null {
+  if (!hasPreviewReadySection(state)) {
+    return null;
+  }
+  if (!state.organizationName.trim()) {
+    return "Enter organization name at the top to preview pricing.";
+  }
+  return null;
+}
+
 function validateLmsCourseQuantities(
   courses: ShopFormState["lmsCourses"]
 ): string | null {
