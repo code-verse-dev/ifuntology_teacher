@@ -168,14 +168,14 @@ function CourseCard({
                     <h3 className="mb-2 text-2xl font-bold text-slate-900">
                         {courseType}
                     </h3>
-                    <div className="mb-6 flex items-baseline">
+                    {/* <div className="mb-6 flex items-baseline">
                         <span className={`text-3xl font-bold ${theme.priceColor}`}>
                             ${total.toFixed(2)}
                         </span>
                         <span className="ml-2 text-sm text-slate-600 font-medium">
                             {HARDCODED_DURATION}
                         </span>
-                    </div>
+                    </div> */}
 
                     <ul className="mb-8 space-y-3">
                         {features.map((feature: string, i: number) => (
