@@ -56,6 +56,9 @@ import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToReadGate from "./pages/writeToRead/WriteToReadGate";
+import WriteToReadRouterLayout from "./pages/writeToRead/WriteToReadRouterLayout";
+import WriteToRead from "./pages/writeToRead";
+import BookBuilderPage from "./pages/writeToRead/BookBuilderPage";
 import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
 import PublicBookReaderPage from "./pages/writeToRead/PublicBookReaderPage";
 import AllSessions from "./pages/allSessions";
@@ -370,11 +373,19 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/write-to-read" element={
-                <ProtectedRoute>
-                  <WriteToReadGate />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/write-to-read"
+                element={
+                  <ProtectedRoute>
+                    <WriteToReadGate />
+                  </ProtectedRoute>
+                }
+              >
+                <Route element={<WriteToReadRouterLayout />}>
+                  <Route path="builder/:bookId/*" element={<BookBuilderPage />} />
+                  <Route index element={<WriteToRead />} />
+                </Route>
+              </Route>
 
               <Route path="/invite-student" element={
                 <ProtectedRoute>

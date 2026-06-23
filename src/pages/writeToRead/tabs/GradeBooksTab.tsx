@@ -23,6 +23,7 @@ import {
 import { BASE_URL, SOCKET_URL } from "@/constants/api";
 import PublicFlipBookViewer from "../PublicFlipBookViewer";
 import { bookPageAspect } from "../bookPreview";
+import { TeacherMyBooksSection } from "./TeacherMyBooksSection";
 import "../public-flipbook.css";
 
 type ReviewBookDoc = {
@@ -264,6 +265,17 @@ export function GradeBooksTab() {
       value="grade"
       className="space-y-6 mt-0 outline-none text-left"
     >
+      <TeacherMyBooksSection />
+
+      <div className="space-y-1">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          Student books to grade
+        </h2>
+        <p className="text-sm text-slate-500 font-medium">
+          Books submitted by your students for review.
+        </p>
+      </div>
+
       {isLoading && (
         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           Loading books…
