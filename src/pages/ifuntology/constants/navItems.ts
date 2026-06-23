@@ -1,3 +1,5 @@
+export const IFUNTOLOGY_FROM_SHOP_KEY = "ifuntology-from-shop";
+
 export const IFUNTOLOGY_NAV_ITEMS = [
   { title: "Funtology", url: "/courses/funtology" },
   { title: "Barbertology", url: "/courses/barbertology" },

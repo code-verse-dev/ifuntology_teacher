@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Check, ChevronDown, GraduationCap, PenTool, Store } from "lucide-react";
 import {
   Dialog,
@@ -43,6 +43,7 @@ import {
   lmsFieldRequired,
   lmsFieldSelect,
 } from "./components/shopLmsStyles";
+import { IFUNTOLOGY_FROM_SHOP_KEY } from "@/pages/ifuntology/constants/navItems";
 import {
   enrichmentFieldInput,
   enrichmentFieldLabel,
@@ -116,6 +117,10 @@ export default function ShopPage() {
   const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("1");
   const [wtrBookPrinting, setWtrBookPrinting] = useState(false);
   const [taxExempt, setTaxExempt] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.removeItem(IFUNTOLOGY_FROM_SHOP_KEY);
+  }, []);
 
   useEffect(() => {
     if (user?.email) {
@@ -448,18 +453,17 @@ export default function ShopPage() {
               footer={
                 <div className="mt-6 grid max-w-[360px] grid-cols-2 gap-3">
                   {lmsCoursePills.map((pill) => (
-                    <a
+                    <Link
                       key={pill.label}
-                      href={pill.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      to={pill.link}
+                      onClick={() => sessionStorage.setItem(IFUNTOLOGY_FROM_SHOP_KEY, "1")}
                       className={cn(
                         "rounded-md px-3 py-3 text-center text-sm font-bold tracking-wide text-white font-serif transition-opacity hover:opacity-90",
                         pill.className
                       )}
                     >
                       {pill.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               }

@@ -1,5 +1,6 @@
-import { ChevronRight, Sparkles } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { ArrowLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import {
   Collapsible,
@@ -15,6 +16,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
+  IFUNTOLOGY_FROM_SHOP_KEY,
   IFUNTOLOGY_NAV_ITEMS,
   isIfuntologySectionActive,
 } from "@/pages/ifuntology/constants/navItems";
@@ -24,6 +26,18 @@ export default function IfuntologySidebarGroup() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const isActiveSection = isIfuntologySectionActive(pathname);
+  const [fromShop, setFromShop] = useState(false);
+
+  useEffect(() => {
+    setFromShop(sessionStorage.getItem(IFUNTOLOGY_FROM_SHOP_KEY) === "1");
+  }, [pathname]);
+
+  const showBackToShop = fromShop && isActiveSection;
+
+  const handleBackToShop = () => {
+    sessionStorage.removeItem(IFUNTOLOGY_FROM_SHOP_KEY);
+    setFromShop(false);
+  };
 
   return (
     <Collapsible defaultOpen={isActiveSection} className="group/collapsible">
@@ -40,6 +54,20 @@ export default function IfuntologySidebarGroup() {
         {!collapsed && (
           <CollapsibleContent>
             <SidebarMenuSub>
+              {showBackToShop && (
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link
+                      to="/shop"
+                      onClick={handleBackToShop}
+                      className="w-full text-sidebar-foreground/90"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+                      <span>Back to Shop</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              )}
               {IFUNTOLOGY_NAV_ITEMS.map((item) => (
                 <SidebarMenuSubItem key={item.url}>
                   <SidebarMenuSubButton asChild>
