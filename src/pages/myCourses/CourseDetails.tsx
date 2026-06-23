@@ -11,7 +11,8 @@ import {
     FileText,
     CheckCircle2,
     Lock,
-    Download
+    Download,
+    Eye
 } from "lucide-react";
 import {
     Accordion,
@@ -55,6 +56,13 @@ export default function CourseDetails() {
         }
     };
 
+    const canPreviewPdf = (lesson: any) => lesson?.allowPdfPreview ?? false;
+    const canDownloadPdf = (lesson: any) => lesson?.allowPdfDownload ?? true;
+
+    const handlePreviewPdf = (lessonId: string) => {
+        navigate(`/my-courses/pdf/${lessonId}`);
+    };
+
     return (
         <DashboardWithSidebarLayout>
             <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -96,6 +104,22 @@ export default function CourseDetails() {
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                                 {course?.description ?? "—"}
                             </p>
+
+                            <div className="mt-6">
+                                <Button
+                                    variant="outline"
+                                    className="w-full rounded-full py-4 font-semibold"
+                                    onClick={() =>
+                                        window.open(
+                                            "https://funtologyenrichmentsupplies.com/interactive-science-kits/",
+                                            "_blank",
+                                            "noopener,noreferrer"
+                                        )
+                                    }
+                                >
+                                    Interactive Classroom Kits
+                                </Button>
+                            </div>
                         </Card>
 
                         {/* Progress Card */}
@@ -187,15 +211,31 @@ export default function CourseDetails() {
                                                             View Lesson
                                                         </Button>}
                                                         {lesson.type === 'PDF' && (
-                                                            <Button
-                                                                size="sm"
-                                                                className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1"
-                                                                onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
-                                                                disabled={!lesson?.fileUrl}
-                                                            >
-                                                                <Download className="h-3 w-3" />
-                                                                Download
-                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                {canPreviewPdf(lesson) && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="rounded-full text-xs h-8 px-4 gap-1"
+                                                                        onClick={() => lesson?._id && handlePreviewPdf(lesson._id)}
+                                                                        disabled={!lesson?._id || !lesson?.fileUrl}
+                                                                    >
+                                                                        <Eye className="h-3 w-3" />
+                                                                        Preview
+                                                                    </Button>
+                                                                )}
+                                                                {canDownloadPdf(lesson) && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1"
+                                                                        onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
+                                                                        disabled={!lesson?.fileUrl}
+                                                                    >
+                                                                        <Download className="h-3 w-3" />
+                                                                        Download
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         )}
                                                         {lesson.type === 'QUIZ' && <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4">
                                                             Preview Quiz

@@ -2,7 +2,6 @@ import {
   BadgeDollarSign,
   BookOpen,
   Box,
-  ClipboardList,
   FileText,
   Gift,
   GraduationCap,
@@ -11,14 +10,20 @@ import {
   Package,
   PenTool,
   Receipt,
+  ShoppingBag,
   Store,
   Ticket,
   UserCog,
   Users,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
+import BookSessionSidebarGroup from "@/components/layout/BookSessionSidebarGroup";
+import FuntologyBusinessBuilderSidebarItem from "@/components/layout/FuntologyBusinessBuilderSidebarItem";
+import FuntologyGlobalInstituteSidebarItem from "@/components/layout/FuntologyGlobalInstituteSidebarItem";
+import IfuntologySidebarGroup from "@/components/layout/IfuntologySidebarGroup";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -71,7 +76,7 @@ export default function DashboardSidebar() {
   const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
 
   const booking: Item[] = [
-    { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
+    { title: "Shop", url: "/shop", icon: ShoppingBag },
     { title: "Quotes", url: "/quotes", icon: Receipt },
     { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
     // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
@@ -83,9 +88,10 @@ export default function DashboardSidebar() {
   ];
 
   const learningManagement: Item[] = [
-    { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
+    { title: "Learning Management", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
+    { title: "Video Library", url: "/video-library", icon: Video },
   ];
 
   const readToWrite: Item[] = [
@@ -93,7 +99,7 @@ export default function DashboardSidebar() {
   ];
 
   const affiliateProgram: Item[] = [
-    { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
+    // { title: "Affiliate Program", url: "/affiliate-program", icon: Gift },
     { title: "Surveys", url: "/surveys", icon: FileText },
   ];
 
@@ -139,11 +145,23 @@ export default function DashboardSidebar() {
           <SidebarGroupLabel>BOOKING & QUOTES</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <BookSessionSidebarGroup />
               {booking.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <MenuLink item={item} />
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>IFUNTOLOGY</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <IfuntologySidebarGroup />
+              <FuntologyGlobalInstituteSidebarItem />
+              <FuntologyBusinessBuilderSidebarItem />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

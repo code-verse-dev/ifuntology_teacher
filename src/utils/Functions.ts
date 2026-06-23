@@ -8,7 +8,8 @@ export const getBasename = () => {
 };
 
 export const ImageUrl = (image: string) => {
-  return `${getBasename()}/images/${image}`;
+  const name = image.replace(/^\/+/, "");
+  return `${getBasename()}/images/${encodeURIComponent(name)}`;
 };
 
 export const buildCartItems = (

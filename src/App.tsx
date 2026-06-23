@@ -6,8 +6,7 @@ import { CartProvider } from "@/context/cart";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { store } from "./redux/store";
-import { Provider, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RecoverPasswordPage from "./pages/auth/RecoverPasswordPage";
@@ -17,7 +16,7 @@ import DashboardWelcomePage from "./pages/dashboard/DashboardWelcomePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
 import BookSessionPage from "./pages/dashboard/BookSessionPage";
 import BookaSessionDashboard from "./pages/BookaSessionDashboard";
-import CreateTeacherHostedSession from "./pages/CreateTeacherHostedSession";
+import ClassroomSessionsPage from "./pages/ClassroomSessionsPage";
 import SessionBookedPage from "./pages/dashboard/SessionBookedPage";
 import QuoteLmsPage from "./pages/dashboard/quotes/QuoteLmsPage";
 import QuoteWriteToReadPage from "./pages/dashboard/quotes/QuoteWriteToReadPage";
@@ -26,6 +25,8 @@ import QuotationDocumentPage from "./pages/dashboard/quotes/QuotationDocumentPag
 import InviteStudent from "./pages/inviteStudent";
 import QutationTracking from "./pages/qutationTracking";
 import RequestQuotation from "./pages/qutationTracking/requestQuotation";
+import ShopPage from "./pages/shop";
+import ShopPaymentPage from "./pages/shop/ShopPaymentPage";
 import QuoteDetails from "./pages/qutationTracking/quoteDetails";
 import PurchaseOrder from "./pages/purchaseOrder";
 import PurchaseOrderDetails from "./pages/purchaseOrder/purchaseOrderDetails";
@@ -41,6 +42,8 @@ import PayInvoice from "./pages/payInvoice";
 import SubscribetoLMS from "./pages/subscribetoLMS";
 import MyCourses from "./pages/myCourses";
 import CourseDetails from "./pages/myCourses/CourseDetails";
+import PdfFullPage from "./pages/myCourses/PdfFullPage";
+import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
 import MyStudents from "./pages/myStudents";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
@@ -64,6 +67,14 @@ import { getBasename } from "./utils/Functions";
 import { useEffect } from "react";
 import socket from "@/config/socket";
 import MessagesPage from "./pages/messages";
+import VideoLibraryPage from "./pages/videoLibrary";
+import IfuntologyPlatformPage from "./pages/ifuntology/PlatformPage";
+import IfuntologyWriteToReadPage from "./pages/ifuntology/WriteToReadPage";
+import FuntologyPage from "./pages/ifuntology/courses/FuntologyPage";
+import BarbertologyPage from "./pages/ifuntology/courses/BarbertologyPage";
+import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
+import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
+import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
 
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
@@ -118,10 +129,18 @@ const App = () => {
                 }
               />
               <Route
+                path="/book-a-session/classroom"
+                element={
+                  <ProtectedRoute>
+                    <ClassroomSessionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/book-a-session/create-own"
                 element={
                   <ProtectedRoute>
-                    <CreateTeacherHostedSession />
+                    <ClassroomSessionsPage />
                   </ProtectedRoute>
                 }
               />
@@ -134,6 +153,22 @@ const App = () => {
                 }
               />
 
+              <Route
+                path="/shop"
+                element={
+                  <ProtectedRoute>
+                    <ShopPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/shop/payment"
+                element={
+                  <ProtectedRoute>
+                    <ShopPaymentPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/quotes" element={
                 <ProtectedRoute>
                   <QutationTracking />
@@ -242,6 +277,16 @@ const App = () => {
                   <MyCourses />
                 </ProtectedRoute>
               } />
+              <Route path="/my-courses/pdf/:id/fullscreen" element={
+                <ProtectedRoute>
+                  <PdfFullscreenPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/pdf/:id" element={
+                <ProtectedRoute>
+                  <PdfFullPage />
+                </ProtectedRoute>
+              } />
               <Route path="/my-courses/:courseType" element={
                 <ProtectedRoute>
                   <CourseDetails />
@@ -336,6 +381,14 @@ const App = () => {
                   <InviteStudent />
                 </ProtectedRoute>
               } />
+              <Route
+                path="/video-library"
+                element={
+                  <ProtectedRoute>
+                    <VideoLibraryPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/surveys" element={
                 <ProtectedRoute>
                   <SurveysList />
@@ -356,6 +409,95 @@ const App = () => {
                   <MessagesPage />
                 </ProtectedRoute>
               } />
+
+              <Route
+                path="/courses/funtology"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/barbertology"
+                element={
+                  <ProtectedRoute>
+                    <BarbertologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/nailtology"
+                element={
+                  <ProtectedRoute>
+                    <NailtologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/skintology"
+                element={
+                  <ProtectedRoute>
+                    <SkintologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/funtology"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/barbertology"
+                element={
+                  <ProtectedRoute>
+                    <BarbertologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/nailtology"
+                element={
+                  <ProtectedRoute>
+                    <NailtologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/skintology"
+                element={
+                  <ProtectedRoute>
+                    <SkintologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/platform"
+                element={
+                  <ProtectedRoute>
+                    <IfuntologyPlatformPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/write-to-read"
+                element={
+                  <ProtectedRoute>
+                    <IfuntologyWriteToReadPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyBusinessBuilderPage />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route path="/quotes/lms" element={<QuoteLmsPage />} />
               <Route

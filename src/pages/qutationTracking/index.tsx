@@ -105,7 +105,8 @@ export default function QutationTracking() {
             </div>
 
             <div className="flex items-center gap-3 justify-end">
-              <NavLink to="/quotes/request" className="w-max">
+              {/* <NavLink to="/quotes/request" className="w-max"> */}
+              <NavLink to="/shop" className="w-max">
                 <Button variant="brand">+ Request Quotation</Button>
               </NavLink>
             </div>

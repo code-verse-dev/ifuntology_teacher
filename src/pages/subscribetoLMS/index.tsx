@@ -93,6 +93,18 @@ const PLANS_THEMES: { name: string; theme: SubscriptionPlan["theme"] }[] = [
             checkColor: "text-purple-500",
         },
     },
+    {
+        name: "iFuntology Braiding",
+        theme: {
+            bg: "bg-orange-50",
+            border: "border-orange-300",
+            iconBg: "bg-orange-500",
+            iconColor: "text-white",
+            titleColor: "text-foreground",
+            priceColor: "text-orange-600",
+            checkColor: "text-orange-500",
+        },
+    },
 ];
 
 const defaultTheme: SubscriptionPlan["theme"] = {
@@ -156,14 +168,14 @@ function CourseCard({
                     <h3 className="mb-2 text-2xl font-bold text-slate-900">
                         {courseType}
                     </h3>
-                    <div className="mb-6 flex items-baseline">
+                    {/* <div className="mb-6 flex items-baseline">
                         <span className={`text-3xl font-bold ${theme.priceColor}`}>
                             ${total.toFixed(2)}
                         </span>
                         <span className="ml-2 text-sm text-slate-600 font-medium">
                             {HARDCODED_DURATION}
                         </span>
-                    </div>
+                    </div> */}
 
                     <ul className="mb-8 space-y-3">
                         {features.map((feature: string, i: number) => (
@@ -183,7 +195,7 @@ function CourseCard({
                             : onSelect(course)
                     }
                 >
-                    {activeSubscriptionId ? "View Course" : "Subscribe Now"}
+                    {activeSubscriptionId ? "View Course" : "Enroll Now"}
                 </Button>
             </div>
         </Card>
@@ -261,17 +273,10 @@ export default function SubscribetoLMS() {
     const lmsTax = lmsSubtotal * (taxPercent / 100);
     const lmsTotal = lmsSubtotal + lmsTax;
 
-    const handleSelectCourse = (course: any) => {
-        setSelectedPlan({
-            id: course._id,
-            name: course.courseType ?? "Course",
-            price: HARDCODED_PRICE,
-            priceValue: HARDCODED_PRICE_VALUE,
-            duration: HARDCODED_DURATION,
-            features: Array.isArray(course.features) ? course.features : [],
-            theme: getThemeForCourseType(course.courseType ?? ""),
+    const handleSubscribeNow = (course: any) => {
+        navigate("/shop", {
+            state: { prefillLmsCourseType: course?.courseType ?? "Funtology" },
         });
-        setCourseTypeForPrice(course.courseType);
     };
     const handlePayWithCreditCard = () => {
         navigate("/payment", {
@@ -337,7 +342,7 @@ export default function SubscribetoLMS() {
                                     course={course}
                                     monthlyFee={monthlyFee}
                                     taxPercent={taxPercent}
-                                    onSelect={handleSelectCourse}
+                                    onSelect={handleSubscribeNow}
                                     activeSubscriptionId={
                                         activeSubscriptionByCourseType[course?.courseType]?._id ?? null
                                     }

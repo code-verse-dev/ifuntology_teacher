@@ -7,11 +7,17 @@ import { PaymentIntentResult } from "@stripe/stripe-js";
 import { useNavigate } from "react-router";
 import {
   paymentSlice,
+  useConfirmClassroomSessionPaymentMutation,
   useConfirmWtrPrintPaymentMutation,
   useGetSavedPaymentMethodsQuery,
   useOrderPaymentMutation,
   useSubscriptionPaymentMutation,
 } from "../../redux/services/apiSlices/paymentSlice";
+import { sessionSlice } from "../../redux/services/apiSlices/sessionSlice";
+import {
+  ShopPreviewPayload,
+  useConfirmShopPaymentMutation,
+} from "../../redux/services/apiSlices/shopSlice";
 import { printOrderSlice } from "../../redux/services/apiSlices/printOrderSlice";
 import { subscriptionSlice } from "../../redux/services/apiSlices/subscriptionSlice";
 import swal from "sweetalert";
@@ -20,10 +26,12 @@ import { CreditCard, Loader2, CheckCircle2 } from "lucide-react";
 import { useGetCartQuery } from "@/redux/services/apiSlices/cartSlice";
 
 interface CheckoutFormProps {
-  /** ORDER | SUBSCRIPTION (LMS) | WTR_SUBSCRIPTION | WTR_PRINT */
+  /** ORDER | SUBSCRIPTION (LMS) | WTR_SUBSCRIPTION | WTR_PRINT | SHOP_BUNDLE | CLASSROOM_SESSION */
   type?: string;
   amount?: number;
   clientSecret?: string;
+  /** Required when type is SHOP_BUNDLE */
+  shopSelection?: ShopPreviewPayload;
   /** Required when type is WTR_PRINT */
   printOrderId?: string;
   subscriptionType?: string;
@@ -36,6 +44,7 @@ interface CheckoutFormProps {
 const CheckoutForm = ({
   type,
   clientSecret,
+  shopSelection,
   printOrderId,
   subscriptionType,
   numberOfSeats,
@@ -55,6 +64,9 @@ const CheckoutForm = ({
   const [bookOrder] = useOrderPaymentMutation();
   const [bookSubscription] = useSubscriptionPaymentMutation();
   const [confirmWtrPrintPayment] = useConfirmWtrPrintPaymentMutation();
+  const [confirmClassroomSessionPayment] =
+    useConfirmClassroomSessionPaymentMutation();
+  const [confirmShopPayment] = useConfirmShopPaymentMutation();
 
   const { data: paymentData, isLoading: cardsLoading } =
     useGetSavedPaymentMethodsQuery();
@@ -124,6 +136,46 @@ const CheckoutForm = ({
             "error"
           );
         }
+      } else if (type === "SHOP_BUNDLE") {
+        if (!shopSelection) {
+          swal("Error", "Missing shop selection.", "error");
+          return;
+        }
+        const res: any = await confirmShopPayment({
+          ...shopSelection,
+          paymentIntentId: paymentIntent.id,
+        }).unwrap();
+        if (res?.status) {
+          dispatch(subscriptionSlice.util.invalidateTags(["Subscription"]));
+          dispatch(paymentSlice.util.invalidateTags(["WtrSubscription"]));
+          swal("Success", "Shop purchase completed successfully.", "success");
+          navigate("/dashboard", { replace: true, state: { from: "/shop" } });
+        } else {
+          swal(
+            "Error",
+            res?.message || "Shop payment could not be confirmed.",
+            "error"
+          );
+        }
+      } else if (type === "CLASSROOM_SESSION") {
+        const res: any = await confirmClassroomSessionPayment({
+          paymentIntentId: paymentIntent.id,
+        }).unwrap();
+        if (res?.status) {
+          dispatch(sessionSlice.util.invalidateTags(["ClassroomAccess"]));
+          swal(
+            "Success",
+            "Payment complete. You can now create classroom sessions.",
+            "success"
+          );
+          navigate("/book-a-session/classroom", { replace: true });
+        } else {
+          swal(
+            "Error",
+            res?.message || "Could not confirm classroom session payment.",
+            "error"
+          );
+        }
       }
     } catch (err: any) {
       swal("Error", err?.data?.message || err?.message || "An unexpected error occurred.", "error");
@@ -140,7 +192,8 @@ const CheckoutForm = ({
       if (
         type === "SUBSCRIPTION" ||
         type === "WTR_SUBSCRIPTION" ||
-        type === "WTR_PRINT"
+        type === "WTR_PRINT" ||
+        type === "CLASSROOM_SESSION"
       ) {
         result = await stripe.confirmPayment({
           clientSecret,
