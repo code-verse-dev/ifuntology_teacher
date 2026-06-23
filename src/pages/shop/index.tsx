@@ -145,6 +145,15 @@ export default function ShopPage() {
     ]);
   }, [location.state]);
 
+  useEffect(() => {
+    const prefillWtr = (location.state as { prefillWtr?: boolean })?.prefillWtr;
+    if (!prefillWtr) return;
+
+    setIncludeLms(false);
+    setIncludeEnrichment(false);
+    setIncludeWtr(true);
+  }, [location.state]);
+
   const [pricing, setPricing] = useState<any>(null);
   const [eligibility, setEligibility] = useState<ShopEligibility | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
