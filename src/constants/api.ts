@@ -3,7 +3,7 @@ const { hostname } = window.location;
 const servers = {
   local: "http://localhost:3030",
   customDev: "https://react.customdev.solutions:3030",
-  live: "",
+  live: "https://api-erp.ifuntology.com",
 };
 
 function normalizeApiBase(raw: string | undefined): string {
@@ -31,7 +31,7 @@ if (!URL && import.meta.env.DEV) {
   URL = servers.local;
 }
 
-/** API host for uploads/PDFs; empty in prod same-origin setups uses relative `/api` + Vite proxy. */
+/** API host for uploads/PDFs. Production uses `servers.live`; override with `VITE_API_URL` at build time if needed. */
 export const SOCKET_URL = URL;
 export const UPLOADS_URL = URL ? `${URL}/Uploads/` : "/Uploads/";
 export const BASE_URL = URL ? `${URL}/api` : "/api";

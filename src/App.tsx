@@ -54,6 +54,7 @@ import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToReadGate from "./pages/writeToRead/WriteToReadGate";
 import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
+import PublicBookReaderPage from "./pages/writeToRead/PublicBookReaderPage";
 import AllSessions from "./pages/allSessions";
 import SurveysList from "./pages/surveys";
 import SurveyResponseView from "./pages/surveys/SurveyResponseView";
@@ -94,6 +95,7 @@ const App = () => {
               />
               <Route path="/verify-otp" element={<VerifyOtp />} />
               <Route path="/sign-up" element={<SignUpPage />} />
+              <Route path="/read/:shareToken" element={<PublicBookReaderPage />} />
 
               <Route
                 path="/dashboard"
