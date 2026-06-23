@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Check, GraduationCap, PenTool, Store } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, GraduationCap, PenTool, Store } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,8 @@ import {
   lmsCourseCardLabel,
   lmsCourseFieldInput,
   lmsCourseFieldSelect,
+  lmsCourseFieldSelectIcon,
+  lmsCourseFieldSelectWrap,
   lmsCoursePills,
   lmsFieldInput,
   lmsFieldLabel,
@@ -45,7 +47,7 @@ import {
   enrichmentFieldInput,
   enrichmentFieldLabel,
 } from "./components/shopEnrichmentStyles";
-import { buildPreviewPayload, buildSubmitPayload } from "./shopPayload";
+import { buildPreviewPayload, buildSubmitPayload, getPreviewBlockReason } from "./shopPayload";
 import type { CatalogSelectedProduct } from "./shopPayload";
 import { getLmsKitQuantityError } from "./utils/lmsKitQuantity";
 import { cn } from "@/lib/utils";
@@ -269,6 +271,10 @@ export default function ShopPage() {
     () => buildPreviewPayload(formState),
     [formState]
   );
+  const previewBlockReason = useMemo(
+    () => getPreviewBlockReason(formState),
+    [formState]
+  );
   const submitPayloadResult = useMemo(
     () => buildSubmitPayload(formState),
     [formState]
@@ -277,6 +283,11 @@ export default function ShopPage() {
   const canPreview = Boolean(previewPayload);
   const canSubmit = Boolean(submitPayloadResult.payload);
   const submitBlockReason = submitPayloadResult.error;
+  const orgNamePreviewError =
+    previewBlockReason && !orgName.trim()
+      ? "Organization name is required to preview pricing."
+      : null;
+  const pricingPanelError = previewError || previewBlockReason;
 
   const lmsConflictTypes = useMemo(
     () => new Set(eligibility?.lmsConflicts?.map((c) => c.courseType) ?? []),
@@ -374,13 +385,18 @@ export default function ShopPage() {
     if (!canPreview) {
       setPricing(null);
       setEligibility(null);
+      if (previewBlockReason) {
+        setPreviewError(previewBlockReason);
+      } else if (!previewPayload) {
+        setPreviewError(null);
+      }
       return;
     }
     const timer = setTimeout(() => {
       runPreview();
     }, 700);
     return () => clearTimeout(timer);
-  }, [canPreview, runPreview, previewPayload]);
+  }, [canPreview, runPreview, previewPayload, previewBlockReason]);
 
   return (
     <DashboardWithSidebarLayout>
@@ -399,15 +415,24 @@ export default function ShopPage() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
             <Card className="rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
-              <Label className="text-sm font-medium text-foreground">
+              <Label className="text-sm font-medium text-foreground" htmlFor="shop-org-name">
                 Organization Name <span className="text-rose-500">*</span>
               </Label>
               <Input
-                className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                id="shop-org-name"
+                className={cn(
+                  "mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none",
+                  orgNamePreviewError && "ring-2 ring-rose-400"
+                )}
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 placeholder="School or Organization Name..."
               />
+              {orgNamePreviewError && (
+                <p className="mt-2 text-xs font-medium text-rose-600">
+                  {orgNamePreviewError}
+                </p>
+              )}
             </Card>
 
             <ShopSectionCard
@@ -495,39 +520,45 @@ export default function ShopPage() {
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Course Type</label>
-                      <select
-                        className={lmsCourseFieldSelect}
-                        value={row.courseType}
-                        onChange={(e) =>
-                          updateLmsCourseItem(row.key, "courseType", e.target.value)
-                        }
-                      >
-                        {LMS_COURSE_TYPES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
+                      <div className={lmsCourseFieldSelectWrap}>
+                        <select
+                          className={lmsCourseFieldSelect}
+                          value={row.courseType}
+                          onChange={(e) =>
+                            updateLmsCourseItem(row.key, "courseType", e.target.value)
+                          }
+                        >
+                          {LMS_COURSE_TYPES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
+                      </div>
                     </div>
                     <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Kit type</label>
-                      <select
-                        className={lmsCourseFieldSelect}
-                        value={row.kitVariant}
-                        onChange={(e) =>
-                          updateLmsCourseItem(
-                            row.key,
-                            "kitVariant",
-                            e.target.value
-                          )
-                        }
-                      >
-                        {LMS_KIT_VARIANTS.map((kit) => (
-                          <option key={kit.value} value={kit.value}>
-                            {kit.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className={lmsCourseFieldSelectWrap}>
+                        <select
+                          className={lmsCourseFieldSelect}
+                          value={row.kitVariant}
+                          onChange={(e) =>
+                            updateLmsCourseItem(
+                              row.key,
+                              "kitVariant",
+                              e.target.value
+                            )
+                          }
+                        >
+                          {LMS_KIT_VARIANTS.map((kit) => (
+                            <option key={kit.value} value={kit.value}>
+                              {kit.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
+                      </div>
                     </div>
                     <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Number of kits</label>
@@ -694,7 +725,7 @@ export default function ShopPage() {
               pricing={pricing}
               eligibility={eligibility}
               isLoading={previewLoading}
-              error={previewError}
+              error={pricingPanelError}
               onRefresh={runPreview}
               canPreview={canPreview}
               canSubmit={canSubmit}

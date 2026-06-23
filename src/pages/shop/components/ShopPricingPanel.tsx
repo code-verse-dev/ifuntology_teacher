@@ -30,6 +30,11 @@ type PricingData = {
     numberOfSeats?: number;
     noOfSubscriptions?: number;
   };
+  bundledWtr?: {
+    numberOfSeats: number;
+    subscriptionType: "lifetime";
+    lineTotal: 0;
+  };
   subtotalBeforeTax?: number;
   shippingAmount?: number;
   taxAmount?: number;
@@ -169,6 +174,16 @@ export default function ShopPricingPanel({
               <div className="text-sm font-medium">
                 LMS subtotal: {fmt(pricing.lms.total)}
               </div>
+              {pricing.bundledWtr && pricing.bundledWtr.numberOfSeats > 0 && (
+                <div className="rounded-lg border border-lime-200/80 bg-lime-50/80 px-3 py-2 text-sm text-lime-900 dark:border-lime-900/40 dark:bg-lime-950/30 dark:text-lime-100">
+                  <div className="font-medium">Write to Read included</div>
+                  <p className="mt-0.5 text-xs leading-relaxed opacity-90">
+                    {pricing.bundledWtr.numberOfSeats} lifetime student seat
+                    {pricing.bundledWtr.numberOfSeats === 1 ? "" : "s"} granted
+                    with your LMS purchase — no additional charge.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -193,6 +208,9 @@ export default function ShopPricingPanel({
             <div className="space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Write to Read
+                {pricing.bundledWtr && pricing.bundledWtr.numberOfSeats > 0
+                  ? " (additional seats)"
+                  : ""}
               </div>
               <div className="text-sm text-muted-foreground">
                 {pricing.wtr.subscriberKind}

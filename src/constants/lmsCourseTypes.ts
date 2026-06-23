@@ -1,8 +1,8 @@
 /** LMS course types — keep in sync with backend CourseType enum. */
 export const LMS_COURSE_TYPES = [
   "Funtology",
-  "Skintology",
   "Barbertology",
+  "Skintology",
   "Nailtology",
   "iTeach iFuntology",
   "iFuntology Braiding",
