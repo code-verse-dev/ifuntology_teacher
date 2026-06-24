@@ -1,24 +1,8 @@
 import { useState, useEffect } from "react";
-/*
-import { useMemo } from "react";
-import {
-  Calendar,
-  dateFnsLocalizer,
-  EventProps,
-  DayPropGetter,
-} from "react-big-calendar";
-import { parse, startOfWeek, getDay } from "date-fns";
-import { enUS } from "date-fns/locale/en-US";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import "./calendar-custom.css";
-*/
 import { format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-/*
-import { CSSProperties } from "react";
-*/
 import {
   Dialog,
   DialogContent,
@@ -30,20 +14,12 @@ import {
   Clock,
   Monitor,
   Trash2,
-  /*
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  */
   Video,
   Loader2,
 } from "lucide-react";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
 import {
   useCreateSessionMutation,
-  /*
-  useGetMySessionsQuery,
-  */
   useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,

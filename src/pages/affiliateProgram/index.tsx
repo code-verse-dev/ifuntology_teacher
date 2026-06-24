@@ -10,9 +10,7 @@ import {
     DollarSign,
     Link as LinkIcon,
     Copy,
-    LayoutList,
     Wallet,
-    CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";

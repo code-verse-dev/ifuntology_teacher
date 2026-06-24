@@ -163,7 +163,7 @@ export default function ShopPricingPanel({
                 >
                   {course.courseType}
                   {course.kitVariant === "BUNDLE_4_IN_1"
-                    ? " · Bundle Kit 4 in 1"
+                    ? " · Bundle Kit (4 in 1)"
                     : course.kitVariant
                       ? " · Standard Kits"
                       : ""}

@@ -30,6 +30,7 @@ import ShopSectionCard, {
   shopFieldSelect,
 } from "./components/ShopSectionCard";
 import ShopAddButton from "./components/ShopAddButton";
+import LmsKitVariantSelect from "./components/LmsKitVariantSelect";
 import {
   lmsCourseCard,
   lmsCourseCardLabel,
@@ -53,7 +54,6 @@ import swal from "sweetalert";
 import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 import {
   DEFAULT_LMS_KIT_VARIANT,
-  LMS_KIT_VARIANTS,
   type LmsKitVariant,
 } from "@/constants/lmsKitVariants";
 import { ImageUrl } from "@/utils/Functions";
@@ -688,26 +688,12 @@ export default function ShopPage() {
                     </div>
                     <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Kit type</label>
-                      <div className={lmsCourseFieldSelectWrap}>
-                        <select
-                          className={lmsCourseFieldSelect}
-                          value={row.kitVariant}
-                          onChange={(e) =>
-                            updateLmsCourseItem(
-                              row.key,
-                              "kitVariant",
-                              e.target.value
-                            )
-                          }
-                        >
-                          {LMS_KIT_VARIANTS.map((kit) => (
-                            <option key={kit.value} value={kit.value}>
-                              {kit.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
-                      </div>
+                      <LmsKitVariantSelect
+                        value={row.kitVariant}
+                        onChange={(kitVariant) =>
+                          updateLmsCourseItem(row.key, "kitVariant", kitVariant)
+                        }
+                      />
                     </div>
                     <div className="min-w-0">
                       <label className={lmsCourseCardLabel}>Number of kits</label>
