@@ -1,7 +1,7 @@
 /** Physical kit variants — keep in sync with backend LmsKitVariant enum. */
 export const LMS_KIT_VARIANTS = [
   { value: "STANDARD", label: "Standard Kits" },
-  { value: "BUNDLE_4_IN_1", label: "Bundle Kit (4 in 1)" },
+  { value: "BUNDLE_4_IN_1", label: "Bundle Kit (4 Courses in 1)" },
 ] as const;
 
 export const BUNDLE_KIT_HOVER_DESCRIPTION =
