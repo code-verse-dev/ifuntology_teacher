@@ -5,20 +5,9 @@ import { Info, Box, Truck, CheckCircle, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGetPurchaseOrderByQuoteIdQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import QuoteItemsBreakdown from "@/components/quotes/QuoteItemsBreakdown";
 import { formatDate } from "@/lib/utils";
 import QuotationReportDownload from "./quotationReport/QuotationReportDownload";
-
-const formatAmount = (value: number | string | undefined): string => {
-  if (value === undefined || value === null) return "—";
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(num);
-};
 
 export default function PurchaseOrderDetails() {
   const { id } = useParams();
@@ -82,6 +71,20 @@ export default function PurchaseOrderDetails() {
                 <div className="text-sm font-semibold">Your PO Number is Ready to Use</div>
                 <div className="mt-2 text-sm text-white">Your PO Number ({purchaseOrderData?.poNumber ?? "-"}) can now be used to access the following services:</div>
                 <ul className="mt-3 ml-4 list-disc text-sm text-white">
+                  {purchaseOrderData?.quote?.serviceType === "shop_bundle" && (
+                    <>
+                      {(purchaseOrderData?.quote?.lmsCourses?.length ?? 0) > 0 && (
+                        <li>LMS: Activate subscriptions and kits per the courses listed in your order</li>
+                      )}
+                      {(purchaseOrderData?.quote?.products?.length ?? 0) > 0 && (
+                        <li>Enrichment Store: Products will ship to your organization address</li>
+                      )}
+                      {(purchaseOrderData?.quote?.wtrNumberOfSeats != null ||
+                        purchaseOrderData?.quote?.wtrLineTotal != null) && (
+                        <li>Write to Read: Student seats will be provisioned after PO approval</li>
+                      )}
+                    </>
+                  )}
                   {purchaseOrderData?.quote?.serviceType === "lms" && <li>LMS Subscriptions: Use this PO number during checkout for course subscriptions</li>}
                   {purchaseOrderData?.quote?.serviceType === "write_to_read" && <li>Write to Read: Activate student accounts using this PO number</li>}
                   {purchaseOrderData?.quote?.serviceType === "enrichment_store" && <li>E-commerce: Physical kits will be shipped automatically</li>}
@@ -91,6 +94,15 @@ export default function PurchaseOrderDetails() {
             </div>
 
             <div className="flex gap-3">
+              {purchaseOrderData?.quote?.serviceType === "shop_bundle" && (
+                <Button
+                  onClick={() => navigate("/shop")}
+                  variant="outline"
+                  className="text-white bg-[#f56e14] hover:text-white"
+                >
+                  View Shop
+                </Button>
+              )}
               {purchaseOrderData?.quote?.serviceType === "lms" && <Button
                 onClick={() => navigate("/subscribe-to-lms")}
                 variant="outline" className="text-white bg-[#f56e14] hover:text-white">Go to LMS Subscriptions</Button>}
@@ -192,255 +204,15 @@ export default function PurchaseOrderDetails() {
           {tab === "items" && (
             <div>
               <h3 className="text-lg font-semibold">Order Items</h3>
-              {purchaseOrderData?.quote?.serviceType === "lms" ? (
-                <div className="mt-4 overflow-auto rounded-lg border border-border/60">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground surface-glass">
-                        <th className="px-4 py-3">Item</th>
-                        <th className="px-4 py-3">Quantity</th>
-                        <th className="px-4 py-3">Unit Price</th>
-                        <th className="px-4 py-3">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y bg-card text-card-foreground">
-                      {purchaseOrderData?.quote?.subscriptionTotal != null && (
-                        <tr>
-                          <td className="px-4 py-3">
-                            LMS Subscription (
-                            {purchaseOrderData.quote.subscriptionType === "yearly"
-                              ? "Yearly"
-                              : "Monthly"}
-                            )
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.webSubscriptions ??
-                              purchaseOrderData.quote.noOfKits ??
-                              "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.webSubscriptions != null &&
-                              purchaseOrderData.quote.subscriptionTotal != null
-                              ? formatAmount(
-                                purchaseOrderData.quote.subscriptionTotal /
-                                purchaseOrderData.quote.webSubscriptions
-                              )
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {formatAmount(
-                              purchaseOrderData.quote.subscriptionTotal
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                      {purchaseOrderData?.quote?.kitsTotal != null && (
-                        <tr>
-                          <td className="px-4 py-3">
-                            Course Kits (
-                            {purchaseOrderData.quote.courseType ?? "—"})
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.noOfKits ?? "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {purchaseOrderData.quote.noOfKits != null &&
-                              purchaseOrderData.quote.kitsTotal != null
-                              ? formatAmount(
-                                purchaseOrderData.quote.kitsTotal /
-                                purchaseOrderData.quote.noOfKits
-                              )
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {formatAmount(purchaseOrderData.quote.kitsTotal)}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                    <tfoot>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Subtotal
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.subTotal)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm text-card-foreground">
-                          Tax
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground">
-                          {formatAmount(purchaseOrderData?.quote?.taxAmount)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Total
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.total)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              ) : purchaseOrderData?.quote?.serviceType === "write_to_read" ? (
-                <div className="mt-4 overflow-auto rounded-lg border border-border/60">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground surface-glass">
-                        <th className="px-4 py-3">Item</th>
-                        <th className="px-4 py-3">Quantity</th>
-                        <th className="px-4 py-3">Unit Price</th>
-                        <th className="px-4 py-3">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y bg-card text-card-foreground">
-                      {purchaseOrderData?.quote?.subTotal != null &&
-                        (purchaseOrderData.quote.noOfSubscriptions != null ||
-                          purchaseOrderData.quote.noOfSubscriptions === 0) && (
-                          <tr>
-                            <td className="px-4 py-3">
-                              Write to Read Subscriptions
-                            </td>
-                            <td className="px-4 py-3">
-                              {purchaseOrderData.quote.noOfSubscriptions ?? "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {purchaseOrderData.quote.noOfSubscriptions != null &&
-                                purchaseOrderData.quote.noOfSubscriptions > 0 &&
-                                purchaseOrderData.quote.subTotal != null
-                                ? formatAmount(
-                                  purchaseOrderData.quote.subTotal /
-                                  purchaseOrderData.quote.noOfSubscriptions
-                                )
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {formatAmount(purchaseOrderData.quote.subTotal)}
-                            </td>
-                          </tr>
-                        )}
-                      <tr>
-                        <td className="px-4 py-3">Book Printing Requests</td>
-                        <td className="px-4 py-3">
-                          {purchaseOrderData?.quote?.bookPrintingRequests ===
-                            true
-                            ? "Yes"
-                            : purchaseOrderData?.quote?.bookPrintingRequests ===
-                              false
-                              ? "No"
-                              : "—"}
-                        </td>
-                        <td className="px-4 py-3">—</td>
-                        <td className="px-4 py-3">—</td>
-                      </tr>
-                    </tbody>
-                    <tfoot>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Subtotal
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.subTotal)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm text-card-foreground">
-                          Tax
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground">
-                          {formatAmount(purchaseOrderData?.quote?.taxAmount)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Total
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.total)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              ) : purchaseOrderData?.quote?.serviceType === "enrichment_store" &&
-                Array.isArray(purchaseOrderData?.quote?.products) &&
-                purchaseOrderData.quote.products.length > 0 ? (
-                <div className="mt-4 overflow-auto rounded-lg border border-border/60">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground surface-glass">
-                        <th className="px-4 py-3">Item</th>
-                        <th className="px-4 py-3">Quantity</th>
-                        <th className="px-4 py-3">Unit Price</th>
-                        <th className="px-4 py-3">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y bg-card text-card-foreground">
-                      {purchaseOrderData.quote.products.map(
-                        (item: any, idx: number) => (
-                          <tr key={item.product ?? idx}>
-                            <td className="px-4 py-3">
-                              {item.name ?? "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {item.quantity ?? "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {formatAmount(item.price)}
-                            </td>
-                            <td className="px-4 py-3">
-                              {formatAmount(item.total)}
-                            </td>
-                          </tr>
-                        )
-                      )}
-                    </tbody>
-                    <tfoot>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Subtotal
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.subTotal)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm text-card-foreground">
-                          Tax
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground">
-                          {formatAmount(purchaseOrderData?.quote?.taxAmount)}
-                        </td>
-                      </tr>
-                      <tr className="surface-glass">
-                        <td className="p-4" colSpan={2} />
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">
-                          Total
-                        </td>
-                        <td className="px-4 py-3 text-card-foreground font-semibold">
-                          {formatAmount(purchaseOrderData?.quote?.total)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  No items to display for this order.
-                </p>
-              )}
+              <div className="mt-4">
+                {purchaseOrderData?.quote ? (
+                  <QuoteItemsBreakdown quoteData={purchaseOrderData.quote} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No items to display for this order.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

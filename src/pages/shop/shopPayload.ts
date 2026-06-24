@@ -6,6 +6,10 @@ import {
   isValidLmsKitQuantity,
   LMS_KIT_QUANTITY_ERROR,
 } from "./utils/lmsKitQuantity";
+import {
+  getShopContactDetailsError,
+  isShopContactDetailsComplete,
+} from "./utils/shopContactDetails";
 
 export type CatalogSelectedProduct = {
   name: string;
@@ -16,11 +20,11 @@ export type CatalogSelectedProduct = {
 
 export type ShopFormState = {
   organizationName: string;
+  email: string;
+  address: string;
   includeLms: boolean;
   includeEnrichment: boolean;
   includeWtr: boolean;
-  lmsEmail: string;
-  lmsAddress: string;
   lmsCourses: {
     courseType: string;
     kitVariant: LmsKitVariant;
@@ -94,10 +98,7 @@ export function getPreviewBlockReason(state: ShopFormState): string | null {
   if (!hasPreviewReadySection(state)) {
     return null;
   }
-  if (!state.organizationName.trim()) {
-    return "Enter organization name at the top to preview pricing.";
-  }
-  return null;
+  return getShopContactDetailsError(state);
 }
 
 function validateLmsCourseQuantities(
@@ -118,6 +119,18 @@ function validateLmsCourseQuantities(
   return null;
 }
 
+function buildContactPayload(state: ShopFormState) {
+  return {
+    email: state.email.trim(),
+    address: state.address.trim(),
+    country: state.country.trim(),
+    city: state.city.trim(),
+    state: state.stateVal.trim(),
+    streetAddress: state.streetAddress.trim(),
+    zipCode: state.zip.trim(),
+  };
+}
+
 function finalizePayload(
   payload: ShopPreviewPayload,
   state: ShopFormState
@@ -131,13 +144,14 @@ function finalizePayload(
 export function buildPreviewPayload(
   state: ShopFormState
 ): ShopPreviewPayload | null {
-  if (!state.organizationName.trim()) return null;
+  if (!isShopContactDetailsComplete(state)) return null;
   if (!state.includeLms && !state.includeEnrichment && !state.includeWtr) {
     return null;
   }
 
   const payload: ShopPreviewPayload = {
     organizationName: state.organizationName.trim(),
+    ...buildContactPayload(state),
   };
   let hasPreviewSection = false;
 
@@ -146,8 +160,6 @@ export function buildPreviewPayload(
     if (validCourses.length) {
       hasPreviewSection = true;
       payload.lms = {
-        email: state.lmsEmail.trim() || "preview@example.com",
-        address: state.lmsAddress.trim() || "Preview",
         lmsCourses: validCourses.map((row) => ({
           courseType: row.courseType,
           kitVariant: row.kitVariant,
@@ -164,11 +176,6 @@ export function buildPreviewPayload(
       hasPreviewSection = true;
       payload.enrichment = {
         products: validProducts,
-        city: state.city.trim() || undefined,
-        streetAddress: state.streetAddress.trim() || undefined,
-        state: state.stateVal.trim() || undefined,
-        country: state.country.trim() || undefined,
-        zipCode: state.zip.trim() || undefined,
         couponCode: state.appliedCoupon ?? undefined,
       };
     }
@@ -192,8 +199,9 @@ export function buildPreviewPayload(
 export function buildSubmitPayload(
   state: ShopFormState
 ): { payload: ShopPreviewPayload | null; error: string | null } {
-  if (!state.organizationName.trim()) {
-    return { payload: null, error: "Organization name is required" };
+  const contactError = getShopContactDetailsError(state);
+  if (contactError) {
+    return { payload: null, error: contactError };
   }
   if (!state.includeLms && !state.includeEnrichment && !state.includeWtr) {
     return {
@@ -204,19 +212,10 @@ export function buildSubmitPayload(
 
   const payload: ShopPreviewPayload = {
     organizationName: state.organizationName.trim(),
+    ...buildContactPayload(state),
   };
 
   if (state.includeLms) {
-    if (!state.lmsEmail.trim()) {
-      return { payload: null, error: "Email is required for LMS" };
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(state.lmsEmail.trim())) {
-      return { payload: null, error: "Please enter a valid LMS email address" };
-    }
-    if (!state.lmsAddress.trim()) {
-      return { payload: null, error: "Address is required for LMS" };
-    }
     const lmsQuantityError = validateLmsCourseQuantities(state.lmsCourses);
     if (lmsQuantityError) {
       return { payload: null, error: lmsQuantityError };
@@ -231,8 +230,6 @@ export function buildSubmitPayload(
       return { payload: null, error: "Add at least one valid LMS course" };
     }
     payload.lms = {
-      email: state.lmsEmail.trim(),
-      address: state.lmsAddress.trim(),
       lmsCourses: validCourses.map((row) => ({
         courseType: row.courseType,
         kitVariant: row.kitVariant,
@@ -247,28 +244,8 @@ export function buildSubmitPayload(
     if (!validProducts.length) {
       return { payload: null, error: "Add at least one enrichment product" };
     }
-    if (!state.country.trim()) {
-      return { payload: null, error: "Country is required for enrichment" };
-    }
-    if (!state.city.trim()) {
-      return { payload: null, error: "City is required for enrichment" };
-    }
-    if (!state.stateVal.trim()) {
-      return { payload: null, error: "State is required for enrichment" };
-    }
-    if (!state.streetAddress.trim()) {
-      return { payload: null, error: "Street address is required for enrichment" };
-    }
-    if (!state.zip.trim()) {
-      return { payload: null, error: "Zip code is required for enrichment" };
-    }
     payload.enrichment = {
       products: validProducts,
-      city: state.city.trim(),
-      streetAddress: state.streetAddress.trim(),
-      state: state.stateVal.trim(),
-      country: state.country.trim(),
-      zipCode: state.zip.trim(),
       couponCode: state.appliedCoupon ?? undefined,
     };
   }

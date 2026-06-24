@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetMyQuotesQuery } from "@/redux/services/apiSlices/quoteSlice";
-
+import {
+  formatQuoteCurrency,
+} from "@/components/quotes/quoteBreakdownUtils";
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
   const d = new Date(dateVal);
@@ -42,6 +44,7 @@ const serviceTypeLabel: Record<string, string> = {
   lms: "Learning Management System",
   write_to_read: "Write to Read",
   enrichment_store: "Enrichment Store",
+  shop_bundle: "Shop Bundle",
 };
 
 export default function QutationTracking() {
@@ -175,7 +178,7 @@ export default function QutationTracking() {
 
                     <div className="ml-4 flex w-40 flex-col items-end justify-between">
                       <div className="text-lg font-semibold">
-                        {formatAmount(q.subTotal)}
+                        {formatQuoteCurrency(q.subTotal)}
                       </div>
                       {(q.subTotal != null || q.taxAmount != null) && (
                         <div className="text-xs text-muted-foreground mt-1">

@@ -58,7 +58,7 @@ export default function WriteToRead() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
                         <div className="space-y-2 text-left">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Subscription Status</h2>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Status</h2>
                                 <Badge
                                     className={cn(
                                         "border-none rounded-full px-3 py-0.5 text-[10px] font-bold uppercase text-white",
@@ -70,14 +70,14 @@ export default function WriteToRead() {
                                     {(wtrSub?.status ?? "Active").toString()}
                                 </Badge>
                             </div>
-                            <p className="text-sm font-medium text-slate-500">
+                            {/* <p className="text-sm font-medium text-slate-500">
                                 {wtrSub
                                     ? `${wtrSub.subscriptionType === "YEARLY" ? "Yearly" : "Monthly"} plan${renewalLabel ? ` • Current period ends ${renewalLabel}` : ""
                                     }${wtrSub.autoRenew === false ? " • Auto-renew off" : ""}`
                                     : "Write to Read subscription"}
-                            </p>
+                            </p> */}
                         </div>
-                        <Button
+                        {/* <Button
                             type="button"
                             variant="secondary"
                             className="rounded-full font-bold px-8 h-12"
@@ -86,7 +86,7 @@ export default function WriteToRead() {
                             }
                         >
                             Manage Subscription
-                        </Button>
+                        </Button> */}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">

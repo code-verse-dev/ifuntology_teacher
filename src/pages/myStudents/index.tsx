@@ -300,12 +300,12 @@ export default function MyStudents() {
                                                 {isActive ? "Active" : "Inactive"}
                                             </Badge>
                                         </div>
-                                        <div className="flex justify-between items-center text-[11px]">
+                                        {/* <div className="flex justify-between items-center text-[11px]">
                                             <span className="text-slate-500 dark:text-slate-400 font-medium">Subscription</span>
                                             <span className="font-semibold text-slate-900 dark:text-white capitalize">
                                                 {student.subscription?.subscriptionType?.toLowerCase() ?? "—"}
                                             </span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </Card>
                             );

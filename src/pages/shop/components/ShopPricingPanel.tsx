@@ -280,7 +280,7 @@ export default function ShopPricingPanel({
               disabled={actionsDisabled}
               onClick={onPayNow}
             >
-              Pay now
+              Pay Electronically
             </Button>
             <Button
               type="button"
@@ -295,7 +295,7 @@ export default function ShopPricingPanel({
                   Submitting quote…
                 </>
               ) : (
-                "Request quote"
+                "Request quote / Purchase Order"
               )}
             </Button>
             {!canSubmit && submitBlockReason && (
