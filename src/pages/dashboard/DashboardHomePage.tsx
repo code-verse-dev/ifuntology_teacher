@@ -2,14 +2,9 @@ import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
-  Award,
-  BookOpen,
   Calendar,
-  CheckCircle2,
-  ChevronRight,
   FileText,
   GraduationCap,
-  Package,
   TrendingUp,
   UserPlus,
   Users,

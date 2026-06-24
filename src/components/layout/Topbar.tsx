@@ -51,7 +51,7 @@ export default function Topbar() {
   const { theme, setTheme } = useTheme();
   const sidebar = useSidebarOptional();
   const [logout] = useLogoutMutation();
-  const user = useSelector((state: RootState) => state.user.userData);
+  const user = useSelector((state: RootState) => state?.user?.userData);
   const dispatch = useDispatch();
 
   const { data: notificationsData, refetch } = useGetAllNotificationsQuery({ isRead: false, limit: 3 });

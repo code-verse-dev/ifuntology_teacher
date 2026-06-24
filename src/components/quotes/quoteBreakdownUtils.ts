@@ -19,7 +19,7 @@ export const serviceTypeLabel: Record<string, string> = {
 
 export const formatKitVariant = (variant?: string) => {
   if (!variant || variant === "STANDARD") return "Standard Kits";
-  if (variant === "BUNDLE_4_IN_1") return "Bundle Kit 4 in 1";
+  if (variant === "BUNDLE_4_IN_1") return "Bundle Kit (4 in 1)";
   return variant.replace(/_/g, " ");
 };
 

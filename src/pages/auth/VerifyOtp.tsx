@@ -5,7 +5,6 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import PasswordField from "@/components/inputs/PasswordField";
 import { useVerifyOtpMutation } from "@/redux/services/apiSlices/authSlice";
 
 export default function RecoverPasswordPage() {

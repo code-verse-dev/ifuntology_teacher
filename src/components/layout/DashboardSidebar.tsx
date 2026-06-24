@@ -1,9 +1,7 @@
 import {
-  BadgeDollarSign,
   BookOpen,
   Box,
   FileText,
-  Gift,
   GraduationCap,
   LayoutDashboard,
   MessagesSquare,

@@ -4,12 +4,10 @@ import {
   BookOpen,
   Calendar,
   GraduationCap,
-  Mail,
   PenLine,
   School,
   Shield,
   ShoppingCart,
-  User,
   Users,
   Gift
 } from "lucide-react";
