@@ -5,10 +5,15 @@ import type { LmsKitVariant } from "@/constants/lmsKitVariants";
 
 export type ShopPreviewPayload = {
   organizationName: string;
+  email: string;
+  address: string;
+  country: string;
+  city: string;
+  state: string;
+  streetAddress: string;
+  zipCode: string;
   taxExempt?: boolean;
   lms?: {
-    email: string;
-    address: string;
     lmsCourses: {
       courseType: string;
       kitVariant?: LmsKitVariant;
@@ -18,16 +23,11 @@ export type ShopPreviewPayload = {
   };
   enrichment?: {
     products: { product: string; quantity: number }[];
-    city?: string;
-    streetAddress?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
     couponCode?: string;
   };
   wtr?: {
     subscriberKind: "TEACHER" | "INDIVIDUAL";
-    subscriptionType: "monthly" | "yearly";
+    subscriptionType?: "monthly" | "yearly";
     numberOfSeats?: number;
     noOfSubscriptions?: number;
     bookPrintingRequests?: boolean;

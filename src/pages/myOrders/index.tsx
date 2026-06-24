@@ -181,17 +181,17 @@ export default function MyOrdersPage() {
                           {order?.cart?.coupon ? (
                             <div>
                               <span className="line-through text-gray-400 mr-2">
-                                ${order?.cart?.subtotal.toFixed(2)}
+                                ${order?.cart?.subtotal?.toFixed(2)}
                               </span>
                               <span className="text-green-600 font-semibold">
-                                ${order?.cart?.total.toFixed(2)}
+                                ${order?.cart?.total?.toFixed(2)}
                               </span>
                               <span className="ml-1 text-xs text-green-700">
                                 (Discount applied)
                               </span>
                             </div>
                           ) : (
-                            <>${order?.cart?.total.toFixed(2)}</>
+                            <>${order?.cart?.total?.toFixed(2)}</>
                           )}
                         </td>
                         <td className="py-3">

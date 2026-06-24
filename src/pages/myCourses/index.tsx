@@ -184,13 +184,13 @@ export default function MyCourses() {
                                             <div className="text-sm font-bold text-slate-900">{sub?.usedSeats ?? 0}</div>
                                         </div>
 
-                                        <div className="rounded-xl bg-white/60 p-3">
+                                        {/* <div className="rounded-xl bg-white/60 p-3">
                                             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
                                                 <Clock className="h-3.5 w-3.5" />
                                                 <span>Expires</span>
                                             </div>
                                             <div className="text-sm font-bold text-slate-900">{formatExpiresDate(sub?.endDate)}</div>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
 

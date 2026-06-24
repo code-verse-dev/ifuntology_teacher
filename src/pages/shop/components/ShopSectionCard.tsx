@@ -16,6 +16,8 @@ type ShopSectionCardProps = {
   icon: React.ComponentType<{ className?: string }>;
   enabled: boolean;
   onToggle: (value: boolean) => void;
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: string;
   imageSrc: string;
   backgroundVectorSrc?: string;
   imageClassName?: string;
@@ -38,6 +40,8 @@ export default function ShopSectionCard({
   icon: Icon,
   enabled,
   onToggle,
+  toggleDisabled = false,
+  toggleDisabledHint,
   imageSrc,
   backgroundVectorSrc,
   imageClassName,
@@ -167,13 +171,24 @@ export default function ShopSectionCard({
               <p className="mt-1 text-sm text-white/90">{description}</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2.5">
-            <span className="text-sm font-semibold text-black">Include</span>
-            <Switch
-              checked={enabled}
-              onCheckedChange={onToggle}
-              className="data-[state=checked]:bg-[#7cb342] data-[state=unchecked]:bg-white/40"
-            />
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <div className="flex items-center gap-2.5">
+              <span className="text-sm font-semibold text-black">Include</span>
+              <Switch
+                checked={enabled}
+                disabled={toggleDisabled}
+                onCheckedChange={(value) => {
+                  if (toggleDisabled) return;
+                  onToggle(value);
+                }}
+                className="data-[state=checked]:bg-[#7cb342] data-[state=unchecked]:bg-white/40"
+              />
+            </div>
+            {toggleDisabled && toggleDisabledHint && (
+              <p className="max-w-[180px] text-right text-[10px] font-medium leading-snug text-black/70">
+                {toggleDisabledHint}
+              </p>
+            )}
           </div>
         </div>
 

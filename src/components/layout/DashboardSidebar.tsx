@@ -119,11 +119,16 @@ export default function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="p-3">
-        <div
-          className="overflow-hidden rounded-2xl border-sidebar-border p-2">
-          <div className="px-1">
+        <div className="overflow-hidden rounded-2xl border-sidebar-border p-2">
+          <a
+            href="https://erp.ifuntology.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block px-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="Open iFuntology ERP website"
+          >
             <IfuntologyMark logoOnly size="medium" />
-          </div>
+          </a>
         </div>
       </SidebarHeader>
 
