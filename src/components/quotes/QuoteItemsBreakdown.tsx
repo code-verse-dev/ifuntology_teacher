@@ -38,15 +38,19 @@ function OrganizationContactBlock({ quoteData }: { quoteData: any }) {
   const contactRows = [
     { label: "Email", value: quoteData.email },
     { label: "Organization address", value: quoteData.address },
-  ];
-
-  const shippingRows = [
-    { label: "Shipping address", value: quoteData.shippingAddress, fullWidth: true },
     { label: "Street address", value: quoteData.streetAddress },
     { label: "City", value: quoteData.city },
     { label: "State", value: quoteData.state },
     { label: "Zip code", value: quoteData.zipCode },
     { label: "Country", value: quoteData.country },
+  ];
+
+  const shippingRows = [
+    { label: "Address", value: quoteData.shippingAddress, fullWidth: true },
+    { label: "City", value: quoteData.shippingCity },
+    { label: "State", value: quoteData.shippingState },
+    { label: "Zip code", value: quoteData.shippingZipCode },
+    { label: "Country", value: quoteData.shippingCountry },
   ];
 
   return (

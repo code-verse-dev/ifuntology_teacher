@@ -23,6 +23,10 @@ export type ShopFormState = {
   email: string;
   address: string;
   shippingAddress: string;
+  shippingCountry: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZip: string;
   includeLms: boolean;
   includeEnrichment: boolean;
   includeWtr: boolean;
@@ -124,12 +128,16 @@ function buildContactPayload(state: ShopFormState) {
   return {
     email: state.email.trim(),
     address: state.address.trim(),
-    shippingAddress: state.shippingAddress.trim(),
     country: state.country.trim(),
     city: state.city.trim(),
     state: state.stateVal.trim(),
     streetAddress: state.streetAddress.trim(),
     zipCode: state.zip.trim(),
+    shippingAddress: state.shippingAddress.trim(),
+    shippingCountry: state.shippingCountry.trim(),
+    shippingCity: state.shippingCity.trim(),
+    shippingState: state.shippingState.trim(),
+    shippingZipCode: state.shippingZip.trim(),
   };
 }
 

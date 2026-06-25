@@ -2,12 +2,16 @@ export type ShopContactFields = {
   organizationName: string;
   email: string;
   address: string;
-  shippingAddress: string;
   country: string;
   city: string;
   stateVal: string;
   streetAddress: string;
   zip: string;
+  shippingAddress: string;
+  shippingCountry: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZip: string;
 };
 
 export function getShopContactDetailsError(
@@ -24,7 +28,7 @@ export function getShopContactDetailsError(
     return "Enter a valid email address.";
   }
   if (!state.address.trim()) {
-    return "Address is required.";
+    return "Organization address is required.";
   }
   if (!state.country.trim()) {
     return "Country is required.";
@@ -38,11 +42,23 @@ export function getShopContactDetailsError(
   if (!state.streetAddress.trim()) {
     return "Street address is required.";
   }
+  if (!state.zip.trim()) {
+    return "Zip code is required.";
+  }
   if (!state.shippingAddress.trim()) {
     return "Shipping address is required.";
   }
-  if (!state.zip.trim()) {
-    return "Zip code is required.";
+  if (!state.shippingCountry.trim()) {
+    return "Shipping country is required.";
+  }
+  if (!state.shippingCity.trim()) {
+    return "Shipping city is required.";
+  }
+  if (!state.shippingState.trim()) {
+    return "Shipping state is required.";
+  }
+  if (!state.shippingZip.trim()) {
+    return "Shipping zip code is required.";
   }
   return null;
 }

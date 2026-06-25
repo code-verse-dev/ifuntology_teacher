@@ -8,6 +8,10 @@ export type ShopPreviewPayload = {
   email: string;
   address: string;
   shippingAddress: string;
+  shippingCountry: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZipCode: string;
   country: string;
   city: string;
   state: string;
