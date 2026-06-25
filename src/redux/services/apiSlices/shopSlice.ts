@@ -7,6 +7,7 @@ export type ShopPreviewPayload = {
   organizationName: string;
   email: string;
   address: string;
+  shippingAddress: string;
   country: string;
   city: string;
   state: string;

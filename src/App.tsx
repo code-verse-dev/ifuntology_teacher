@@ -45,6 +45,7 @@ import CourseDetails from "./pages/myCourses/CourseDetails";
 import PdfFullPage from "./pages/myCourses/PdfFullPage";
 import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
 import MyStudents from "./pages/myStudents";
+import StudentProfile from "./pages/myStudents/StudentProfile";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -293,6 +294,11 @@ const App = () => {
               <Route path="/my-courses/:courseType" element={
                 <ProtectedRoute>
                   <CourseDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-students/:studentId" element={
+                <ProtectedRoute>
+                  <StudentProfile />
                 </ProtectedRoute>
               } />
               <Route path="/my-students" element={

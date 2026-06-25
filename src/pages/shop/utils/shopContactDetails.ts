@@ -2,6 +2,7 @@ export type ShopContactFields = {
   organizationName: string;
   email: string;
   address: string;
+  shippingAddress: string;
   country: string;
   city: string;
   stateVal: string;
@@ -36,6 +37,9 @@ export function getShopContactDetailsError(
   }
   if (!state.streetAddress.trim()) {
     return "Street address is required.";
+  }
+  if (!state.shippingAddress.trim()) {
+    return "Shipping address is required.";
   }
   if (!state.zip.trim()) {
     return "Zip code is required.";
