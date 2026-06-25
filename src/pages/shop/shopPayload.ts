@@ -22,6 +22,7 @@ export type ShopFormState = {
   organizationName: string;
   email: string;
   address: string;
+  shippingAddress: string;
   includeLms: boolean;
   includeEnrichment: boolean;
   includeWtr: boolean;
@@ -123,6 +124,7 @@ function buildContactPayload(state: ShopFormState) {
   return {
     email: state.email.trim(),
     address: state.address.trim(),
+    shippingAddress: state.shippingAddress.trim(),
     country: state.country.trim(),
     city: state.city.trim(),
     state: state.stateVal.trim(),

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,9 @@ function formatDate(iso: string) {
 
 export default function MessagesPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const openStudentId = (location.state as { studentUserId?: string } | null)?.studentUserId;
   const user = useSelector((state: any) => state.user.userData);
   const currentUserId = user?._id;
 
@@ -210,21 +214,36 @@ export default function MessagesPage() {
     : "";
 
   React.useEffect(() => {
-    document.title = "Chats • iFuntology Student";
+    document.title = "Chats • iFuntology Teacher";
   }, []);
+
+  React.useEffect(() => {
+    if (openStudentId) {
+      setSelectedTab("student");
+    }
+  }, [openStudentId]);
 
   const handleSelectContactRef = React.useRef(handleSelectContact);
   handleSelectContactRef.current = handleSelectContact;
 
   React.useEffect(() => {
-    if (contacts.length === 0) return;
+    if (!openStudentId || contacts.length === 0) return;
+    const contact = contacts.find((c: any) => c._id === openStudentId);
+    if (contact) {
+      handleSelectContactRef.current(contact);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [openStudentId, contacts, navigate, location.pathname]);
+
+  React.useEffect(() => {
+    if (openStudentId || contacts.length === 0) return;
     const first = contacts[0];
     const shouldSelectFirst =
       !selectedContact || !contacts.some((c: any) => c._id === selectedContact._id);
     if (shouldSelectFirst) {
       handleSelectContactRef.current(first);
     }
-  }, [selectedTab, contacts]);
+  }, [selectedTab, contacts, openStudentId, selectedContact]);
 
   return (
     <DashboardWithSidebarLayout>

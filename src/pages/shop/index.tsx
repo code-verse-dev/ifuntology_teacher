@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { quoteSlice } from "@/redux/services/apiSlices/quoteSlice";
@@ -91,6 +92,7 @@ export default function ShopPage() {
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
 
   const [lmsCourses, setLmsCourses] = useState<LmsCourseItem[]>([
     makeLmsCourseItem(),
@@ -129,13 +131,14 @@ export default function ShopPage() {
       organizationName: orgName,
       email,
       address,
+      shippingAddress,
       country,
       city,
       stateVal,
       streetAddress,
       zip,
     }),
-    [orgName, email, address, country, city, stateVal, streetAddress, zip]
+    [orgName, email, address, shippingAddress, country, city, stateVal, streetAddress, zip]
   );
 
   const contactDetailsComplete = useMemo(
@@ -299,6 +302,7 @@ export default function ShopPage() {
       organizationName: orgName,
       email,
       address,
+      shippingAddress,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -319,6 +323,7 @@ export default function ShopPage() {
       orgName,
       email,
       address,
+      shippingAddress,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -534,6 +539,25 @@ export default function ShopPage() {
                       placeholder="Organization address"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label
+                    className="text-sm font-medium text-foreground"
+                    htmlFor="shop-shipping-address"
+                  >
+                    Shipping Address <span className="text-rose-500">*</span>
+                  </Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Where physical kits and enrichment products should be delivered.
+                  </p>
+                  <Textarea
+                    id="shop-shipping-address"
+                    className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Shipping address"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

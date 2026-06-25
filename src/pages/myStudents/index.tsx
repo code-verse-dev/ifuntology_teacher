@@ -250,8 +250,19 @@ export default function MyStudents() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                                <DropdownMenuItem>Message</DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => student.user?._id && navigate(`/my-students/${student.user._id}`)}
+                                                >
+                                                    View Profile
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        navigate("/messages", { state: { studentUserId: student.user._id } })
+                                                    }
+                                                >
+                                                    Message
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   formatBillingPeriod,
   formatBool,
@@ -34,9 +35,13 @@ function SectionSubtotal({
 }
 
 function OrganizationContactBlock({ quoteData }: { quoteData: any }) {
-  const rows = [
+  const contactRows = [
     { label: "Email", value: quoteData.email },
-    { label: "Address", value: quoteData.address },
+    { label: "Organization address", value: quoteData.address },
+  ];
+
+  const shippingRows = [
+    { label: "Shipping address", value: quoteData.shippingAddress, fullWidth: true },
     { label: "Street address", value: quoteData.streetAddress },
     { label: "City", value: quoteData.city },
     { label: "State", value: quoteData.state },
@@ -45,15 +50,34 @@ function OrganizationContactBlock({ quoteData }: { quoteData: any }) {
   ];
 
   return (
-    <Card className="rounded-xl border border-border/60 p-4">
-      <SectionHeading>Organization &amp; contact details</SectionHeading>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {rows.map((row) => (
-          <div key={row.label} className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
-            <p className="text-xs text-muted-foreground">{row.label}</p>
-            <p className="font-medium">{row.value || "—"}</p>
-          </div>
-        ))}
+    <Card className="rounded-xl border border-border/60 p-4 space-y-4">
+      <div>
+        <SectionHeading>Organization &amp; contact details</SectionHeading>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {contactRows.map((row) => (
+            <div key={row.label} className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+              <p className="text-xs text-muted-foreground">{row.label}</p>
+              <p className="font-medium">{row.value || "—"}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <SectionHeading>Shipping address</SectionHeading>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {shippingRows.map((row) => (
+            <div
+              key={row.label}
+              className={cn(
+                "rounded-lg bg-muted/40 px-3 py-2 text-sm",
+                row.fullWidth && "sm:col-span-2"
+              )}
+            >
+              <p className="text-xs text-muted-foreground">{row.label}</p>
+              <p className="font-medium whitespace-pre-wrap">{row.value || "—"}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   );
