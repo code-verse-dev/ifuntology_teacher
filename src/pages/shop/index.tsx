@@ -93,6 +93,10 @@ export default function ShopPage() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingZip, setShippingZip] = useState("");
 
   const [lmsCourses, setLmsCourses] = useState<LmsCourseItem[]>([
     makeLmsCourseItem(),
@@ -131,14 +135,32 @@ export default function ShopPage() {
       organizationName: orgName,
       email,
       address,
-      shippingAddress,
       country,
       city,
       stateVal,
       streetAddress,
       zip,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
     }),
-    [orgName, email, address, shippingAddress, country, city, stateVal, streetAddress, zip]
+    [
+      orgName,
+      email,
+      address,
+      country,
+      city,
+      stateVal,
+      streetAddress,
+      zip,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
+    ]
   );
 
   const contactDetailsComplete = useMemo(
@@ -153,7 +175,7 @@ export default function ShopPage() {
 
   const sectionToggleDisabled = !contactDetailsComplete;
   const sectionToggleHint = sectionToggleDisabled
-    ? "Complete all required fields above first."
+    ? "Complete all required organization, contact, and shipping fields first."
     : undefined;
 
   const guardSectionToggle = (
@@ -161,7 +183,7 @@ export default function ShopPage() {
     setter: (next: boolean) => void
   ) => {
     if (value && !contactDetailsComplete) {
-      toast.error("Complete organization and contact details at the top first.");
+      toast.error("Complete organization, contact, and shipping details first.");
       return;
     }
     setter(value);
@@ -260,7 +282,7 @@ export default function ShopPage() {
     });
     if (product) {
       if (!contactDetailsComplete) {
-        toast.error("Complete organization and contact details at the top first.");
+        toast.error("Complete organization, contact, and shipping details first.");
         return;
       }
       setIncludeEnrichment(true);
@@ -303,6 +325,10 @@ export default function ShopPage() {
       email,
       address,
       shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -324,6 +350,10 @@ export default function ShopPage() {
       email,
       address,
       shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -371,7 +401,7 @@ export default function ShopPage() {
       setPricing(null);
       setEligibility(null);
       setPreviewError(
-        "Complete organization and contact details, then enable at least one section to preview pricing."
+        "Complete organization, contact, and shipping details, then enable at least one section to preview pricing."
       );
       return;
     }
@@ -529,7 +559,7 @@ export default function ShopPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-foreground" htmlFor="shop-address">
-                      Address <span className="text-rose-500">*</span>
+                      Organization Address <span className="text-rose-500">*</span>
                     </Label>
                     <Input
                       id="shop-address"
@@ -542,22 +572,10 @@ export default function ShopPage() {
                 </div>
 
                 <div>
-                  <Label
-                    className="text-sm font-medium text-foreground"
-                    htmlFor="shop-shipping-address"
-                  >
-                    Shipping Address <span className="text-rose-500">*</span>
-                  </Label>
+                  <p className="text-sm font-medium text-foreground">Organization location</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Where physical kits and enrichment products should be delivered.
+                    Billing and organization contact location.
                   </p>
-                  <Textarea
-                    id="shop-shipping-address"
-                    className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Shipping address"
-                  />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -629,6 +647,89 @@ export default function ShopPage() {
                 {contactPreviewError && (
                   <p className="text-xs font-medium text-rose-600">{contactPreviewError}</p>
                 )}
+              </div>
+            </Card>
+
+            <Card className="rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Shipping address
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Where physical kits and enrichment products should be delivered.
+                  </p>
+                </div>
+
+                <div>
+                  <Label
+                    className="text-sm font-medium text-foreground"
+                    htmlFor="shop-shipping-address"
+                  >
+                    Address <span className="text-rose-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="shop-shipping-address"
+                    className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Building, suite, or delivery instructions"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-country">
+                      Country <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-shipping-country"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={shippingCountry}
+                      onChange={(e) => setShippingCountry(e.target.value)}
+                      placeholder="United States"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-city">
+                      City <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-shipping-city"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={shippingCity}
+                      onChange={(e) => setShippingCity(e.target.value)}
+                      placeholder="Anchorage"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-state">
+                      State <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-shipping-state"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={shippingState}
+                      onChange={(e) => setShippingState(e.target.value)}
+                      placeholder="Alaska"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-zip">
+                      Zip Code <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-shipping-zip"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={shippingZip}
+                      onChange={(e) => setShippingZip(e.target.value)}
+                      placeholder="99503"
+                    />
+                  </div>
+                </div>
               </div>
             </Card>
 
@@ -784,7 +885,7 @@ export default function ShopPage() {
               tagline="Physical & Digital Resources for Lifelong Learning"
               onTaglineClick={() => {
                 if (!contactDetailsComplete) {
-                  toast.error("Complete organization and contact details at the top first.");
+                  toast.error("Complete organization, contact, and shipping details first.");
                   return;
                 }
                 setCatalogPickerOpen(true);
@@ -795,7 +896,7 @@ export default function ShopPage() {
                   label="Add Product"
                   onClick={() => {
                     if (!contactDetailsComplete) {
-                      toast.error("Complete organization and contact details at the top first.");
+                      toast.error("Complete organization, contact, and shipping details first.");
                       return;
                     }
                     setCatalogPickerOpen(true);
