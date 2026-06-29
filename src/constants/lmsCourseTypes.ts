@@ -2,8 +2,8 @@
 export const LMS_COURSE_TYPES = [
   "Funtology",
   "Barbertology",
-  "Skintology",
   "Nailtology",
+  "Skintology",
   "iTeach iFuntology",
   "iFuntology Braiding",
 ] as const;
