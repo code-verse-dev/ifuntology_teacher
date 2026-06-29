@@ -272,7 +272,7 @@ export default function MessagesPage() {
                 <div className="relative mt-3">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search students..."
+                    placeholder="e.g. Emma Wilson"
                     value={studentSearchQuery}
                     onChange={(e) => setStudentSearchQuery(e.target.value)}
                     className="pl-9 h-10 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
@@ -486,7 +486,7 @@ export default function MessagesPage() {
                       <Smile className="h-5 w-5 text-muted-foreground" />
                     </Button>
                     <Input
-                      placeholder="Type your message here"
+                    placeholder="e.g. Hi Emma, please review chapter 3 before Friday…"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}

@@ -487,6 +487,7 @@ export default function BookaSessionDashboard() {
                 <input
                   type="date"
                   min={todayStr}
+                  placeholder="2026-06-15"
                   value={selectedDate}
                   onChange={(e) => {
                     setSelectedDate(e.target.value);

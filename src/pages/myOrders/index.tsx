@@ -107,7 +107,7 @@ export default function MyOrdersPage() {
             <div className="flex items-center gap-3 w-full md:w-1/2">
               <div className="flex-1">
                 <Input
-                  placeholder="Search Order#"
+                  placeholder="e.g. ORD-1024"
                   onChange={(e) => setSearch(e.target.value)}
                   value={search}
                 />

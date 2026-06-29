@@ -123,7 +123,7 @@ export default function CreateTicket() {
                                     Subject <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
-                                    placeholder="Enter subject"
+                                    placeholder="e.g. Unable to access course materials"
                                     className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12 px-6"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
@@ -153,7 +153,7 @@ export default function CreateTicket() {
                                 Description <span className="text-red-500">*</span>
                             </Label>
                             <Textarea
-                                placeholder="Please provide detailed information about your issue..."
+                                placeholder="Describe what happened, steps to reproduce, and any error messages you saw…"
                                 className="min-h-[150px] rounded-3xl bg-slate-50 dark:bg-slate-800 border-none p-6 resize-none"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
