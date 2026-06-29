@@ -928,6 +928,7 @@ export default function ShopPage() {
                   type="number"
                   min={1}
                   className={shopFieldInput}
+                  placeholder="e.g. 24"
                   value={wtrNumberOfSeats}
                   onChange={(e) => setWtrNumberOfSeats(e.target.value)}
                 />

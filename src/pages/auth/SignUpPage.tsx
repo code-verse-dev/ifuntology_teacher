@@ -188,7 +188,7 @@ export default function SignUpPage() {
                     <Input
                       id="first"
                       required
-                      placeholder="Enter Name"
+                      placeholder="Jane"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -205,7 +205,7 @@ export default function SignUpPage() {
                     <Input
                       id="last"
                       required
-                      placeholder="Enter Name"
+                      placeholder="Doe"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -223,7 +223,7 @@ export default function SignUpPage() {
                       id="email"
                       type="email"
                       required
-                      placeholder="your@email.com"
+                      placeholder="teacher@school.edu"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -267,7 +267,7 @@ export default function SignUpPage() {
                   <Input
                     id="org"
                     required
-                    placeholder="Enter Name"
+                    placeholder="Springfield High School"
                     className="h-11 rounded-full border-border/80 bg-background/80"
                     value={org}
                     onChange={(e) => setOrg(e.target.value)}
@@ -279,7 +279,7 @@ export default function SignUpPage() {
                   <Input
                     id="country"
                     required
-                    placeholder="Enter Name"
+                    placeholder="United States"
                     className="h-11 rounded-full border-border/80 bg-background/80"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
@@ -305,7 +305,7 @@ export default function SignUpPage() {
                   <Input
                     id="city"
                     required
-                    placeholder="Enter City"
+                    placeholder="Anchorage"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
@@ -317,7 +317,7 @@ export default function SignUpPage() {
                   <Input
                     id="state"
                     required
-                    placeholder="Enter State"
+                    placeholder="Alaska"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={stateVal}
                     onChange={(e) => setStateVal(e.target.value)}
@@ -329,7 +329,7 @@ export default function SignUpPage() {
                   <Input
                     id="streetAddress"
                     required
-                    placeholder="Enter Street Address"
+                    placeholder="142 W 34th Ave"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
@@ -341,7 +341,7 @@ export default function SignUpPage() {
                   <Input
                     id="zipCode"
                     required
-                    placeholder="Enter Zip Code"
+                    placeholder="99503"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={zipCode}
                     onChange={(e) => setZipCode(e.target.value)}

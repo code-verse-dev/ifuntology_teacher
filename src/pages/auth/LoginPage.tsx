@@ -177,7 +177,7 @@ export default function LoginPage() {
                 Email Address *
               </Label>
               <div className="relative">
-                <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
+                <Input id="email" type="email" required placeholder="teacher@school.edu" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
               </div>
             </div>
             <div className="space-y-2">

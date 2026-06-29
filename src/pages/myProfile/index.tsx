@@ -245,6 +245,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.firstName || ""}
+                          placeholder="Jane"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -255,6 +256,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.lastName || ""}
+                          placeholder="Doe"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -265,6 +267,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.email || ""}
+                          placeholder="teacher@school.edu"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -275,6 +278,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.phoneNumber || ""}
+                          placeholder="+1 (907) 555-0142"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -286,6 +290,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.organization || ""}
+                          placeholder="Springfield High School"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -304,6 +309,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.streetAddress || ""}
+                          placeholder="142 W 34th Ave"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -314,6 +320,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.city || ""}
+                          placeholder="Anchorage"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -324,6 +331,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.state || ""}
+                          placeholder="Alaska"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -334,6 +342,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.zipCode || ""}
+                          placeholder="99503"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />
@@ -344,6 +353,7 @@ export default function MyProfile() {
                         </Label>
                         <Input
                           value={user?.country || ""}
+                          placeholder="United States"
                           className="rounded-xl bg-slate-50 dark:bg-slate-800 border-none h-12"
                           disabled
                         />

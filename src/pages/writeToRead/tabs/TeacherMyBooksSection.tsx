@@ -245,7 +245,7 @@ export function TeacherMyBooksSection() {
               Book title <span className="text-red-500">*</span>
             </Label>
             <Input
-              placeholder="Enter book title"
+              placeholder="e.g. My Science Adventure"
               value={createTitle}
               onChange={(e) => setCreateTitle(e.target.value)}
               className="h-12 rounded-xl"

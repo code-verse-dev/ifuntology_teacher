@@ -386,6 +386,7 @@ export default function SubscribetoLMS() {
                                     id="students"
                                     type="number"
                                     min={1}
+                                    placeholder="e.g. 24"
                                     value={numStudents}
                                     onChange={(e) => setNumStudents(parseInt(e.target.value) || 0)}
                                     className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"
@@ -456,7 +457,7 @@ export default function SubscribetoLMS() {
                                 PO Number <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                placeholder="Enter PO number"
+                                placeholder="PO-2026-0042"
                                 value={poNumber}
                                 onChange={(e) => setPoNumber(e.target.value)}
                                 className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"

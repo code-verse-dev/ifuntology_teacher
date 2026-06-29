@@ -321,7 +321,7 @@ export default function InviteStudent() {
                         First Name
                       </label>
                       <Input
-                        placeholder="First Name"
+                        placeholder="Jane"
                         value={row.firstName}
                         onChange={(e) => updateEmailRow(row.key, "firstName", e.target.value)}
                       />
@@ -331,7 +331,7 @@ export default function InviteStudent() {
                         Last Name
                       </label>
                       <Input
-                        placeholder="Last Name"
+                        placeholder="Doe"
                         value={row.lastName}
                         onChange={(e) => updateEmailRow(row.key, "lastName", e.target.value)}
                       />
@@ -341,7 +341,7 @@ export default function InviteStudent() {
                         Email
                       </label>
                       <Input
-                        placeholder="Email"
+                        placeholder="student@school.edu"
                         type="email"
                         value={row.email}
                         onChange={(e) => updateEmailRow(row.key, "email", e.target.value)}
@@ -452,7 +452,7 @@ export default function InviteStudent() {
                         First Name
                       </label>
                       <Input
-                        placeholder="First Name"
+                        placeholder="Jane"
                         value={row.firstName}
                         onChange={(e) => updateManualRow(row.key, "firstName", e.target.value)}
                       />
@@ -462,7 +462,7 @@ export default function InviteStudent() {
                         Last Name
                       </label>
                       <Input
-                        placeholder="Last Name"
+                        placeholder="Doe"
                         value={row.lastName}
                         onChange={(e) => updateManualRow(row.key, "lastName", e.target.value)}
                       />

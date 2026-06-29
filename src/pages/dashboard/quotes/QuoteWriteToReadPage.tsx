@@ -84,7 +84,7 @@ export default function QuoteWriteToReadPage() {
               <Input
                 id="org"
                 className="h-11 rounded-full"
-                placeholder="Enter Name"
+                placeholder="Springfield High School"
                 value={values.organizationName}
                 onChange={(e) => setValues((s) => ({ ...s, organizationName: e.target.value }))}
               />
@@ -96,7 +96,7 @@ export default function QuoteWriteToReadPage() {
             <Input
               id="address"
               className="h-11 rounded-full"
-              placeholder="Enter Address"
+              placeholder="142 W 34th Ave, Anchorage, AK 99503"
               value={values.address}
               onChange={(e) => setValues((s) => ({ ...s, address: e.target.value }))}
             />
@@ -109,6 +109,7 @@ export default function QuoteWriteToReadPage() {
                 id="subs"
                 inputMode="numeric"
                 className="h-11 rounded-full"
+                placeholder="e.g. 30"
                 value={String(values.subscriptions)}
                 onChange={(e) => setValues((s) => ({ ...s, subscriptions: Number(e.target.value || 0) }))}
               />
@@ -119,6 +120,7 @@ export default function QuoteWriteToReadPage() {
                 id="students"
                 inputMode="numeric"
                 className="h-11 rounded-full"
+                placeholder="e.g. 24"
                 value={String(values.studentsInBatch)}
                 onChange={(e) => setValues((s) => ({ ...s, studentsInBatch: Number(e.target.value || 0) }))}
               />

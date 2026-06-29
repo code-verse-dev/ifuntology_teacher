@@ -59,7 +59,7 @@ export default function BookSessionPage() {
 
             <div className="space-y-2">
               <Label htmlFor="type">Session Type *</Label>
-              <Input id="type" required placeholder="All" className="h-11 rounded-full" />
+              <Input id="type" required placeholder="e.g., Lab Review" className="h-11 rounded-full" />
             </div>
 
             <div className="space-y-2">

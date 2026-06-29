@@ -271,6 +271,7 @@ export default function CreateTeacherHostedSession() {
               <input
                 type="date"
                 min={todayMin}
+                placeholder="2026-06-15"
                 className="w-full rounded-xl border border-border/40 bg-muted/30 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
@@ -293,6 +294,7 @@ export default function CreateTeacherHostedSession() {
                 <input
                   type="time"
                   step={60}
+                  placeholder="09:00"
                   className="w-full rounded-xl border border-border/40 bg-muted/30 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
@@ -303,6 +305,7 @@ export default function CreateTeacherHostedSession() {
                 <input
                   type="time"
                   step={60}
+                  placeholder="10:30"
                   className="w-full rounded-xl border border-border/40 bg-muted/30 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
