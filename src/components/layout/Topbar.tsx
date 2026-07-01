@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { buildCartItems, ImageUrl } from "@/utils/Functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useSidebarOptional } from "@/components/ui/sidebar";
+import { useSidebarOptional, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,18 +77,25 @@ export default function Topbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background">
       <div className="flex w-full items-center justify-between gap-3 px-4 py-3 md:gap-4 md:px-6">
-        {/* Hamburger — mobile only, toggles sidebar (only when inside SidebarProvider) */}
-        {sidebar && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full border border-border bg-background md:hidden"
-            aria-label="Open menu"
-            onClick={sidebar.toggleSidebar}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {sidebar && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full border border-border bg-background md:hidden"
+                aria-label="Open menu"
+                onClick={sidebar.toggleSidebar}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <SidebarTrigger
+                className="hidden h-10 w-10 rounded-full border border-border bg-background md:inline-flex"
+                aria-label="Toggle sidebar"
+              />
+            </>
+          )}
+        </div>
 
         <div className="ml-auto flex items-center gap-3 sm:gap-4">
           {/* Theme toggle — minimal */}

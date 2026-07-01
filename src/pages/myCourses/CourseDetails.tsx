@@ -22,7 +22,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF } from "@/constants/api";
+import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
 import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
 import { isImportedAssessmentModule } from "@/constants/quiz";
@@ -153,20 +153,36 @@ export default function CourseDetails() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
                     {/* Lessons */}
                     <div className="lg:col-span-8">
-                        <Button
-                            variant="brand"
-                            className="mb-4 gap-2 rounded-full font-semibold"
-                            asChild
-                        >
-                            <a
-                                href={WORKFORCE_EXPLORATION_FORM_PDF}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                        <div className="mb-4 flex flex-wrap gap-3">
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
                             >
-                                <Download className="h-4 w-4" />
-                                Workforce Exploration Form
-                            </a>
-                        </Button>
+                                <a
+                                    href={WORKFORCE_EXPLORATION_FORM_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Workforce Exploration Form
+                                </a>
+                            </Button>
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
+                            >
+                                <a
+                                    href={IFUNTOLOGY_GLOSSARY_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    iFuntology Glossary
+                                </a>
+                            </Button>
+                        </div>
                         <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">Lessons</h2>
                         <Accordion
                             type="single"

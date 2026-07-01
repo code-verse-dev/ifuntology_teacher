@@ -78,8 +78,8 @@ export default function ProductDetails() {
       <DashboardWithSidebarLayout>
         <section className="mx-auto w-full space-y-6">
           <div className="h-5 w-48 bg-muted rounded animate-pulse" />
-          <Card className="p-6 grid md:grid-cols-2 gap-6">
-            <div className="aspect-[4/3] bg-muted rounded animate-pulse" />
+          <Card className="p-6 grid lg:grid-cols-[minmax(0,380px)_1fr] gap-8">
+            <div className="mx-auto w-full max-w-sm aspect-[4/3] max-h-[280px] bg-muted rounded-xl animate-pulse" />
             <div className="space-y-4">
               <div className="h-6 w-2/3 bg-muted rounded animate-pulse" />
               <div className="h-4 w-1/3 bg-muted rounded animate-pulse" />
@@ -106,75 +106,90 @@ export default function ProductDetails() {
         <h1 className="text-2xl font-extrabold">Product Details</h1>
 
         <Card className="rounded-2xl border border-border/60 p-6">
-          <div className="flex flex-col gap-6 md:flex-row">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-10">
             {/* ---------- Images ---------- */}
-            <div className="md:w-1/2">
-              <div className="relative rounded-md bg-muted p-4">
-                <img
-                  src={heroSrc}
-                  alt={product.name}
-                  className="w-full rounded-md object-cover"
-                />
+            <div className="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-none space-y-3">
+              <div className="relative flex aspect-[4/3] max-h-[280px] w-full items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-muted/40">
+                {heroSrc ? (
+                  <img
+                    src={heroSrc}
+                    alt={product.name}
+                    className="max-h-full max-w-full object-contain p-3"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">No image</div>
+                )}
 
-                <button
-                  onClick={() => {
-                    const prev = Math.max(0, activeIndex - 1);
-                    setActiveIndex(prev);
-                    setHeroSrc(images[prev]);
-                    thumbApi?.scrollTo(prev);
-                  }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/80 shadow"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
+                {images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      disabled={activeIndex === 0}
+                      onClick={() => {
+                        const prev = Math.max(0, activeIndex - 1);
+                        setActiveIndex(prev);
+                        setHeroSrc(images[prev]);
+                        thumbApi?.scrollTo(prev);
+                      }}
+                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-background/90 shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
 
-                <button
-                  onClick={() => {
-                    const next = Math.min(images.length - 1, activeIndex + 1);
-                    setActiveIndex(next);
-                    setHeroSrc(images[next]);
-                    thumbApi?.scrollTo(next);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/80 shadow"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      disabled={activeIndex === images.length - 1}
+                      onClick={() => {
+                        const next = Math.min(images.length - 1, activeIndex + 1);
+                        setActiveIndex(next);
+                        setHeroSrc(images[next]);
+                        thumbApi?.scrollTo(next);
+                      }}
+                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-background/90 shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* ---------- Thumbnails ---------- */}
               {images.length > 1 && (
-                <div className="mt-4">
-                  <Carousel setApi={setThumbApi}>
-                    <CarouselContent className="flex gap-2">
-                      {images.map((img, i) => (
-                        <CarouselItem key={i} className="basis-auto">
-                          <button
-                            onClick={() => {
-                              setHeroSrc(img);
-                              setActiveIndex(i);
-                              thumbApi?.scrollTo(i);
-                            }}
-                            className={`h-24 w-24 overflow-hidden rounded-md ${
-                              i === activeIndex
-                                ? "border-2 border-amber-400"
-                                : "border border-border/60"
-                            }`}
-                          >
-                            <img
-                              src={img}
-                              className="h-full w-full object-cover"
-                            />
-                          </button>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                </div>
+                <Carousel setApi={setThumbApi} opts={{ align: "start", dragFree: true }}>
+                  <CarouselContent className="-ml-2">
+                    {images.map((img, i) => (
+                      <CarouselItem key={img} className="basis-auto pl-2">
+                        <button
+                          type="button"
+                          aria-label={`View image ${i + 1}`}
+                          onClick={() => {
+                            setHeroSrc(img);
+                            setActiveIndex(i);
+                            thumbApi?.scrollTo(i);
+                          }}
+                          className={`h-16 w-16 overflow-hidden rounded-lg border bg-muted/40 transition-colors ${
+                            i === activeIndex
+                              ? "border-lime-500 ring-2 ring-lime-500/30"
+                              : "border-border/60 hover:border-lime-500/50"
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                </Carousel>
               )}
             </div>
 
             {/* ---------- Details ---------- */}
-            <div className="md:w-1/2">
+            <div className="min-w-0">
               <div className="flex justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">{product.name}</h2>
