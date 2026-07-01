@@ -36,3 +36,5 @@ export const SOCKET_URL = URL;
 export const UPLOADS_URL = URL ? `${URL}/Uploads/` : "/Uploads/";
 export const BASE_URL = URL ? `${URL}/api` : "/api";
 export const PUBLIC_URL = "/";
+export const WORKFORCE_EXPLORATION_FORM_PDF =
+    "https://erp.ifuntology.com/pdfs/iFuntology-Career-Exploration.pdf";
