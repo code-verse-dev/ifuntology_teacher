@@ -23,6 +23,7 @@ import PasswordField from "@/components/inputs/PasswordField";
 import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
 import { useDispatch } from "react-redux";
 import { addUser } from "@/redux/services/Slices/userSlice";
+import { setActorPortalSession } from "@/utils/actorPortalSession";
 
 const roleCards = [
   { key: "affiliate", label: "Affiliate", icon: Gift, link: "https://affiliate-erp.ifuntology.com/login" },
@@ -64,6 +65,7 @@ export default function LoginPage() {
       if (res?.status) {
         toast.success("Signed in successfully");
         dispatch(addUser({ user: res?.data?.user }));
+        setActorPortalSession(res?.data?.user);
         navigate("/dashboard");
       }
       else {

@@ -42,6 +42,10 @@ import PayInvoice from "./pages/payInvoice";
 import SubscribetoLMS from "./pages/subscribetoLMS";
 import MyCourses from "./pages/myCourses";
 import CourseDetails from "./pages/myCourses/CourseDetails";
+import CourseQuizzes from "./pages/myCourses/CourseQuizzes";
+import CourseTests from "./pages/myCourses/CourseTests";
+import CourseExams from "./pages/myCourses/CourseExams";
+import AssessmentPreview from "./pages/myCourses/AssessmentPreview";
 import PdfFullPage from "./pages/myCourses/PdfFullPage";
 import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
 import MyStudents from "./pages/myStudents";
@@ -79,6 +83,7 @@ import BarbertologyPage from "./pages/ifuntology/courses/BarbertologyPage";
 import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
 import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
 import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
+import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
@@ -100,6 +105,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter basename={getBasename()}>
+            <ActorPortalSessionSync />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
@@ -289,6 +295,26 @@ const App = () => {
               <Route path="/my-courses/pdf/:id" element={
                 <ProtectedRoute>
                   <PdfFullPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/quizzes" element={
+                <ProtectedRoute>
+                  <CourseQuizzes />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/tests" element={
+                <ProtectedRoute>
+                  <CourseTests />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/exams" element={
+                <ProtectedRoute>
+                  <CourseExams />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/assessment/:id/preview" element={
+                <ProtectedRoute>
+                  <AssessmentPreview />
                 </ProtectedRoute>
               } />
               <Route path="/my-courses/:courseType" element={
