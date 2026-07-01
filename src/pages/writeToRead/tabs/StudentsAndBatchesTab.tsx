@@ -13,7 +13,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Users, Plus, Loader2, ChevronLeft, Info, Copy, Upload } from "lucide-react";
+import {
+  Users,
+  Plus,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Copy,
+  Upload,
+  Filter,
+  MoreVertical,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   useCreateInviteBatchMutation,
@@ -52,10 +70,48 @@ function emptyStudentRow(): StudentFieldRow {
 function formatBatchDate(value?: string) {
   if (!value) return "—";
   try {
-    return format(parseISO(value), "M/d/yyyy");
+    return format(parseISO(value), "MMM d, yyyy");
   } catch {
     return value;
   }
+}
+
+const BATCH_ICON_COLORS = [
+  "bg-teal-500",
+  "bg-violet-500",
+  "bg-blue-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-emerald-500",
+];
+
+function batchInitials(index: number, title?: string) {
+  const label = title?.trim() || `Batch ${index + 1}`;
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0][0] ?? ""}${words[1][0] ?? ""}`.toUpperCase();
+  }
+  return `B${index + 1}`;
+}
+
+function batchStatusLabel(status?: string) {
+  if (!status) return "Draft";
+  const normalized = status.replace(/_/g, " ").toLowerCase();
+  return normalized.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function batchStatusClass(status?: string) {
+  const s = (status ?? "").toUpperCase();
+  if (s === "COMPLETED" || s === "ACTIVE" || s === "CREATED") {
+    return "bg-green-500/15 text-green-500 dark:bg-green-500/10 dark:text-green-400";
+  }
+  if (s === "IN_PROGRESS" || s === "PROCESSING") {
+    return "bg-blue-500/15 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400";
+  }
+  if (s === "PENDING") {
+    return "bg-orange-500/15 text-orange-500 dark:bg-orange-500/10 dark:text-orange-400";
+  }
+  return "bg-slate-500/15 text-slate-500 dark:bg-slate-500/10 dark:text-slate-400";
 }
 
 export function StudentsAndBatchesTab() {
@@ -63,28 +119,42 @@ export function StudentsAndBatchesTab() {
   const wtrSub = wtrRes?.status && wtrRes?.data ? wtrRes.data : null;
   const subscriptionId = wtrSub?._id ? String(wtrSub._id) : "";
 
-  const { data: batchesRes, isLoading: batchesLoading, isFetching } = useGetInviteBatchesQuery(
-    {
-      page: 1,
-      limit: 10,
-      subscriptionId,
-    },
-    { skip: !subscriptionId }
-  );
-
-  const [createBatch, { isLoading: isCreatingBatch }] = useCreateInviteBatchMutation();
-  const [createBatchCsv, { isLoading: isCreatingBatchCsv }] = useCreateInviteBatchCsvMutation();
-
   const [selectedBatch, setSelectedBatch] = useState<InviteBatchDoc | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [batchTitle, setBatchTitle] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [studentRows, setStudentRows] = useState<StudentFieldRow[]>(() => [emptyStudentRow()]);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data: batchesRes, isLoading: batchesLoading, isFetching } = useGetInviteBatchesQuery(
+    {
+      page,
+      limit: 10,
+      subscriptionId,
+    },
+    { skip: !subscriptionId }
+  );
+  const [createBatch, { isLoading: isCreatingBatch }] = useCreateInviteBatchMutation();
+  const [createBatchCsv, { isLoading: isCreatingBatchCsv }] = useCreateInviteBatchCsvMutation();
 
   const batches = useMemo(() => {
     const raw = batchesRes?.data?.docs ?? batchesRes?.docs;
     return Array.isArray(raw) ? (raw as InviteBatchDoc[]) : [];
   }, [batchesRes]);
+
+  const filteredBatches = useMemo(() => {
+    if (statusFilter === "all") return batches;
+    return batches.filter(
+      (batch) => (batch.status ?? "DRAFT").toUpperCase() === statusFilter.toUpperCase()
+    );
+  }, [batches, statusFilter]);
+
+  const totalDocs =
+    batchesRes?.data?.totalDocs ?? batchesRes?.totalDocs ?? filteredBatches.length;
+  const totalPages = batchesRes?.data?.totalPages ?? batchesRes?.totalPages ?? 1;
+  const pageStart = totalDocs === 0 ? 0 : (page - 1) * 10 + 1;
+  const pageEnd = Math.min(page * 10, totalDocs);
 
   const resetCreateForm = useCallback(() => {
     setBatchTitle("");
@@ -215,71 +285,195 @@ export function StudentsAndBatchesTab() {
       {!selectedBatch ? (
         <div className="space-y-6 text-left">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Users className="h-5 w-5 text-lime-600" />
+            <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+              <Users className="h-5 w-5 text-lime-500" />
               My Batches
             </h3>
-            <Button
-              className="rounded-full bg-lime-600 hover:bg-lime-700 text-white font-bold h-11 px-6 border-none shrink-0"
-              onClick={() => {
-                if (!subscriptionId) {
-                  toast.error("You need an active Write to Read subscription to create a batch.");
-                  return;
-                }
-                setCreateOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Batch
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[150px] rounded-full border-slate-200 bg-white font-semibold dark:border-slate-700 dark:bg-slate-900">
+                  <Filter className="mr-2 h-4 w-4 text-slate-400" />
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                className="h-11 shrink-0 rounded-full border-none bg-lime-600 px-6 font-bold text-white hover:bg-lime-700"
+                onClick={() => {
+                  if (!subscriptionId) {
+                    toast.error("You need an active Write to Read subscription to create a batch.");
+                    return;
+                  }
+                  setCreateOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Batch
+              </Button>
+            </div>
           </div>
 
           {loadingList ? (
             <div className="flex justify-center py-16 text-slate-500">
               <Loader2 className="h-10 w-10 animate-spin text-lime-600" />
             </div>
-          ) : batches.length === 0 ? (
-            <Card className="rounded-[2rem] border border-slate-100 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+          ) : filteredBatches.length === 0 ? (
+            <Card className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900/50">
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
                 No invite batches yet. Create one to add students to Write to Read.
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {batches.map((batch) => {
-                const inviteCount = batch.invites?.length ?? 0;
-                const createdCount =
-                  batch.invites?.filter((i) => i.rowStatus === "CREATED").length ?? 0;
-                return (
-                  <button
-                    key={batch._id}
+            <div className="space-y-4">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                <table className="w-full min-w-[760px] text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
+                      <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Batch Name
+                      </th>
+                      <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Created On
+                      </th>
+                      <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Invites
+                      </th>
+                      <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Enrolled
+                      </th>
+                      <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Status
+                      </th>
+                      <th className="px-5 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredBatches.map((batch, index) => {
+                      const inviteCount = batch.invites?.length ?? 0;
+                      const enrolledCount =
+                        batch.invites?.filter((i) => i.rowStatus === "CREATED").length ?? 0;
+                      return (
+                        <tr
+                          key={batch._id}
+                          className="bg-white transition-colors hover:bg-slate-50/70 dark:bg-slate-900/30 dark:hover:bg-slate-800/30"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold text-white",
+                                  BATCH_ICON_COLORS[index % BATCH_ICON_COLORS.length]
+                                )}
+                              >
+                                {batchInitials(index, batch.title)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                  {batch.title ?? "Untitled batch"}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-medium text-slate-500">
+                            {formatBatchDate(batch.createdAt)}
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                              {inviteCount}
+                              <Users className="h-3.5 w-3.5 text-slate-400" />
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center gap-1 text-sm font-bold text-green-500">
+                              {enrolledCount}
+                              <Users className="h-3.5 w-3.5" />
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <Badge
+                              className={cn(
+                                "rounded-full border-none px-3 py-1 text-[10px] font-bold uppercase",
+                                batchStatusClass(batch.status)
+                              )}
+                            >
+                              {batchStatusLabel(batch.status)}
+                            </Badge>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full border-slate-200 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
+                                onClick={() => setSelectedBatch(batch)}
+                              >
+                                View Students
+                                <ChevronRight className="ml-1 h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                                onClick={() => setSelectedBatch(batch)}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Showing {pageStart} to {pageEnd} of {totalDocs} batch
+                  {totalDocs === 1 ? "" : "es"}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
                     type="button"
-                    onClick={() => setSelectedBatch(batch)}
-                    className="rounded-[2rem] bg-gradient-to-br from-[#0f4c64] to-[#1c5d76] p-7 text-left text-white shadow-lg transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-lime-500/50"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-lg font-bold leading-tight">{batch.title ?? "Untitled batch"}</h4>
-                      <Badge className="shrink-0 border-none bg-green-500/20 px-3 text-[10px] font-bold text-green-400">
-                        {batch.status ?? "—"}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-xs font-medium lowercase text-white/60">
-                      Created {formatBatchDate(batch.createdAt)}
-                    </p>
-                    <div className="mt-4 space-y-2 pt-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/70">Invites</span>
-                        <span className="font-bold">{inviteCount}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/70">Enrolled</span>
-                        <span className="font-bold text-green-400">{createdCount}</span>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-xs font-semibold text-lime-200">View students →</p>
-                  </button>
-                );
-              })}
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="flex h-9 min-w-9 items-center justify-center rounded-full bg-lime-600 px-3 text-sm font-bold text-white">
+                    {page}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>

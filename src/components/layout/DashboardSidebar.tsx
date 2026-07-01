@@ -26,6 +26,7 @@ import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -33,8 +34,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ImageUrl } from "@/utils/Functions";
 
 type Item = {
   title: string;
@@ -71,6 +76,9 @@ function MenuLink({ item }: { item: Item }) {
 }
 
 export default function DashboardSidebar() {
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+
   const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
 
   const booking: Item[] = [
@@ -117,15 +125,25 @@ export default function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="p-3">
-        <div className="overflow-hidden rounded-2xl border-sidebar-border p-2">
+        <div className="overflow-hidden rounded-2xl border-sidebar-border p-2 group-data-[collapsible=icon]:p-1">
           <a
             href="https://erp.ifuntology.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="block px-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className={`flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              collapsed ? "justify-center px-0 py-1" : "block px-1"
+            }`}
             aria-label="Open iFuntology ERP website"
           >
-            <IfuntologyMark logoOnly size="medium" />
+            {collapsed ? (
+              <img
+                src={ImageUrl("logo.png")}
+                alt="iFuntology"
+                className="h-8 w-8 object-contain"
+              />
+            ) : (
+              <IfuntologyMark logoOnly size="medium" />
+            )}
           </a>
         </div>
       </SidebarHeader>
@@ -264,6 +282,28 @@ export default function DashboardSidebar() {
 
 
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="w-full justify-center gap-2 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-0"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <>
+              <PanelLeftClose className="h-4 w-4" />
+              <span className="text-xs font-medium">Collapse</span>
+            </>
+          )}
+        </Button>
+      </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }
