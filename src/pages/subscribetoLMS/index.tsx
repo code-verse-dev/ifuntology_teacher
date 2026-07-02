@@ -98,11 +98,11 @@ function CourseCard({
 
     return (
         <Card className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-stretch">
-                <div className={cn("h-1 w-full shrink-0 lg:h-auto lg:w-1", theme.accentBar)} />
+            <div className="flex flex-col xl:flex-row xl:items-stretch">
+                <div className={cn("h-1 w-full shrink-0 xl:h-auto xl:w-1", theme.accentBar)} />
 
                 {/* Title & description */}
-                <div className="flex flex-1 items-start gap-4 p-5 sm:p-6 lg:max-w-[34%]">
+                <div className="flex min-w-0 flex-1 items-start gap-4 p-5 sm:p-6 xl:max-w-[32%] xl:shrink-0">
                     <div
                         className={cn(
                             "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm",
@@ -112,7 +112,7 @@ function CourseCard({
                         <GraduationCap className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="text-xl font-bold leading-tight text-white sm:text-2xl">
+                        <h3 className="text-lg font-bold leading-tight text-white sm:text-xl xl:text-2xl">
                             {courseType}
                         </h3>
                         <p className="mt-2 text-sm leading-relaxed text-slate-400">
@@ -121,42 +121,43 @@ function CourseCard({
                     </div>
                 </div>
 
-                {/* Features */}
-                <div className="border-t border-slate-800 px-5 py-5 sm:px-6 lg:flex-1 lg:border-l lg:border-t-0">
-                    <ul className="space-y-2.5">
-                        {features.map((feature: string) => (
-                            <li key={feature} className="flex items-center gap-3">
-                                <div
-                                    className={cn(
-                                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-                                        theme.iconBg
-                                    )}
-                                >
-                                    <Check className="h-3 w-3 text-white" />
-                                </div>
-                                <span className="text-sm font-medium text-slate-200">{feature}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                {/* Features + action: stacked on mobile, side-by-side on md–lg, full row on xl+ */}
+                <div className="flex flex-col border-t border-slate-800 md:flex-row md:items-stretch xl:contents">
+                    <div className="min-w-0 px-5 py-5 sm:px-6 md:flex-1 md:border-l md:border-slate-800 xl:min-w-0">
+                        <ul className="space-y-2.5">
+                            {features.map((feature: string) => (
+                                <li key={feature} className="flex items-center gap-3">
+                                    <div
+                                        className={cn(
+                                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                                            theme.iconBg
+                                        )}
+                                    >
+                                        <Check className="h-3 w-3 text-white" />
+                                    </div>
+                                    <span className="text-sm font-medium text-slate-200">{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
 
-                {/* Action */}
-                <div className="flex items-center justify-center border-t border-slate-800 px-5 py-5 sm:px-6 lg:min-w-[200px] lg:border-l lg:border-t-0">
-                    <Button
-                        variant="outline"
-                        className={cn(
-                            "w-full rounded-full border-2 bg-transparent px-6 py-5 text-sm font-semibold shadow-none",
-                            theme.buttonClass
-                        )}
-                        onClick={() =>
-                            activeSubscriptionId
-                                ? onViewCourse(activeSubscriptionId)
-                                : onSelect(course)
-                        }
-                    >
-                        {activeSubscriptionId ? "View Course" : "Enroll Now"}
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
+                    <div className="flex shrink-0 items-center justify-center border-t border-slate-800 px-5 py-5 sm:px-6 md:min-w-[168px] md:max-w-[220px] md:border-l md:border-t-0 lg:min-w-[180px] xl:min-w-[200px]">
+                        <Button
+                            variant="outline"
+                            className={cn(
+                                "w-full rounded-full border-2 bg-transparent px-5 py-5 text-sm font-semibold shadow-none whitespace-nowrap",
+                                theme.buttonClass
+                            )}
+                            onClick={() =>
+                                activeSubscriptionId
+                                    ? onViewCourse(activeSubscriptionId)
+                                    : onSelect(course)
+                            }
+                        >
+                            {activeSubscriptionId ? "View Course" : "Enroll Now"}
+                            <ChevronRight className="ml-1 h-4 w-4 shrink-0" />
+                        </Button>
+                    </div>
                 </div>
             </div>
         </Card>
@@ -281,8 +282,8 @@ export default function SubscribetoLMS() {
 
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full space-y-6">
-                <h1 className="text-2xl font-extrabold">Subscribe to LMS</h1>
+            <section className="mx-auto w-full max-w-6xl space-y-6">
+                <h1 className="text-2xl font-extrabold sm:text-3xl">Subscribe to LMS</h1>
 
                 {/* Subscription Cards */}
                 <div className="w-full">

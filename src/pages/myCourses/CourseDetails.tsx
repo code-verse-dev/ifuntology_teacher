@@ -15,6 +15,7 @@ import {
     Package,
     ChevronRight,
     Users,
+    Compass,
 } from "lucide-react";
 import {
     Accordion,
@@ -102,6 +103,12 @@ export default function CourseDetails() {
             icon: GraduationCap,
             onClick: () => navigate(`/my-courses/${encodedCourseType}/exams`),
             className: "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20",
+        },
+        {
+            label: "Career Explorer Pathway",
+            icon: Compass,
+            onClick: () => navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`),
+            className: "border-indigo-500/25 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20",
         },
         {
             label: "Classroom Kits",
