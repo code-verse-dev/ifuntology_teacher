@@ -48,6 +48,7 @@ import CourseExams from "./pages/myCourses/CourseExams";
 import AssessmentPreview from "./pages/myCourses/AssessmentPreview";
 import PdfFullPage from "./pages/myCourses/PdfFullPage";
 import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
+import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplorerPathway";
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
 import AffiliateProgram from "./pages/affiliateProgram";
@@ -310,6 +311,11 @@ const App = () => {
               <Route path="/my-courses/:courseType/exams" element={
                 <ProtectedRoute>
                   <CourseExams />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/career-explorer-pathway" element={
+                <ProtectedRoute>
+                  <TeacherCareerExplorerPathway />
                 </ProtectedRoute>
               } />
               <Route path="/my-courses/assessment/:id/preview" element={
