@@ -162,13 +162,12 @@ export default function ShopPricingPanel({
                   className="text-sm text-muted-foreground"
                 >
                   {course.courseType}
-                  {course.kitVariant === "BUNDLE_4_IN_1"
-                    ? " · Bundle Kit (4 in 1)"
-                    : course.kitVariant
-                      ? " · Standard Kits"
-                      : ""}
-                  : kits {fmt(course.kitsTotal)} + curriculum{" "}
-                  {fmt(course.subscriptionTotal)} = {fmt(course.total)}
+{course.kitVariant === "BUNDLE_4_IN_1"
+  ? " · Bundle Kit (4 in 1)"
+  : course.kitVariant
+    ? " · Standard Kits"
+    : ""}
+: kits {fmt(course.kitsTotal)}
                 </div>
               ))}
               <div className="text-sm font-medium">
