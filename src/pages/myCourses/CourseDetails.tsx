@@ -23,7 +23,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF } from "@/constants/api";
+import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, FUNTOLOGY_BRAIDING_PDF } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
 import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
 import { isImportedAssessmentModule } from "@/constants/quiz";
@@ -189,6 +189,20 @@ export default function CourseDetails() {
                                     iFuntology Glossary
                                 </a>
                             </Button>
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
+                            >
+                                <a
+                                    href={FUNTOLOGY_BRAIDING_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                    View Braiding
+                                </a>
+                            </Button>
                         </div>
                         <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">Lessons</h2>
                         <Accordion
@@ -222,7 +236,7 @@ export default function CourseDetails() {
                                                         {module.title}
                                                     </h3>
                                                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                                        {module.duration} mins · {module.totalLessons} lessons
+                                                        {module.totalLessons} lessons
                                                     </p>
                                                 </div>
                                             </div>

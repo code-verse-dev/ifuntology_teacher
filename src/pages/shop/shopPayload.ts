@@ -27,6 +27,7 @@ export type ShopFormState = {
   shippingCity: string;
   shippingState: string;
   shippingZip: string;
+  shippingSameAsBilling: boolean;
   includeLms: boolean;
   includeEnrichment: boolean;
   includeWtr: boolean;
@@ -99,11 +100,54 @@ export function hasPreviewReadySection(state: ShopFormState): boolean {
 }
 
 /** User-facing reason preview cannot run yet (when a section looks ready). */
-export function getPreviewBlockReason(state: ShopFormState): string | null {
-  if (!hasPreviewReadySection(state)) {
-    return null;
+export function getPreviewBlockReason(_state: ShopFormState): string | null {
+  return null;
+}
+
+function buildPreviewPlaceholderContact(state: ShopFormState) {
+  const billingShippingAddress = [state.streetAddress, state.address]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    email: state.email.trim() || "preview@ifuntology.com",
+    address: state.address.trim() || "Pending",
+    country: state.country.trim() || "United States",
+    city: state.city.trim() || "Pending",
+    state: state.stateVal.trim() || "NA",
+    streetAddress: state.streetAddress.trim() || "Pending",
+    zipCode: state.zip.trim() || "00000",
+    shippingAddress: state.shippingSameAsBilling
+      ? billingShippingAddress || "Pending"
+      : state.shippingAddress.trim() || "Pending",
+    shippingCountry: state.shippingSameAsBilling
+      ? state.country.trim() || "United States"
+      : state.shippingCountry.trim() || "United States",
+    shippingCity: state.shippingSameAsBilling
+      ? state.city.trim() || "Pending"
+      : state.shippingCity.trim() || "Pending",
+    shippingState: state.shippingSameAsBilling
+      ? state.stateVal.trim() || "NA"
+      : state.shippingState.trim() || "NA",
+    shippingZipCode: state.shippingSameAsBilling
+      ? state.zip.trim() || "00000"
+      : state.shippingZip.trim() || "00000",
+  };
+}
+
+function buildPreviewContactFields(state: ShopFormState) {
+  if (isShopContactDetailsComplete(state)) {
+    return {
+      organizationName: state.organizationName.trim(),
+      ...buildContactPayload(state),
+    };
   }
-  return getShopContactDetailsError(state);
+
+  return {
+    organizationName: state.organizationName.trim() || "Pending",
+    ...buildPreviewPlaceholderContact(state),
+  };
 }
 
 function validateLmsCourseQuantities(
@@ -125,6 +169,11 @@ function validateLmsCourseQuantities(
 }
 
 function buildContactPayload(state: ShopFormState) {
+  const billingShippingAddress = [state.streetAddress, state.address]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
+
   return {
     email: state.email.trim(),
     address: state.address.trim(),
@@ -133,11 +182,21 @@ function buildContactPayload(state: ShopFormState) {
     state: state.stateVal.trim(),
     streetAddress: state.streetAddress.trim(),
     zipCode: state.zip.trim(),
-    shippingAddress: state.shippingAddress.trim(),
-    shippingCountry: state.shippingCountry.trim(),
-    shippingCity: state.shippingCity.trim(),
-    shippingState: state.shippingState.trim(),
-    shippingZipCode: state.shippingZip.trim(),
+    shippingAddress: state.shippingSameAsBilling
+      ? billingShippingAddress
+      : state.shippingAddress.trim(),
+    shippingCountry: state.shippingSameAsBilling
+      ? state.country.trim()
+      : state.shippingCountry.trim(),
+    shippingCity: state.shippingSameAsBilling
+      ? state.city.trim()
+      : state.shippingCity.trim(),
+    shippingState: state.shippingSameAsBilling
+      ? state.stateVal.trim()
+      : state.shippingState.trim(),
+    shippingZipCode: state.shippingSameAsBilling
+      ? state.zip.trim()
+      : state.shippingZip.trim(),
   };
 }
 
@@ -154,14 +213,12 @@ function finalizePayload(
 export function buildPreviewPayload(
   state: ShopFormState
 ): ShopPreviewPayload | null {
-  if (!isShopContactDetailsComplete(state)) return null;
   if (!state.includeLms && !state.includeEnrichment && !state.includeWtr) {
     return null;
   }
 
   const payload: ShopPreviewPayload = {
-    organizationName: state.organizationName.trim(),
-    ...buildContactPayload(state),
+    ...buildPreviewContactFields(state),
   };
   let hasPreviewSection = false;
 

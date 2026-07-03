@@ -40,3 +40,5 @@ export const WORKFORCE_EXPLORATION_FORM_PDF =
     "https://erp.ifuntology.com/pdfs/iFuntology-Career-Exploration.pdf";
 export const IFUNTOLOGY_GLOSSARY_PDF =
     "https://erp.ifuntology.com/pdfs/iFuntology-Glossary.pdf";
+export const FUNTOLOGY_BRAIDING_PDF =
+    "https://erp.ifuntology.com/pdfs/Funtology-Braiding.pdf";

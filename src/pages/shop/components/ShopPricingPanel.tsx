@@ -272,6 +272,11 @@ export default function ShopPricingPanel({
           </div>
 
           <div className="space-y-2 border-t border-border/60 pt-4">
+            {!canSubmit && submitBlockReason && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                {submitBlockReason}
+              </div>
+            )}
             <Button
               type="button"
               variant="brand"
@@ -297,11 +302,6 @@ export default function ShopPricingPanel({
                 "Request quote / Purchase Order"
               )}
             </Button>
-            {!canSubmit && submitBlockReason && (
-              <p className="text-center text-xs text-muted-foreground">
-                {submitBlockReason}
-              </p>
-            )}
             {!canSubmit && !submitBlockReason && (
               <p className="text-center text-xs text-muted-foreground">
                 Complete all required fields for enabled sections to pay or

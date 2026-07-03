@@ -42,7 +42,7 @@ import {
   lmsCoursePills,
 } from "./components/shopLmsStyles";
 import { IFUNTOLOGY_FROM_SHOP_KEY } from "@/pages/ifuntology/constants/navItems";
-import { buildPreviewPayload, buildSubmitPayload, getPreviewBlockReason } from "./shopPayload";
+import { buildPreviewPayload, buildSubmitPayload } from "./shopPayload";
 import type { CatalogSelectedProduct } from "./shopPayload";
 import { getLmsKitQuantityError } from "./utils/lmsKitQuantity";
 import {
@@ -85,13 +85,14 @@ export default function ShopPage() {
     document.title = "Shop • iFuntology Teacher";
   }, []);
 
-  const [includeLms, setIncludeLms] = useState(false);
-  const [includeEnrichment, setIncludeEnrichment] = useState(false);
-  const [includeWtr, setIncludeWtr] = useState(false);
+  const [includeLms, setIncludeLms] = useState(true);
+  const [includeEnrichment, setIncludeEnrichment] = useState(true);
+  const [includeWtr, setIncludeWtr] = useState(true);
 
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [shippingSameAsBilling, setShippingSameAsBilling] = useState(false);
   const [shippingAddress, setShippingAddress] = useState("");
   const [shippingCountry, setShippingCountry] = useState("");
   const [shippingCity, setShippingCity] = useState("");
@@ -145,6 +146,7 @@ export default function ShopPage() {
       shippingCity,
       shippingState,
       shippingZip,
+      shippingSameAsBilling,
     }),
     [
       orgName,
@@ -160,6 +162,7 @@ export default function ShopPage() {
       shippingCity,
       shippingState,
       shippingZip,
+      shippingSameAsBilling,
     ]
   );
 
@@ -173,29 +176,12 @@ export default function ShopPage() {
     [contactFields]
   );
 
-  const sectionToggleDisabled = !contactDetailsComplete;
-  const sectionToggleHint = sectionToggleDisabled
-    ? "Complete all required organization, contact, and shipping fields first."
-    : undefined;
-
   const guardSectionToggle = (
     value: boolean,
     setter: (next: boolean) => void
   ) => {
-    if (value && !contactDetailsComplete) {
-      toast.error("Complete organization, contact, and shipping details first.");
-      return;
-    }
     setter(value);
   };
-
-  useEffect(() => {
-    if (!contactDetailsComplete) {
-      setIncludeLms(false);
-      setIncludeEnrichment(false);
-      setIncludeWtr(false);
-    }
-  }, [contactDetailsComplete]);
 
   useEffect(() => {
     const prefillCourseType = (location.state as { prefillLmsCourseType?: string })
@@ -216,19 +202,19 @@ export default function ShopPage() {
   useEffect(() => {
     const prefillCourseType = (location.state as { prefillLmsCourseType?: string })
       ?.prefillLmsCourseType;
-    if (prefillCourseType && contactDetailsComplete) {
+    if (prefillCourseType) {
       setIncludeLms(true);
     }
-  }, [location.state, contactDetailsComplete]);
+  }, [location.state]);
 
   useEffect(() => {
     const prefillWtr = (location.state as { prefillWtr?: boolean })?.prefillWtr;
-    if (!prefillWtr || !contactDetailsComplete) return;
+    if (!prefillWtr) return;
 
     setIncludeLms(false);
     setIncludeEnrichment(false);
     setIncludeWtr(true);
-  }, [location.state, contactDetailsComplete]);
+  }, [location.state]);
 
   const [pricing, setPricing] = useState<any>(null);
   const [eligibility, setEligibility] = useState<ShopEligibility | null>(null);
@@ -281,10 +267,6 @@ export default function ShopPage() {
       return { ...prev, [productId]: product };
     });
     if (product) {
-      if (!contactDetailsComplete) {
-        toast.error("Complete organization, contact, and shipping details first.");
-        return;
-      }
       setIncludeEnrichment(true);
     }
   };
@@ -329,6 +311,7 @@ export default function ShopPage() {
       shippingCity,
       shippingState,
       shippingZip,
+      shippingSameAsBilling,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -354,6 +337,7 @@ export default function ShopPage() {
       shippingCity,
       shippingState,
       shippingZip,
+      shippingSameAsBilling,
       includeLms,
       includeEnrichment,
       includeWtr,
@@ -375,21 +359,18 @@ export default function ShopPage() {
     () => buildPreviewPayload(formState),
     [formState]
   );
-  const previewBlockReason = useMemo(
-    () => getPreviewBlockReason(formState),
-    [formState]
-  );
   const submitPayloadResult = useMemo(
     () => buildSubmitPayload(formState),
     [formState]
   );
 
   const canPreview = Boolean(previewPayload);
-  const canSubmit = Boolean(submitPayloadResult.payload);
-  const submitBlockReason = submitPayloadResult.error;
-  const contactPreviewError =
-    previewBlockReason && !contactDetailsComplete ? contactDetailsError : null;
-  const pricingPanelError = previewError || previewBlockReason;
+  const canSubmit = contactDetailsComplete && Boolean(submitPayloadResult.payload);
+  const submitBlockReason = !contactDetailsComplete
+    ? "Complete organization and contact details before you can pay or request a quote."
+    : submitPayloadResult.error;
+  const contactPreviewError = contactDetailsError;
+  const pricingPanelError = previewError;
 
   const lmsConflictTypes = useMemo(
     () => new Set(eligibility?.lmsConflicts?.map((c) => c.courseType) ?? []),
@@ -401,7 +382,7 @@ export default function ShopPage() {
       setPricing(null);
       setEligibility(null);
       setPreviewError(
-        "Complete organization, contact, and shipping details, then enable at least one section to preview pricing."
+        "Enable at least one section with valid selections to preview pricing."
       );
       return;
     }
@@ -437,7 +418,7 @@ export default function ShopPage() {
       swal(
         "Not eligible",
         eligibility?.messages?.join("\n") ||
-          "You cannot purchase the selected bundle",
+        "You cannot purchase the selected bundle",
         "error"
       );
       return;
@@ -461,7 +442,7 @@ export default function ShopPage() {
       swal(
         "Not eligible",
         eligibility?.messages?.join("\n") ||
-          "You cannot request a quote for the selected bundle",
+        "You cannot request a quote for the selected bundle",
         "error"
       );
       return;
@@ -487,9 +468,7 @@ export default function ShopPage() {
     if (!canPreview) {
       setPricing(null);
       setEligibility(null);
-      if (previewBlockReason) {
-        setPreviewError(previewBlockReason);
-      } else if (!previewPayload) {
+      if (!previewPayload) {
         setPreviewError(null);
       }
       return;
@@ -498,7 +477,7 @@ export default function ShopPage() {
       runPreview();
     }, 700);
     return () => clearTimeout(timer);
-  }, [canPreview, runPreview, previewPayload, previewBlockReason]);
+  }, [canPreview, runPreview, previewPayload]);
 
   return (
     <DashboardWithSidebarLayout>
@@ -523,7 +502,7 @@ export default function ShopPage() {
                     Organization &amp; contact details
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Required for every shop order. Complete these fields before including any section below.
+                    Required for checkout and quotes. You can preview pricing while filling these in.
                   </p>
                 </div>
 
@@ -652,84 +631,107 @@ export default function ShopPage() {
 
             <Card className="rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
               <div className="space-y-5">
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">
-                    Shipping address
-                  </h2>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Where physical kits and enrichment products should be delivered.
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground">
+                      Shipping address
+                    </h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Where physical kits and enrichment products should be delivered.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                    <Switch
+                      id="shop-shipping-same-as-billing"
+                      checked={shippingSameAsBilling}
+                      onCheckedChange={setShippingSameAsBilling}
+                    />
+                    <Label
+                      htmlFor="shop-shipping-same-as-billing"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Same as billing address
+                    </Label>
+                  </div>
+                </div>
+
+                {shippingSameAsBilling ? (
+                  <p className="rounded-xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                    Shipping will use your organization billing address above.
                   </p>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label
+                        className="text-sm font-medium text-foreground"
+                        htmlFor="shop-shipping-address"
+                      >
+                        Address <span className="text-rose-500">*</span>
+                      </Label>
+                      <Textarea
+                        id="shop-shipping-address"
+                        className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Building, suite, or delivery instructions"
+                      />
+                    </div>
 
-                <div>
-                  <Label
-                    className="text-sm font-medium text-foreground"
-                    htmlFor="shop-shipping-address"
-                  >
-                    Address <span className="text-rose-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="shop-shipping-address"
-                    className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Building, suite, or delivery instructions"
-                  />
-                </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-country">
+                          Country <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                          id="shop-shipping-country"
+                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                          value={shippingCountry}
+                          onChange={(e) => setShippingCountry(e.target.value)}
+                          placeholder="United States"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-city">
+                          City <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                          id="shop-shipping-city"
+                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          placeholder="Anchorage"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-country">
-                      Country <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-shipping-country"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={shippingCountry}
-                      onChange={(e) => setShippingCountry(e.target.value)}
-                      placeholder="United States"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-city">
-                      City <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-shipping-city"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={shippingCity}
-                      onChange={(e) => setShippingCity(e.target.value)}
-                      placeholder="Anchorage"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-state">
-                      State <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-shipping-state"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={shippingState}
-                      onChange={(e) => setShippingState(e.target.value)}
-                      placeholder="Alaska"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-zip">
-                      Zip Code <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-shipping-zip"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={shippingZip}
-                      onChange={(e) => setShippingZip(e.target.value)}
-                      placeholder="99503"
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-state">
+                          State <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                          id="shop-shipping-state"
+                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                          value={shippingState}
+                          onChange={(e) => setShippingState(e.target.value)}
+                          placeholder="Alaska"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-zip">
+                          Zip Code <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                          id="shop-shipping-zip"
+                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                          value={shippingZip}
+                          onChange={(e) => setShippingZip(e.target.value)}
+                          placeholder="99503"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
 
@@ -740,8 +742,6 @@ export default function ShopPage() {
               icon={GraduationCap}
               enabled={includeLms}
               onToggle={(value) => guardSectionToggle(value, setIncludeLms)}
-              toggleDisabled={sectionToggleDisabled}
-              toggleDisabledHint={sectionToggleHint}
               imageSrc={ImageUrl("shop-section-1.png")}
               backgroundVectorSrc={ImageUrl("vector-section-1.png")}
               tagline="Discover More. Learn More. Become More."
@@ -766,103 +766,103 @@ export default function ShopPage() {
               {lmsCourses.map((row, idx) => {
                 const qtyError = getLmsKitQuantityError(row.noOfKits);
                 return (
-                <div
-                  key={row.key}
-                  className={cn(
-                    lmsCourseCard,
-                    lmsConflictTypes.has(row.courseType) && "ring-2 ring-amber-400"
-                  )}
-                >
-                  {lmsConflictTypes.has(row.courseType) && (
-                    <p className="mb-3 flex items-center gap-1.5 text-xs text-amber-800">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      Active subscription or duplicate for {row.courseType}
-                    </p>
-                  )}
-                  <div className="mb-5 flex items-center justify-between">
-                    <span className={lmsCourseCardLabel}>Course {idx + 1}</span>
-                    {lmsCourses.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeLmsCourseItem(row.key)}
-                        className="text-xs font-semibold text-rose-600 hover:underline"
-                      >
-                        Remove
-                      </button>
+                  <div
+                    key={row.key}
+                    className={cn(
+                      lmsCourseCard,
+                      lmsConflictTypes.has(row.courseType) && "ring-2 ring-amber-400"
                     )}
-                  </div>
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="min-w-0">
-                      <label className={lmsCourseCardLabel}>Course Type</label>
-                      <div className={lmsCourseFieldSelectWrap}>
-                        <select
-                          className={lmsCourseFieldSelect}
-                          value={row.courseType}
-                          onChange={(e) =>
-                            updateLmsCourseItem(row.key, "courseType", e.target.value)
-                          }
-                        >
-                          {LMS_COURSE_TYPES.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <label className={lmsCourseCardLabel}>Kit type</label>
-                      <LmsKitVariantSelect
-                        value={row.kitVariant}
-                        onChange={(kitVariant) =>
-                          updateLmsCourseItem(row.key, "kitVariant", kitVariant)
-                        }
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className={lmsCourseCardLabel}>Number of kits</label>
-                      <input
-                        type="number"
-                        min={1}
-                        className={cn(
-                          lmsCourseFieldInput,
-                          qtyError && "ring-2 ring-rose-400"
-                        )}
-                        value={row.noOfKits}
-                        onChange={(e) =>
-                          updateLmsCourseItem(row.key, "noOfKits", e.target.value)
-                        }
-                        placeholder="12, 24, 15, 30…"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className={lmsCourseCardLabel}>Interactive Qty</label>
-                      <input
-                        type="number"
-                        min={1}
-                        className={cn(
-                          lmsCourseFieldInput,
-                          qtyError && "ring-2 ring-rose-400"
-                        )}
-                        value={row.webSubscriptions}
-                        onChange={(e) =>
-                          updateLmsCourseItem(
-                            row.key,
-                            "webSubscriptions",
-                            e.target.value
-                          )
-                        }
-                        placeholder="12, 24, 15, 30…"
-                      />
-                    </div>
-                    {qtyError && (
-                      <p className="text-xs font-medium text-rose-600 sm:col-span-2">
-                        {qtyError}
+                  >
+                    {lmsConflictTypes.has(row.courseType) && (
+                      <p className="mb-3 flex items-center gap-1.5 text-xs text-amber-800">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Active subscription or duplicate for {row.courseType}
                       </p>
                     )}
+                    <div className="mb-5 flex items-center justify-between">
+                      <span className={lmsCourseCardLabel}>Course {idx + 1}</span>
+                      {lmsCourses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeLmsCourseItem(row.key)}
+                          className="text-xs font-semibold text-rose-600 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Course Type</label>
+                        <div className={lmsCourseFieldSelectWrap}>
+                          <select
+                            className={lmsCourseFieldSelect}
+                            value={row.courseType}
+                            onChange={(e) =>
+                              updateLmsCourseItem(row.key, "courseType", e.target.value)
+                            }
+                          >
+                            {LMS_COURSE_TYPES.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Kit type</label>
+                        <LmsKitVariantSelect
+                          value={row.kitVariant}
+                          onChange={(kitVariant) =>
+                            updateLmsCourseItem(row.key, "kitVariant", kitVariant)
+                          }
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Number of kits</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className={cn(
+                            lmsCourseFieldInput,
+                            qtyError && "ring-2 ring-rose-400"
+                          )}
+                          value={row.noOfKits}
+                          onChange={(e) =>
+                            updateLmsCourseItem(row.key, "noOfKits", e.target.value)
+                          }
+                          placeholder="12, 24, 15, 30…"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Interactive Qty</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className={cn(
+                            lmsCourseFieldInput,
+                            qtyError && "ring-2 ring-rose-400"
+                          )}
+                          value={row.webSubscriptions}
+                          onChange={(e) =>
+                            updateLmsCourseItem(
+                              row.key,
+                              "webSubscriptions",
+                              e.target.value
+                            )
+                          }
+                          placeholder="12, 24, 15, 30…"
+                        />
+                      </div>
+                      {qtyError && (
+                        <p className="text-xs font-medium text-rose-600 sm:col-span-2">
+                          {qtyError}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
                 );
               })}
 
@@ -873,34 +873,20 @@ export default function ShopPage() {
 
             <ShopSectionCard
               variant="enrichment"
-              title="Enrichment Store"
-              description="Physical and digital enrichment products"
+              title="Shop On Enrichment Store"
+              description=""
               icon={Store}
               enabled={includeEnrichment}
               onToggle={(value) => guardSectionToggle(value, setIncludeEnrichment)}
-              toggleDisabled={sectionToggleDisabled}
-              toggleDisabledHint={sectionToggleHint}
               imageSrc={ImageUrl("shop-section-2.png")}
               backgroundVectorSrc={ImageUrl("vector-section-1.png")}
-              tagline="Physical & Digital Resources for Lifelong Learning"
-              onTaglineClick={() => {
-                if (!contactDetailsComplete) {
-                  toast.error("Complete organization, contact, and shipping details first.");
-                  return;
-                }
-                setCatalogPickerOpen(true);
-              }}
+              tagline="Kits Related Resources"
+              onTaglineClick={() => setCatalogPickerOpen(true)}
             >
               <div className="flex justify-end">
                 <ShopAddButton
                   label="Add Product"
-                  onClick={() => {
-                    if (!contactDetailsComplete) {
-                      toast.error("Complete organization, contact, and shipping details first.");
-                      return;
-                    }
-                    setCatalogPickerOpen(true);
-                  }}
+                  onClick={() => setCatalogPickerOpen(true)}
                 />
               </div>
             </ShopSectionCard>
@@ -912,16 +898,14 @@ export default function ShopPage() {
               icon={PenTool}
               enabled={includeWtr}
               onToggle={(value) => guardSectionToggle(value, setIncludeWtr)}
-              toggleDisabled={sectionToggleDisabled}
-              toggleDisabledHint={sectionToggleHint}
               imageSrc={ImageUrl("shop-section-3.png")}
               tagline="Everything You Need to Learn Beyond Limits"
             >
-              {/* <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-700">
-                Lifetime access. Additional seats are added to your existing
-                subscription when you already have Write to Read from an LMS
-                purchase.
-              </p> */}
+              <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-700">
+                Write to Read is an interactive literacy platform that brings story-building, creative writing, reading comprehension, and imagination together in one engaging learning experience.
+                Students participate in virtual classrooms, connect through teacher-to-class-chats, create and print their own books, and develop
+                lifelong literacy skills with exciting educational tools and activites. Available for just $4.99 per student, per month.
+              </p>
               <div>
                 <label className={shopFieldLabel}>No of Student Seats</label>
                 <input

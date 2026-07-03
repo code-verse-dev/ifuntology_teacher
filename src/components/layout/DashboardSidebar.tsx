@@ -5,10 +5,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   MessagesSquare,
-  Package,
   PenTool,
-  Receipt,
-  ShoppingBag,
   Store,
   Ticket,
   UserCog,
@@ -18,6 +15,7 @@ import {
 import { toast } from "sonner";
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
 import BookSessionSidebarGroup from "@/components/layout/BookSessionSidebarGroup";
+import PurchaseNowSidebarGroup from "@/components/layout/PurchaseNowSidebarGroup";
 import FuntologyBusinessBuilderSidebarItem from "@/components/layout/FuntologyBusinessBuilderSidebarItem";
 import FuntologyGlobalInstituteSidebarItem from "@/components/layout/FuntologyGlobalInstituteSidebarItem";
 import IfuntologySidebarGroup from "@/components/layout/IfuntologySidebarGroup";
@@ -79,13 +77,6 @@ export default function DashboardSidebar() {
   const collapsed = state === "collapsed";
 
   const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
-
-  const booking: Item[] = [
-    { title: "Shop", url: "/shop", icon: ShoppingBag },
-    { title: "Quotes", url: "/quotes", icon: Receipt },
-    { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
-    // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
-  ];
 
   const ecommerce: Item[] = [
     { title: "Enrichment Store", url: "/enrichment-store", icon: Store },
@@ -162,15 +153,19 @@ export default function DashboardSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>BOOKING & QUOTES</SidebarGroupLabel>
+          <SidebarGroupLabel>BOOKING</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <BookSessionSidebarGroup />
-              {booking.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <MenuLink item={item} />
-                </SidebarMenuItem>
-              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>PURCHASE NOW</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <PurchaseNowSidebarGroup />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
