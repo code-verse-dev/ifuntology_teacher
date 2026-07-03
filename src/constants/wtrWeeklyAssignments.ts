@@ -1,10 +1,10 @@
-export const WTR_PDF_BASE = "https://erp.ifuntology.com/pdfs";
+import { UPLOADS_URL } from "./api";
+
+/** Upload assignment PDFs to `Uploads/wtr-assignments/` on the API server. */
+export const WTR_ASSIGNMENTS_UPLOAD_DIR = "wtr-assignments/";
 
 export function getWtrAssignmentPdfUrl(filename: string): string {
-  if (import.meta.env.DEV) {
-    return `/pdfs/${filename}`;
-  }
-  return `${WTR_PDF_BASE}/${filename}`;
+  return `${UPLOADS_URL}${WTR_ASSIGNMENTS_UPLOAD_DIR}${filename}`;
 }
 
 const WTR_WEEKLY_ASSIGNMENT_FILES = [
