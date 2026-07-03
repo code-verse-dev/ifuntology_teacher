@@ -910,7 +910,7 @@ export default function ShopPage() {
                 <label className={shopFieldLabel}>No of Student Seats</label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   className={shopFieldInput}
                   placeholder="e.g. 24"
                   value={wtrNumberOfSeats}
