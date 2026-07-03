@@ -8,7 +8,7 @@ import {
   WTR_WEEKLY_ASSIGNMENTS,
   downloadWtrAssignmentPdf,
 } from "@/constants/wtrWeeklyAssignments";
-import PdfFlipViewer from "@/pages/myCourses/PdfFlipViewer";
+import WtrAssignmentPdfViewer from "./components/WtrAssignmentPdfViewer";
 
 export default function WtrAssignmentPreviewPage() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -79,12 +79,10 @@ export default function WtrAssignmentPreviewPage() {
         </div>
 
         <Card className="overflow-hidden rounded-2xl border border-slate-200 p-4 dark:border-slate-800 sm:p-6">
-          <PdfFlipViewer
-            fileUrl={assignment.url}
+          <WtrAssignmentPdfViewer
+            url={assignment.url}
             title={assignment.name}
-            onDownload={() =>
-              downloadWtrAssignmentPdf(assignment.url, assignment.filename)
-            }
+            filename={assignment.filename}
           />
         </Card>
       </section>
