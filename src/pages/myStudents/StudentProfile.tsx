@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
+import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import {
     BookOpen,
     CheckCircle2,
     Loader2,
+    KeyRound,
     Mail,
     MessageCircle,
     User,
@@ -42,6 +44,7 @@ function formatDate(dateStr?: string) {
 export default function StudentProfile() {
     const { studentId } = useParams<{ studentId: string }>();
     const navigate = useNavigate();
+    const [resetOpen, setResetOpen] = useState(false);
 
     const { data, isLoading, error } = useGetStudentByIdQuery(
         { studentId: studentId ?? "" },
@@ -129,13 +132,23 @@ export default function StudentProfile() {
                                     )}
                                 </div>
                             </div>
-                            <Button
-                                className="rounded-full bg-lime-600 hover:bg-lime-700 text-white gap-2"
-                                onClick={handleMessage}
-                            >
-                                <MessageCircle className="h-4 w-4" />
-                                Message
-                            </Button>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="rounded-full gap-2"
+                                    onClick={() => setResetOpen(true)}
+                                >
+                                    <KeyRound className="h-4 w-4" />
+                                    Reset password
+                                </Button>
+                                <Button
+                                    className="rounded-full bg-lime-600 hover:bg-lime-700 text-white gap-2"
+                                    onClick={handleMessage}
+                                >
+                                    <MessageCircle className="h-4 w-4" />
+                                    Message
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -322,6 +335,13 @@ export default function StudentProfile() {
                     )}
                 </Card>
             </div>
+
+            <ResetStudentPasswordDialog
+                open={resetOpen}
+                onOpenChange={setResetOpen}
+                studentId={studentId}
+                studentName={fullName}
+            />
         </DashboardWithSidebarLayout>
     );
 }

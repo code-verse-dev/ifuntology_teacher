@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
+import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,10 @@ export default function MyStudents() {
     const [courseTypeFilter, setCourseTypeFilter] = useState<string | undefined>(undefined);
     const [page, setPage] = useState(1);
     const limit = 10;
+    const [resetTarget, setResetTarget] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
 
     const debouncedKeyword = useDebounce(keyword, 400);
 
@@ -263,6 +268,17 @@ export default function MyStudents() {
                                                 >
                                                     Message
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        setResetTarget({
+                                                            id: student.user._id,
+                                                            name: fullName,
+                                                        })
+                                                    }
+                                                >
+                                                    Reset password
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -355,6 +371,15 @@ export default function MyStudents() {
                     </div>
                 )}
             </div>
+
+            <ResetStudentPasswordDialog
+                open={Boolean(resetTarget)}
+                onOpenChange={(open) => {
+                    if (!open) setResetTarget(null);
+                }}
+                studentId={resetTarget?.id}
+                studentName={resetTarget?.name}
+            />
         </DashboardWithSidebarLayout>
     );
 }

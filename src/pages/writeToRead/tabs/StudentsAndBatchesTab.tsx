@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
 import {
   useCreateInviteBatchMutation,
   useCreateInviteBatchCsvMutation,
@@ -47,6 +48,7 @@ type InviteRow = {
   lastName: string;
   rowStatus?: string;
   booksCount?: number;
+  createdUser?: string;
 };
 
 export type InviteBatchDoc = {
@@ -126,6 +128,10 @@ export function StudentsAndBatchesTab() {
   const [studentRows, setStudentRows] = useState<StudentFieldRow[]>(() => [emptyStudentRow()]);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [resetTarget, setResetTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const { data: batchesRes, isLoading: batchesLoading, isFetching } = useGetInviteBatchesQuery(
     {
@@ -520,12 +526,15 @@ export function StudentsAndBatchesTab() {
                     <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Invite status
                     </th>
+                    <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {(selectedBatch.invites ?? []).length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-8 py-10 text-center text-sm text-slate-500">
+                      <td colSpan={6} className="px-8 py-10 text-center text-sm text-slate-500">
                         No students on this batch yet.
                       </td>
                     </tr>
@@ -560,6 +569,26 @@ export function StudentsAndBatchesTab() {
                           >
                             {inv.rowStatus ?? "PENDING"}
                           </Badge>
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          {inv.createdUser && inv.rowStatus === "CREATED" ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full font-bold"
+                              onClick={() =>
+                                setResetTarget({
+                                  id: String(inv.createdUser),
+                                  name: `${inv.firstName} ${inv.lastName}`.trim(),
+                                })
+                              }
+                            >
+                              Reset password
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -764,6 +793,15 @@ export function StudentsAndBatchesTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ResetStudentPasswordDialog
+        open={Boolean(resetTarget)}
+        onOpenChange={(open) => {
+          if (!open) setResetTarget(null);
+        }}
+        studentId={resetTarget?.id}
+        studentName={resetTarget?.name}
+      />
     </TabsContent>
   );
 }
