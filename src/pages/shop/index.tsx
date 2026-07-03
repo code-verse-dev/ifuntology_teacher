@@ -117,7 +117,7 @@ export default function ShopPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   // WTR
-  const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("1");
+  const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("0");
   const [wtrBookPrinting, setWtrBookPrinting] = useState(false);
   const [taxExempt, setTaxExempt] = useState(false);
 
@@ -910,7 +910,7 @@ export default function ShopPage() {
                 <label className={shopFieldLabel}>No of Student Seats</label>
                 <input
                   type="number"
-                  min={0}
+                  min={1}
                   className={shopFieldInput}
                   placeholder="e.g. 24"
                   value={wtrNumberOfSeats}
