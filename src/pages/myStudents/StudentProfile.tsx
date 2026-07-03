@@ -201,7 +201,7 @@ export default function StudentProfile() {
                         </h2>
                         {passedCourses.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                No courses passed yet. Student must pass all quizzes in a course to earn a certificate.
+                                No courses passed yet. Student must pass all quizzes and tests with 70% or higher in a course to earn a certificate.
                             </p>
                         ) : (
                             <div className="flex flex-wrap gap-2">

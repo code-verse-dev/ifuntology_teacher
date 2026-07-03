@@ -150,8 +150,8 @@ export default function CareerExplorerPathway({
                             Career Explorer Pathway
                         </h1>
                         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-base">
-                            Explore curriculum pathways by skill level. Each level includes a guide PDF
-                            plus shared week-based curriculum pathways for {coursePdfName}.
+                            Explore curriculum pathways by skill level. Each level includes a guide
+                            plus shared weekly curriculum pathways for {coursePdfName}.
                         </p>
                     </div>
                 </section>

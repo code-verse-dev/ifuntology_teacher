@@ -12,6 +12,7 @@ export type ShopContactFields = {
   shippingCity: string;
   shippingState: string;
   shippingZip: string;
+  shippingSameAsBilling?: boolean;
 };
 
 export function getShopContactDetailsError(
@@ -44,6 +45,9 @@ export function getShopContactDetailsError(
   }
   if (!state.zip.trim()) {
     return "Zip code is required.";
+  }
+  if (state.shippingSameAsBilling) {
+    return null;
   }
   if (!state.shippingAddress.trim()) {
     return "Shipping address is required.";
