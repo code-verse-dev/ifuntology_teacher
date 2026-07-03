@@ -105,21 +105,10 @@ export default function CourseDetails() {
             className: "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20",
         },
         {
-            label: "Career Explorer Pathway",
-            icon: Compass,
-            onClick: () => navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`),
-            className: "border-indigo-500/25 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20",
-        },
-        {
-            label: "Classroom Kits",
-            icon: Package,
-            onClick: () =>
-                window.open(
-                    "https://funtologyenrichmentsupplies.com/interactive-science-kits/",
-                    "_blank",
-                    "noopener,noreferrer"
-                ),
-            className: "border-slate-500/25 bg-slate-500/10 text-slate-600 dark:text-slate-300 hover:bg-slate-500/20",
+            label: "Braidology",
+            icon: Eye,
+            onClick: () => window.open(FUNTOLOGY_BRAIDING_PDF, "_blank", "noopener,noreferrer"),
+            className: "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20",
         },
     ];
 
@@ -192,16 +181,12 @@ export default function CourseDetails() {
                             <Button
                                 variant="brand"
                                 className="gap-2 rounded-full font-semibold"
-                                asChild
+                                onClick={() =>
+                                    navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`)
+                                }
                             >
-                                <a
-                                    href={FUNTOLOGY_BRAIDING_PDF}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Eye className="h-4 w-4" />
-                                    View Braiding
-                                </a>
+                                <Compass className="h-4 w-4" />
+                                Career Explorer Pathway
                             </Button>
                         </div>
                         <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">Lessons</h2>
@@ -334,7 +319,7 @@ export default function CourseDetails() {
                         </section>
 
                         <section>
-                            <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Resources</h2>
+                            <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Testing Center</h2>
                             <div className="grid grid-cols-2 gap-2">
                                 {resources.map((resource) => (
                                     <button
@@ -368,6 +353,20 @@ export default function CourseDetails() {
                                 onClick={() => navigate("/my-students")}
                             >
                                 View All Students
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="mt-3 w-full rounded-full border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                                onClick={() =>
+                                    window.open(
+                                        "https://funtologyenrichmentsupplies.com/interactive-science-kits/",
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                    )
+                                }
+                            >
+                                <Package className="mr-2 h-4 w-4" />
+                                Classroom Kits
                             </Button>
                         </section>
                     </div>
