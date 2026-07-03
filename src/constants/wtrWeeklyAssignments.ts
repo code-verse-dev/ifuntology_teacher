@@ -1,3 +1,12 @@
+export const WTR_PDF_BASE = "https://erp.ifuntology.com/pdfs";
+
+export function getWtrAssignmentPdfUrl(filename: string): string {
+  if (import.meta.env.DEV) {
+    return `/pdfs/${filename}`;
+  }
+  return `${WTR_PDF_BASE}/${filename}`;
+}
+
 const WTR_WEEKLY_ASSIGNMENT_FILES = [
   "iFuntology_Write_to_Read_Weekly_Assignments_3rd_to_5th_Descriptive.pdf",
   "iFuntology_Write_to_Read_Weekly_Assignments_3rd_to_5th_Expository.pdf",
@@ -34,7 +43,7 @@ export type WtrWeeklyAssignment = {
 export const WTR_WEEKLY_ASSIGNMENTS: WtrWeeklyAssignment[] =
   WTR_WEEKLY_ASSIGNMENT_FILES.map((filename) => ({
     id: filename,
-    url: `/pdfs/${filename}`,
+    url: getWtrAssignmentPdfUrl(filename),
     filename,
     name: formatWtrAssignmentName(filename),
   }));
