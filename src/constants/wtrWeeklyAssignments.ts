@@ -4,7 +4,7 @@ import { UPLOADS_URL } from "./api";
 export const WTR_ASSIGNMENTS_UPLOAD_DIR = "wtr-assignments/";
 
 export function getWtrAssignmentPdfUrl(filename: string): string {
-  return `${UPLOADS_URL}${WTR_ASSIGNMENTS_UPLOAD_DIR}${filename}`;
+  return `${UPLOADS_URL}/${filename}`;
 }
 
 const WTR_WEEKLY_ASSIGNMENT_FILES = [
