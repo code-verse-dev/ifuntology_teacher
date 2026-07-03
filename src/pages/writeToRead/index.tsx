@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Wallet, BookOpen, Printer, ChevronRight } from "lucide-react";
+import { Users, Wallet, BookOpen, Printer, ChevronRight, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGetMyWtrSubscriptionQuery } from "@/redux/services/apiSlices/paymentSlice";
 import { StudentsAndBatchesTab } from "./tabs/StudentsAndBatchesTab";
 import { GradeBooksTab } from "./tabs/GradeBooksTab";
 import { PrintOrdersTab } from "./tabs/PrintOrdersTab";
+import { AssignmentsTab } from "./tabs/AssignmentsTab";
 
 type WriteToReadLocationState = {
-    wtrActiveTab?: "students" | "grade" | "print";
+    wtrActiveTab?: "students" | "grade" | "print" | "assignments";
 };
 
 export default function WriteToRead() {
@@ -49,7 +50,7 @@ export default function WriteToRead() {
 
     useEffect(() => {
         const tab = (location.state as WriteToReadLocationState | null)?.wtrActiveTab;
-        if (tab === "print" || tab === "grade" || tab === "students") {
+        if (tab === "print" || tab === "grade" || tab === "students" || tab === "assignments") {
             setActiveTab(tab);
             navigate("/write-to-read", { replace: true, state: {} });
         }
@@ -158,6 +159,7 @@ export default function WriteToRead() {
                                     { id: "students", label: "Students & Batches", icon: Users },
                                     { id: "grade", label: "Grade Books", icon: BookOpen },
                                     { id: "print", label: "Print Orders", icon: Printer },
+                                    { id: "assignments", label: "Assignments", icon: FileText },
                                 ].map((t) => (
                                     <TabsTrigger
                                         key={t.id}
@@ -175,6 +177,7 @@ export default function WriteToRead() {
                             <StudentsAndBatchesTab />
                             <GradeBooksTab />
                             <PrintOrdersTab />
+                            <AssignmentsTab />
                         </div>
                     </Tabs>
                 </Card>

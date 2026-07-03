@@ -65,6 +65,7 @@ import WriteToReadGate from "./pages/writeToRead/WriteToReadGate";
 import WriteToReadRouterLayout from "./pages/writeToRead/WriteToReadRouterLayout";
 import WriteToRead from "./pages/writeToRead";
 import BookBuilderPage from "./pages/writeToRead/BookBuilderPage";
+import WtrAssignmentPreviewPage from "./pages/writeToRead/WtrAssignmentPreviewPage";
 import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
 import PublicBookReaderPage from "./pages/writeToRead/PublicBookReaderPage";
 import AllSessions from "./pages/allSessions";
@@ -421,6 +422,7 @@ const App = () => {
               >
                 <Route element={<WriteToReadRouterLayout />}>
                   <Route path="builder/:bookId/*" element={<BookBuilderPage />} />
+                  <Route path="assignment-preview/:assignmentId" element={<WtrAssignmentPreviewPage />} />
                   <Route index element={<WriteToRead />} />
                 </Route>
               </Route>

@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
       "/Uploads": { target: "http://localhost:3030", changeOrigin: true },
       "/uploads": { target: "http://localhost:3030", changeOrigin: true },
       "/fonts": { target: "http://localhost:3030", changeOrigin: true },
+      "/pdfs": { target: "https://erp.ifuntology.com", changeOrigin: true, secure: false },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
