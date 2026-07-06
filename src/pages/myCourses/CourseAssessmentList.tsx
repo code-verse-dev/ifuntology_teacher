@@ -144,6 +144,8 @@ export default function CourseAssessmentList({ kind }: { kind: AssessmentKind })
                     <TableHead className="min-w-[10rem] whitespace-nowrap">Title</TableHead>
                     {(kind === "QUIZ" || kind === "TEST") && (
                       <>
+                        <TableHead className="hidden sm:table-cell whitespace-nowrap">Course</TableHead>
+                        <TableHead className="hidden md:table-cell whitespace-nowrap">Unit No</TableHead>
                         <TableHead className="hidden md:table-cell whitespace-nowrap">Unit ID</TableHead>
                         <TableHead className="hidden lg:table-cell min-w-[8rem]">Unit</TableHead>
                         <TableHead className="hidden md:table-cell whitespace-nowrap">Chapter ID</TableHead>
@@ -171,6 +173,10 @@ export default function CourseAssessmentList({ kind }: { kind: AssessmentKind })
                         <div>{item.title}</div>
                         {(kind === "QUIZ" || kind === "TEST") && (
                           <div className="mt-1 space-y-0.5 text-xs text-muted-foreground lg:hidden">
+                            <p>Course: {displayValue(item.courseType ?? courseType)}</p>
+                            {displayValue(item.unitNo) !== "—" && (
+                              <p>Unit No: {displayValue(item.unitNo)}</p>
+                            )}
                             {displayValue(item.unitId) !== "—" && (
                               <p>
                                 Unit {displayValue(item.unitId)}: {displayValue(item.unit)}
@@ -194,6 +200,12 @@ export default function CourseAssessmentList({ kind }: { kind: AssessmentKind })
                       </TableCell>
                       {(kind === "QUIZ" || kind === "TEST") && (
                         <>
+                          <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
+                            {displayValue(item.courseType ?? courseType)}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground whitespace-nowrap">
+                            {displayValue(item.unitNo)}
+                          </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground whitespace-nowrap">
                             {displayValue(item.unitId)}
                           </TableCell>
