@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import PasswordField from "@/components/inputs/PasswordField";
 import { useResetPasswordMutation } from "@/redux/services/apiSlices/authSlice";
+import {
+  getPasswordValidationError,
+  PASSWORD_POLICY_HINT,
+} from "@/utils/passwordValidation";
 
 export default function RecoverPasswordPage() {
   const navigate = useNavigate();
@@ -28,6 +32,11 @@ export default function RecoverPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
+      toast.error(passwordError);
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -64,6 +73,11 @@ export default function RecoverPasswordPage() {
               <PasswordField id="password" required placeholder="••••••••" onChange={
                 (e) => setPassword(e.target.value)
               }/>
+              {getPasswordValidationError(password) ? (
+                <p className="text-xs text-rose-600">{getPasswordValidationError(password)}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirm Password *</Label>

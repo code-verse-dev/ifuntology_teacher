@@ -5284,6 +5284,24 @@ export function BookBuilder() {
                 <option value="bottom-center">Pg No. — Bottom center</option>
                 <option value="bottom-outside">Pg No. — Below page</option>
               </select>
+              {builderHost?.wurtleAssignmentsHref ? (
+                <Link
+                  to={builderHost.wurtleAssignmentsHref}
+                  className="book-toolbar-assignment-btn"
+                  title="Daily Wurtle Assignments"
+                >
+                  Daily Wurtle Assignments
+                </Link>
+              ) : null}
+              {builderHost?.wtrAssignmentsHref ? (
+                <Link
+                  to={builderHost.wtrAssignmentsHref}
+                  className="book-toolbar-assignment-btn"
+                  title="Daily WTR Assignments"
+                >
+                  Daily WTR Assignments
+                </Link>
+              ) : null}
             </div>
             <div className="book-stage__toolbar-right">
               {builderHost?.backHref ? (

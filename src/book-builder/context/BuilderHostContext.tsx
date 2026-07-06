@@ -33,6 +33,10 @@ export type BuilderHostConfig = {
   builderHref?: string
   /** Character composer page. Default `/builder/character`. */
   characterHref?: string
+  /** Daily Wurtle assignments gallery for this book. */
+  wurtleAssignmentsHref?: string
+  /** Daily WTR assignments gallery for this book. */
+  wtrAssignmentsHref?: string
   /** API origin for images/uploads (e.g. `http://localhost:3030`). */
   assetOrigin?: string
 }
