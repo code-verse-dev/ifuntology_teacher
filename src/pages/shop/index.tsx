@@ -58,6 +58,7 @@ import {
   type LmsKitVariant,
 } from "@/constants/lmsKitVariants";
 import { ImageUrl } from "@/utils/Functions";
+import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 
 type LmsCourseItem = {
   key: string;
@@ -557,46 +558,23 @@ export default function ShopPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-country">
-                      Country <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-country"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      placeholder="United States"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-city">
-                      City <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-city"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Anchorage"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <CountryStateCityFields
+                    idPrefix="shop-billing"
+                    country={country}
+                    state={stateVal}
+                    city={city}
+                    onCountryChange={setCountry}
+                    onStateChange={setStateVal}
+                    onCityChange={setCity}
+                    required
+                    fieldClassName="space-y-0"
+                    labelClassName="text-sm font-medium text-foreground"
+                    selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-state">
-                      State <span className="text-rose-500">*</span>
-                    </Label>
-                    <Input
-                      id="shop-state"
-                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                      value={stateVal}
-                      onChange={(e) => setStateVal(e.target.value)}
-                      placeholder="Alaska"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label className="text-sm font-medium text-foreground" htmlFor="shop-zip">
                       Zip Code <span className="text-rose-500">*</span>
@@ -609,7 +587,7 @@ export default function ShopPage() {
                       placeholder="99503"
                     />
                   </div>
-                  <div className="sm:col-span-1">
+                  <div>
                     <Label className="text-sm font-medium text-foreground" htmlFor="shop-street">
                       Street Address <span className="text-rose-500">*</span>
                     </Label>
@@ -677,46 +655,23 @@ export default function ShopPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-country">
-                          Country <span className="text-rose-500">*</span>
-                        </Label>
-                        <Input
-                          id="shop-shipping-country"
-                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                          value={shippingCountry}
-                          onChange={(e) => setShippingCountry(e.target.value)}
-                          placeholder="United States"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-city">
-                          City <span className="text-rose-500">*</span>
-                        </Label>
-                        <Input
-                          id="shop-shipping-city"
-                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                          value={shippingCity}
-                          onChange={(e) => setShippingCity(e.target.value)}
-                          placeholder="Anchorage"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <CountryStateCityFields
+                        idPrefix="shop-shipping"
+                        country={shippingCountry}
+                        state={shippingState}
+                        city={shippingCity}
+                        onCountryChange={setShippingCountry}
+                        onStateChange={setShippingState}
+                        onCityChange={setShippingCity}
+                        required
+                        fieldClassName="space-y-0"
+                        labelClassName="text-sm font-medium text-foreground"
+                        selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-state">
-                          State <span className="text-rose-500">*</span>
-                        </Label>
-                        <Input
-                          id="shop-shipping-state"
-                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
-                          value={shippingState}
-                          onChange={(e) => setShippingState(e.target.value)}
-                          placeholder="Alaska"
-                        />
-                      </div>
                       <div>
                         <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-zip">
                           Zip Code <span className="text-rose-500">*</span>

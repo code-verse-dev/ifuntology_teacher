@@ -32,6 +32,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLogoutMutation } from "@/redux/services/apiSlices/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { removeUser } from "@/redux/services/Slices/userSlice";
@@ -44,13 +52,14 @@ import {
 import { UPLOADS_URL } from "@/constants/api";
 import { useGetAllNotificationsQuery } from "@/redux/services/apiSlices/notificationSlice";
 import socket from "@/config/socket";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Topbar() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const sidebar = useSidebarOptional();
-  const [logout] = useLogoutMutation();
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const user = useSelector((state: RootState) => state?.user?.userData);
   const dispatch = useDispatch();
 
@@ -59,9 +68,14 @@ export default function Topbar() {
   const topNotifs: any[] = notificationsData?.data?.notifications?.docs?.slice(0, 3) ?? [];
 
   const onLogout = async () => {
-    const res = await logout().unwrap();
-    dispatch(removeUser());
-    navigate("/login", { replace: true });
+    try {
+      await logout().unwrap();
+      dispatch(removeUser());
+      setLogoutDialogOpen(false);
+      navigate("/login", { replace: true });
+    } catch {
+      toast.error("Could not log out. Please try again.");
+    }
   };
   
   useEffect(() => {
@@ -231,7 +245,10 @@ export default function Topbar() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={onLogout}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setLogoutDialogOpen(true);
+                }}
                 className="flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
@@ -245,13 +262,44 @@ export default function Topbar() {
             variant="ghost"
             size="sm"
             className="gap-2 text-accent hover:bg-accent/10 hover:text-accent"
-            onClick={onLogout}
+            onClick={() => setLogoutDialogOpen(true)}
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </div>
+
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Log out?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to log out? You will need to sign in again to access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setLogoutDialogOpen(false)}
+              disabled={isLoggingOut}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-full"
+              onClick={() => void onLogout()}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? "Logging out…" : "Log out"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

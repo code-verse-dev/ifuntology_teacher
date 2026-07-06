@@ -9,7 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
+import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 import { Avatar } from "@/components/ui/avatar";
+import {
+  getPasswordValidationError,
+  PASSWORD_POLICY_HINT,
+} from "@/utils/passwordValidation";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -71,6 +76,11 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
+      toast.error(passwordError);
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -244,6 +254,13 @@ export default function SignUpPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                   />
+                  {getPasswordValidationError(password) ? (
+                    <p className="text-xs text-rose-600">
+                      {getPasswordValidationError(password)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw2">Confirm Password *</Label>
@@ -274,18 +291,19 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="country">Country *</Label>
-                  <Input
-                    id="country"
-                    required
-                    placeholder="United States"
-                    className="h-11 rounded-full border-border/80 bg-background/80"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
+                <CountryStateCityFields
+                  idPrefix="signup"
+                  country={country}
+                  state={stateVal}
+                  city={city}
+                  onCountryChange={setCountry}
+                  onStateChange={setStateVal}
+                  onCityChange={setCity}
+                  disabled={isLoading}
+                  required
+                  fieldClassName="space-y-2 md:col-span-1"
+                  selectClassName="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
@@ -299,30 +317,6 @@ export default function SignUpPage() {
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     />
                   </div>
-                </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    required
-                    placeholder="Anchorage"
-                    className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="state">State *</Label>
-                  <Input
-                    id="state"
-                    required
-                    placeholder="Alaska"
-                    className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
-                    value={stateVal}
-                    onChange={(e) => setStateVal(e.target.value)}
-                    disabled={isLoading}
-                  />
                 </div>
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>

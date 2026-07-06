@@ -1,8 +1,5 @@
 import { UPLOADS_URL } from "./api";
 
-/** Upload assignment PDFs to `Uploads/wtr-assignments/` on the API server. */
-export const WTR_ASSIGNMENTS_UPLOAD_DIR = "wtr-assignments/";
-
 export function getWtrAssignmentPdfUrl(filename: string): string {
   return `${UPLOADS_URL}/wtr-assignments/${filename}`;
 }

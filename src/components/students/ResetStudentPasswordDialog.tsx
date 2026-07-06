@@ -13,6 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useResetStudentPasswordMutation } from "@/redux/services/apiSlices/invitationSlice";
+import {
+  getPasswordValidationError,
+  isStrongPassword,
+  PASSWORD_POLICY_HINT,
+} from "@/utils/passwordValidation";
 
 type Props = {
   open: boolean;
@@ -27,8 +32,6 @@ type ResetResult = {
   password: string;
   emailed?: boolean;
 };
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export default function ResetStudentPasswordDialog({
   open,
@@ -49,17 +52,14 @@ export default function ResetStudentPasswordDialog({
     }
   }, [open]);
 
-  const passwordError =
-    password.length > 0 && password.length < MIN_PASSWORD_LENGTH
-      ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
-      : null;
+  const passwordError = getPasswordValidationError(password);
   const confirmError =
     confirmPassword.length > 0 && password !== confirmPassword
       ? "Passwords do not match."
       : null;
   const canSubmit =
     Boolean(studentId) &&
-    password.length >= MIN_PASSWORD_LENGTH &&
+    isStrongPassword(password) &&
     password === confirmPassword &&
     !isLoading;
 
@@ -171,16 +171,14 @@ export default function ResetStudentPasswordDialog({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder="Enter new password"
                 className="h-11 rounded-xl"
                 autoComplete="new-password"
               />
               {passwordError ? (
                 <p className="text-xs text-rose-600">{passwordError}</p>
               ) : (
-                <p className="text-xs text-muted-foreground">
-                  Minimum {MIN_PASSWORD_LENGTH} characters.
-                </p>
+                <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
               )}
             </div>
             <div className="space-y-2">

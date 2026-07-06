@@ -160,6 +160,8 @@ export default function BookBuilderPage() {
       draftPutPath: `${BASE_URL}/book/${bookId}/builder-draft`,
       builderHref: `/write-to-read/builder/${bookId}`,
       characterHref: `/write-to-read/builder/${bookId}/character`,
+      wurtleAssignmentsHref: `/write-to-read/builder/${bookId}/assignments/wurtle`,
+      wtrAssignmentsHref: `/write-to-read/builder/${bookId}/assignments/wtr`,
       backHref: "/write-to-read",
       backState: { wtrActiveTab: "grade" as const },
       exportPdfOnSave,
