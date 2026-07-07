@@ -92,8 +92,8 @@ export default function App() {
         setStatus("Loading RequestQuotation...");
         m.RequestQuotation = await import("./pages/qutationTracking/requestQuotation");
 
-        setStatus("Loading ShopPage...");
-        m.ShopPage = await import("./pages/shop");
+        // setStatus("Loading ShopPage...");
+        // m.ShopPage = await import("./pages/shop");
 
         setStatus("Loading ShopPaymentPage...");
         m.ShopPaymentPage = await import("./pages/shop/ShopPaymentPage");
