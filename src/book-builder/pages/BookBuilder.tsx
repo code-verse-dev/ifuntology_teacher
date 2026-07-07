@@ -1,7 +1,10 @@
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import { areJsonSnapshotsEqual, safeStructuredClone } from '@/utils/safeClone'
+import { isIOS } from '@/utils/isIOS'
 import {
   readBuilderDraftCache,
+  stringifyBuilderDraftBody,
   writeBuilderDraftCache,
 } from '../lib/bookBuilderDraftCache'
 import { collectFontStylesheetsForExport } from '../lib/collectFontStylesheetsForExport'
@@ -601,11 +604,11 @@ function createInitialPages(): BookPageData[] {
 }
 
 function clonePagesSnapshot(pages: BookPageData[]): BookPageData[] {
-  return JSON.parse(JSON.stringify(pages)) as BookPageData[]
+  return safeStructuredClone(pages)
 }
 
 function arePagesSnapshotsEqual(a: BookPageData[], b: BookPageData[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return areJsonSnapshotsEqual(a, b)
 }
 
 const TEXT_BOX_DRAG_PX = 5
@@ -2619,7 +2622,7 @@ export function BookBuilder() {
       const res = await builderFetch(putUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: stringifyBuilderDraftBody({
           pages,
           paperSize,
           pageFrame: pageFrameSettings,
@@ -4535,7 +4538,7 @@ export function BookBuilder() {
       const el = pageSurfaceRefs.current.get(pages[i].id)
       if (!el) continue
       const canvas = await html2canvas(el, {
-        scale: 2,
+        scale: isIOS() ? 1 : 2,
         useCORS: true,
       })
       if (i > 0) pdf.addPage([w, h])

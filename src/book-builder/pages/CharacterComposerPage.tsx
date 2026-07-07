@@ -38,7 +38,7 @@ import './book-builder.css'
 type SelectionMap = Record<string, string | null>
 
 function cloneSelectionMap(src: SelectionMap): SelectionMap {
-  return JSON.parse(JSON.stringify(src)) as SelectionMap
+  return { ...src }
 }
 
 function IconToolCharacter() {

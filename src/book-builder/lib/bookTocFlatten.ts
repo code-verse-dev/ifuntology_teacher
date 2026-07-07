@@ -16,9 +16,18 @@ export function newTocEntryId(): string {
     : `toc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-export function flattenTocEntries(entries: TocEntry[], depth = 0): TocFlatRow[] {
+const MAX_TOC_DEPTH = 64
+
+export function flattenTocEntries(
+  entries: TocEntry[],
+  depth = 0,
+  seen: Set<string> = new Set(),
+): TocFlatRow[] {
+  if (depth > MAX_TOC_DEPTH) return []
   const out: TocFlatRow[] = []
   for (const e of entries) {
+    if (seen.has(e.id)) continue
+    seen.add(e.id)
     out.push({
       id: e.id,
       title: e.title,
@@ -26,7 +35,7 @@ export function flattenTocEntries(entries: TocEntry[], depth = 0): TocFlatRow[] 
       depth,
     })
     if (e.children?.length) {
-      out.push(...flattenTocEntries(e.children, depth + 1))
+      out.push(...flattenTocEntries(e.children, depth + 1, seen))
     }
   }
   return out
