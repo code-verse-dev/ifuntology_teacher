@@ -50,8 +50,8 @@ export default function App() {
         setStatus("Loading VerifyOtp...");
         m.VerifyOtp = await import("./pages/auth/VerifyOtp");
 
-        setStatus("Loading SignUpPage...");
-        m.SignUpPage = await import("./pages/auth/SignUpPage");
+        // setStatus("Loading SignUpPage...");
+        // m.SignUpPage = await import("./pages/auth/SignUpPage");
 
         setStatus("Loading DashboardWelcomePage...");
         m.DashboardWelcomePage = await import("./pages/dashboard/DashboardWelcomePage");
