@@ -3,10 +3,11 @@ import "./index.css";
 import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
-import App from "./App";
+// import App from "./App";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <Provider store={store}>
-    <App />
+    {/* <App /> */}
+    <h1>This is funtology</h1>
   </Provider>
 );
