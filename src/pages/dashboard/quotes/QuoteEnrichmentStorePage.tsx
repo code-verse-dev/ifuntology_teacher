@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-
 import QuoteSubmittedDialog from "@/components/quotes/QuoteSubmittedDialog";
 import QuoteShell from "@/pages/dashboard/quotes/QuoteShell";
 import { Button } from "@/components/ui/button";
@@ -108,6 +107,7 @@ export default function QuoteEnrichmentStorePage() {
                     id="qty"
                     inputMode="numeric"
                     className="h-11 rounded-full"
+                    placeholder="e.g. 5"
                     value={String(values.quantity)}
                     onChange={(e) => setValues((s) => ({ ...s, quantity: Number(e.target.value || 1) }))}
                   />
@@ -119,7 +119,7 @@ export default function QuoteEnrichmentStorePage() {
                 <Input
                   id="address"
                   className="h-11 rounded-full"
-                  placeholder="Enter Address"
+                  placeholder="142 W 34th Ave, Anchorage, AK 99503"
                   value={values.address}
                   onChange={(e) => setValues((s) => ({ ...s, address: e.target.value }))}
                 />
@@ -131,7 +131,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="city"
                     className="h-11 rounded-full"
-                    placeholder="Enter City"
+                    placeholder="Anchorage"
                     value={values.city}
                     onChange={(e) => setValues((s) => ({ ...s, city: e.target.value }))}
                   />
@@ -141,7 +141,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="state"
                     className="h-11 rounded-full"
-                    placeholder="Enter State"
+                    placeholder="Alaska"
                     value={values.state}
                     onChange={(e) => setValues((s) => ({ ...s, state: e.target.value }))}
                   />
@@ -154,7 +154,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="country"
                     className="h-11 rounded-full"
-                    placeholder="Enter Country"
+                    placeholder="United States"
                     value={values.country}
                     onChange={(e) => setValues((s) => ({ ...s, country: e.target.value }))}
                   />
@@ -164,7 +164,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="zip"
                     className="h-11 rounded-full"
-                    placeholder="Enter Zip Code"
+                    placeholder="99503"
                     value={values.zipCode}
                     onChange={(e) => setValues((s) => ({ ...s, zipCode: e.target.value }))}
                   />
@@ -177,7 +177,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="org"
                     className="h-11 rounded-full"
-                    placeholder="Enter Name"
+                    placeholder="Springfield High School"
                     value={values.organizationName}
                     onChange={(e) => setValues((s) => ({ ...s, organizationName: e.target.value }))}
                   />
@@ -187,7 +187,7 @@ export default function QuoteEnrichmentStorePage() {
                   <Input
                     id="coupon"
                     className="h-11 rounded-full"
-                    placeholder="Enter Coupon / Discount Code"
+                    placeholder="SAVE10"
                     value={values.coupon}
                     onChange={(e) => setValues((s) => ({ ...s, coupon: e.target.value }))}
                   />

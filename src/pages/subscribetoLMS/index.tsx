@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { GraduationCap, Check, Loader2 } from "lucide-react";
+import { GraduationCap, Check, Loader2, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useGetAllSettingsQuery } from "@/redux/services/apiSlices/settingSlice";
 import { useGetCoursesQuery } from "@/redux/services/apiSlices/courseSlice";
 import { useGetProductByCourseTypeQuery } from "@/redux/services/apiSlices/productSlice";
@@ -14,177 +15,150 @@ import { useNavigate } from "react-router-dom";
 import { useUtilizePurchaseOrderMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
 import { toast } from "sonner";
 
-type SubscriptionPlan = {
-    id: string;
-    name: string;
-    price: string;
-    priceValue: number; // Added for calculation
-    duration: string;
-    features: string[];
-    theme: {
-        bg: string;
-        border: string;
-        iconBg: string;
-        iconColor: string;
-        titleColor: string;
-        priceColor: string;
-        checkColor: string;
-    };
+type CourseTheme = {
+    accentBar: string;
+    iconBg: string;
+    buttonClass: string;
 };
 
-const PLANS_THEMES: { name: string; theme: SubscriptionPlan["theme"] }[] = [
-    {
-        name: "Funtology",
-        theme: {
-            bg: "bg-pink-50",
-            border: "border-pink-300",
-            iconBg: "bg-pink-500",
-            iconColor: "text-white",
-            titleColor: "text-foreground",
-            priceColor: "text-pink-600",
-            checkColor: "text-pink-500",
-        },
+const COURSE_THEMES: Record<string, CourseTheme> = {
+    Funtology: {
+        accentBar: "bg-rose-500",
+        iconBg: "bg-rose-500",
+        buttonClass:
+            "border-rose-500 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300",
     },
-    {
-        name: "Barbertology",
-        theme: {
-            bg: "bg-[#FDF8E8]",
-            border: "border-[#D4B36A]",
-            iconBg: "bg-[#A68A3E]",
-            iconColor: "text-white",
-            titleColor: "text-foreground",
-            priceColor: "text-[#A68A3E]",
-            checkColor: "text-[#A68A3E]",
-        },
+    Barbertology: {
+        accentBar: "bg-amber-500",
+        iconBg: "bg-amber-500",
+        buttonClass:
+            "border-amber-500 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300",
     },
-    {
-        name: "Nailtology",
-        theme: {
-            bg: "bg-teal-50",
-            border: "border-teal-300",
-            iconBg: "bg-teal-500",
-            iconColor: "text-white",
-            titleColor: "text-foreground",
-            priceColor: "text-teal-600",
-            checkColor: "text-teal-500",
-        },
+    Nailtology: {
+        accentBar: "bg-teal-500",
+        iconBg: "bg-teal-500",
+        buttonClass:
+            "border-teal-500 text-teal-400 hover:bg-teal-500/10 hover:text-teal-300",
     },
-    {
-        name: "Skintology",
-        theme: {
-            bg: "bg-green-50",
-            border: "border-green-300",
-            iconBg: "bg-green-500",
-            iconColor: "text-white",
-            titleColor: "text-foreground",
-            priceColor: "text-green-600",
-            checkColor: "text-green-500",
-        },
+    Skintology: {
+        accentBar: "bg-emerald-500",
+        iconBg: "bg-emerald-500",
+        buttonClass:
+            "border-emerald-500 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300",
     },
-    {
-        name: "iTeach iFuntology",
-        theme: {
-            bg: "bg-purple-50",
-            border: "border-purple-300",
-            iconBg: "bg-purple-500",
-            iconColor: "text-white",
-            titleColor: "text-foreground",
-            priceColor: "text-purple-600",
-            checkColor: "text-purple-500",
-        },
+    "iTeach iFuntology": {
+        accentBar: "bg-violet-500",
+        iconBg: "bg-violet-500",
+        buttonClass:
+            "border-violet-500 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300",
     },
+    "iFuntology Braiding": {
+        accentBar: "bg-orange-500",
+        iconBg: "bg-orange-500",
+        buttonClass:
+            "border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300",
+    },
+};
+
+const DEFAULT_THEME = COURSE_THEMES.Funtology;
+
+const DEFAULT_FEATURES = [
+    "Web-based access",
+    "Interactive lessons",
+    "Quizzes & Tests",
+    "Student progress tracking",
 ];
 
-const defaultTheme: SubscriptionPlan["theme"] = {
-    bg: "bg-slate-50",
-    border: "border-slate-300",
-    iconBg: "bg-slate-500",
-    iconColor: "text-white",
-    titleColor: "text-foreground",
-    priceColor: "text-slate-600",
-    checkColor: "text-slate-500",
-};
-
-function getThemeForCourseType(courseType: string): SubscriptionPlan["theme"] {
-    const found = PLANS_THEMES.find(
-        (p) => p.name.toLowerCase() === (courseType ?? "").toLowerCase()
+function getThemeForCourseType(courseType: string): CourseTheme {
+    const found = Object.entries(COURSE_THEMES).find(
+        ([name]) => name.toLowerCase() === (courseType ?? "").toLowerCase()
     );
-    return found?.theme ?? defaultTheme;
+    return found?.[1] ?? DEFAULT_THEME;
 }
-
-const HARDCODED_DURATION = "/ 12 months";
-const HARDCODED_PRICE = "$299.99";
-const HARDCODED_PRICE_VALUE = 299.99;
 
 function CourseCard({
     course,
-    monthlyFee,
-    taxPercent,
     onSelect,
     activeSubscriptionId,
     onViewCourse,
 }: {
     course: any;
-    monthlyFee: number;
-    taxPercent: number;
     onSelect: (course: any) => void;
     activeSubscriptionId: string | null;
     onViewCourse: (subscriptionId: string) => void;
 }) {
     const courseType = course?.courseType ?? "Funtology";
-    const { data: productByCourse } = useGetProductByCourseTypeQuery({
-        courseType,
-    });
     const theme = getThemeForCourseType(courseType);
-    const features = Array.isArray(course?.features) ? course.features : [];
-    const kitPrice = Number(productByCourse?.data?.price) || 0;
-    const qty = 12;
-    const subtotal = qty * monthlyFee + qty * kitPrice;
-    const tax = subtotal * (taxPercent / 100);
-    const total = subtotal + tax;
+    const features = Array.isArray(course?.features) && course.features.length > 0
+        ? course.features
+        : DEFAULT_FEATURES;
+    const description =
+        course?.description?.trim() ||
+        "Explore lessons, modules, and assessments for this course.";
 
     return (
-        <Card
-            className={`relative overflow-hidden rounded-2xl border-2 p-8 shadow-sm ${theme.bg} ${theme.border}`}
-        >
-            <div className="flex flex-col h-full justify-between">
-                <div>
-                    <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-xl shadow-sm ${theme.iconBg} ${theme.iconColor}`}>
-                        <GraduationCap className="h-8 w-8" />
-                    </div>
+        <Card className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-sm">
+            <div className="flex flex-col xl:flex-row xl:items-stretch">
+                <div className={cn("h-1 w-full shrink-0 xl:h-auto xl:w-1", theme.accentBar)} />
 
-                    <h3 className="mb-2 text-2xl font-bold text-slate-900">
-                        {courseType}
-                    </h3>
-                    <div className="mb-6 flex items-baseline">
-                        <span className={`text-3xl font-bold ${theme.priceColor}`}>
-                            ${total.toFixed(2)}
-                        </span>
-                        <span className="ml-2 text-sm text-slate-600 font-medium">
-                            {HARDCODED_DURATION}
-                        </span>
+                {/* Title & description */}
+                <div className="flex min-w-0 flex-1 items-start gap-4 p-5 sm:p-6 xl:max-w-[32%] xl:shrink-0">
+                    <div
+                        className={cn(
+                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm",
+                            theme.iconBg
+                        )}
+                    >
+                        <GraduationCap className="h-5 w-5" />
                     </div>
-
-                    <ul className="mb-8 space-y-3">
-                        {features.map((feature: string, i: number) => (
-                            <li key={i} className="flex items-center gap-3">
-                                <Check className={`h-5 w-5 ${theme.checkColor}`} />
-                                <span className="text-sm font-medium text-slate-700">{feature}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="min-w-0">
+                        <h3 className="text-lg font-bold leading-tight text-white sm:text-xl xl:text-2xl">
+                            {courseType}
+                        </h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                            {description}
+                        </p>
+                    </div>
                 </div>
 
-                <Button
-                    className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-6 text-base shadow-lg"
-                    onClick={() =>
-                        activeSubscriptionId
-                            ? onViewCourse(activeSubscriptionId)
-                            : onSelect(course)
-                    }
-                >
-                    {activeSubscriptionId ? "View Course" : "Subscribe Now"}
-                </Button>
+                {/* Features + action: stacked on mobile, side-by-side on md–lg, full row on xl+ */}
+                <div className="flex flex-col border-t border-slate-800 md:flex-row md:items-stretch xl:contents">
+                    <div className="min-w-0 px-5 py-5 sm:px-6 md:flex-1 md:border-l md:border-slate-800 xl:min-w-0">
+                        <ul className="space-y-2.5">
+                            {features.map((feature: string) => (
+                                <li key={feature} className="flex items-center gap-3">
+                                    <div
+                                        className={cn(
+                                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                                            theme.iconBg
+                                        )}
+                                    >
+                                        <Check className="h-3 w-3 text-white" />
+                                    </div>
+                                    <span className="text-sm font-medium text-slate-200">{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="flex shrink-0 items-center justify-center border-t border-slate-800 px-5 py-5 sm:px-6 md:min-w-[168px] md:max-w-[220px] md:border-l md:border-t-0 lg:min-w-[180px] xl:min-w-[200px]">
+                        <Button
+                            variant="outline"
+                            className={cn(
+                                "w-full rounded-full border-2 bg-transparent px-5 py-5 text-sm font-semibold shadow-none whitespace-nowrap",
+                                theme.buttonClass
+                            )}
+                            onClick={() =>
+                                activeSubscriptionId
+                                    ? onViewCourse(activeSubscriptionId)
+                                    : onSelect(course)
+                            }
+                        >
+                            {activeSubscriptionId ? "View Course" : "Enroll Now"}
+                            <ChevronRight className="ml-1 h-4 w-4 shrink-0" />
+                        </Button>
+                    </div>
+                </div>
             </div>
         </Card>
     );
@@ -192,7 +166,7 @@ function CourseCard({
 
 export default function SubscribetoLMS() {
     const navigate = useNavigate();
-    const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<{ name: string } | null>(null);
     const [numStudents, setNumStudents] = useState<number>(12); // Default to 12 as per image
     const [subscriptionType, setSubscriptionType] = useState<string>("MONTHLY");
     const [isPODialogOpen, setIsPODialogOpen] = useState(false);
@@ -261,17 +235,10 @@ export default function SubscribetoLMS() {
     const lmsTax = lmsSubtotal * (taxPercent / 100);
     const lmsTotal = lmsSubtotal + lmsTax;
 
-    const handleSelectCourse = (course: any) => {
-        setSelectedPlan({
-            id: course._id,
-            name: course.courseType ?? "Course",
-            price: HARDCODED_PRICE,
-            priceValue: HARDCODED_PRICE_VALUE,
-            duration: HARDCODED_DURATION,
-            features: Array.isArray(course.features) ? course.features : [],
-            theme: getThemeForCourseType(course.courseType ?? ""),
+    const handleSubscribeNow = (course: any) => {
+        navigate("/shop", {
+            state: { prefillLmsCourseType: course?.courseType ?? "Funtology" },
         });
-        setCourseTypeForPrice(course.courseType);
     };
     const handlePayWithCreditCard = () => {
         navigate("/payment", {
@@ -315,11 +282,11 @@ export default function SubscribetoLMS() {
 
     return (
         <DashboardWithSidebarLayout>
-            <section className="mx-auto w-full space-y-6">
-                <h1 className="text-2xl font-extrabold">Subscribe to LMS</h1>
+            <section className="mx-auto w-full max-w-6xl space-y-6">
+                <h1 className="text-2xl font-extrabold sm:text-3xl">Subscribe to LMS</h1>
 
-                {/* Subscription Cards Grid */}
-                <div className="max-w-4xl">
+                {/* Subscription Cards */}
+                <div className="w-full">
                     {coursesLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 gap-4">
                             <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
@@ -330,18 +297,16 @@ export default function SubscribetoLMS() {
                             No courses available.
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-4">
                             {courseList.map((course: any) => (
                                 <CourseCard
                                     key={course._id}
                                     course={course}
-                                    monthlyFee={monthlyFee}
-                                    taxPercent={taxPercent}
-                                    onSelect={handleSelectCourse}
+                                    onSelect={handleSubscribeNow}
                                     activeSubscriptionId={
                                         activeSubscriptionByCourseType[course?.courseType]?._id ?? null
                                     }
-                                    onViewCourse={(id) => navigate(`/my-courses/${course?.courseType}`)}
+                                    onViewCourse={() => navigate(`/my-courses/${course?.courseType}`)}
                                 />
                             ))}
                         </div>
@@ -381,6 +346,7 @@ export default function SubscribetoLMS() {
                                     id="students"
                                     type="number"
                                     min={1}
+                                    placeholder="e.g. 24"
                                     value={numStudents}
                                     onChange={(e) => setNumStudents(parseInt(e.target.value) || 0)}
                                     className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"
@@ -451,7 +417,7 @@ export default function SubscribetoLMS() {
                                 PO Number <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                placeholder="Enter PO number"
+                                placeholder="PO-2026-0042"
                                 value={poNumber}
                                 onChange={(e) => setPoNumber(e.target.value)}
                                 className="h-12 rounded-xl border-border/60 bg-white dark:bg-secondary/50"

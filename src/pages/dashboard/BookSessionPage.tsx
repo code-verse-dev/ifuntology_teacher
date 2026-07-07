@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,7 +59,7 @@ export default function BookSessionPage() {
 
             <div className="space-y-2">
               <Label htmlFor="type">Session Type *</Label>
-              <Input id="type" required placeholder="All" className="h-11 rounded-full" />
+              <Input id="type" required placeholder="e.g., Lab Review" className="h-11 rounded-full" />
             </div>
 
             <div className="space-y-2">

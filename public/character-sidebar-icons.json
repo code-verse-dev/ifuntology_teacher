@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "slug": "body",
+      "image": "images/body.png",
+      "tooltip": "Body"
+    },
+    {
+      "slug": "hair",
+      "image": "images/hair.png",
+      "tooltip": "Hair"
+    },
+    {
+      "slug": "face",
+      "image": "images/face.png",
+      "tooltip": "Face"
+    },
+    {
+      "slug": "shirt",
+      "image": "images/shirt.png",
+      "tooltip": "Shirt"
+    },
+    {
+      "slug": "pant",
+      "image": "images/pant.png",
+      "tooltip": "Pants"
+    },
+    {
+      "slug": "shoes",
+      "image": "images/shoes.png",
+      "tooltip": "Shoes"
+    }
+  ]
+}

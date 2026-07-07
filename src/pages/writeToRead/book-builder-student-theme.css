@@ -1,0 +1,489 @@
+/* Write to Read — student portal overrides for embedded book builder */
+
+body.student-book-builder-active {
+  --wtr-green: #46a217;
+  --wtr-green-hover: #3d8c14;
+  overflow: hidden;
+}
+
+body.student-book-builder-active .bg-app {
+  min-height: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.student-book-builder,
+.student-book-builder__frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.student-book-builder .book-shell,
+.student-book-builder .book-shell.book-shell--character {
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  flex: 1;
+  background: transparent;
+  color: hsl(var(--foreground));
+}
+
+/* Match site background — transparent stage, token-based panels (light + dark) */
+.student-book-builder__frame {
+  background: transparent;
+  border-color: hsl(var(--border) / 0.55);
+}
+
+.student-book-builder .book-stage {
+  background: transparent;
+  border-color: hsl(var(--border));
+  box-shadow: none;
+}
+
+.student-book-builder .book-stage__toolbar {
+  border-bottom-color: hsl(var(--border));
+}
+
+.student-book-builder .book-stage__canvas-area {
+  background: transparent;
+}
+
+.student-book-builder .book-tool-sidebar {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  box-shadow: 0 4px 24px hsl(var(--foreground) / 0.06);
+}
+
+.student-book-builder .book-tool-sidebar__btn {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .book-tool-sidebar__btn:hover {
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .book-tool-sidebar__btn.is-active {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.28);
+  background: hsl(var(--secondary));
+}
+
+.student-book-builder .book-paper-custom {
+  color: hsl(var(--muted-foreground));
+}
+
+.student-book-builder .book-paper-custom__input {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-paper-custom__input:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.22);
+}
+
+.student-book-builder .book-toolbar-char {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .book-toolbar-char:hover {
+  background: hsl(var(--secondary));
+}
+
+.student-book-builder .book-stage__save-msg {
+  color: hsl(142 76% 45%);
+}
+
+.dark .student-book-builder .book-stage__save-msg {
+  color: hsl(142 70% 55%);
+}
+
+.student-book-builder .book-stage__save-msg--err {
+  color: hsl(var(--destructive));
+}
+
+.student-book-builder .book-text-flyout,
+.student-book-builder .book-char-flyout,
+.student-book-builder .book-toc-flyout {
+  background: hsl(var(--card));
+  border-left-color: hsl(var(--border));
+  box-shadow: -8px 0 32px hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-text-flyout__title,
+.student-book-builder .book-char-flyout__title,
+.student-book-builder .book-toc-flyout__title {
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-text-flyout__head,
+.student-book-builder .book-char-flyout__head,
+.student-book-builder .book-toc-flyout__head,
+.student-book-builder .book-text-flyout__hint,
+.student-book-builder .book-char-flyout__hint,
+.student-book-builder .book-toc-flyout__hint {
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .book-text-flyout__hint,
+.student-book-builder .book-text-flyout__field-head,
+.student-book-builder .book-text-flyout__field-sub,
+.student-book-builder .book-text-flyout__close,
+.student-book-builder .book-char-flyout__close,
+.student-book-builder .book-toc-flyout__close,
+.student-book-builder .book-char-flyout__hint {
+  color: hsl(var(--muted-foreground));
+}
+
+.student-book-builder .book-text-flyout__hint strong,
+.student-book-builder .book-char-flyout__hint strong {
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-text-flyout__close:hover,
+.student-book-builder .book-char-flyout__close:hover,
+.student-book-builder .book-toc-flyout__close:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted));
+}
+
+.student-book-builder .book-text-flyout__select,
+.student-book-builder .book-text-flyout__textarea,
+.student-book-builder .book-text-flyout__color-hex {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-layers__item {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-layers__item:hover {
+  background: hsl(var(--secondary));
+}
+
+.student-book-builder .book-layers__item--active {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
+}
+
+.student-book-builder .book-layers__empty,
+.student-book-builder .book-layers__drag-icon {
+  color: hsl(var(--muted-foreground));
+}
+
+.student-book-builder .book-layers__name-input,
+.student-book-builder .book-layers__group-name-input {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .char-composer__main-selection,
+.student-book-builder .char-composer__layers,
+.student-book-builder .char-composer__preview {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .char-panel__cats {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+.student-book-builder .char-panel__cat-icon {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .char-panel__cat-icon.is-active {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary));
+}
+
+.student-book-builder .char-panel__tile {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .char-panel__tile.is-selected {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary));
+}
+
+.student-book-builder .char-panel__thumb {
+  background: hsl(var(--muted));
+}
+
+.student-book-builder .char-panel--empty,
+.student-book-builder .char-panel--empty .hint {
+  color: hsl(var(--muted-foreground));
+}
+
+.student-book-builder .book-shell__row {
+  padding: 0 0.5rem 0;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .student-book-builder .book-shell__row {
+    padding: 0 0.75rem 0;
+    gap: 0.75rem;
+  }
+}
+
+/* Light mode: toolbar raster icons are white assets — darken on light surfaces */
+html:not(.dark) .student-book-builder .book-tool-sidebar__icon-img,
+html:not(.dark) .student-book-builder .char-composer__cat-icon-img,
+.light .student-book-builder .book-tool-sidebar__icon-img,
+.light .student-book-builder .char-composer__cat-icon-img {
+  filter: brightness(0);
+}
+
+.dark .student-book-builder .book-tool-sidebar__icon-img,
+.dark .student-book-builder .char-composer__cat-icon-img {
+  filter: none;
+}
+
+/* SVG fallbacks follow theme text color */
+.student-book-builder .book-tool-sidebar__btn svg,
+.student-book-builder .book-icon-square svg {
+  color: inherit;
+}
+
+html:not(.dark) .student-book-builder .book-tool-sidebar__btn svg {
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .book-icon-square--orange svg,
+.student-book-builder .book-icon-square--orange {
+  color: #fff;
+}
+
+/* Toolbar — green primary actions (My Books style) */
+.student-book-builder .book-icon-square--orange,
+.student-book-builder .book-select--orange,
+.student-book-builder .book-toolbar-back,
+.student-book-builder .icon-btn {
+  background: var(--wtr-green);
+  box-shadow: 0 4px 14px rgba(70, 162, 23, 0.25);
+}
+
+.student-book-builder .book-icon-square--orange:hover:not(:disabled),
+.student-book-builder .book-select--orange:hover,
+.student-book-builder .book-toolbar-back:hover,
+.student-book-builder .icon-btn:hover:not(:disabled) {
+  background: var(--wtr-green-hover);
+}
+
+.student-book-builder .char-panel__load-more {
+  border-color: rgba(70, 162, 23, 0.45);
+  background: var(--wtr-green);
+}
+
+.student-book-builder .char-panel__load-more:hover:not(:disabled) {
+  background: var(--wtr-green-hover);
+}
+
+/* Portaled modals & overlays (rendered on document.body) */
+body.student-book-builder-active .builder-modal-overlay,
+body.student-book-builder-active .bg-modal-overlay,
+body.student-book-builder-active .char-save-overlay {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+body.student-book-builder-active .builder-modal,
+body.student-book-builder-active .bg-modal,
+body.student-book-builder-active .paper-size-modal.builder-modal,
+body.student-book-builder-active .paper-size-modal.bg-modal,
+body.student-book-builder-active .char-save-dialog,
+body.student-book-builder-active .bg-modal-sub {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  border-radius: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+}
+
+body.student-book-builder-active .builder-modal__head,
+body.student-book-builder-active .bg-modal__head,
+body.student-book-builder-active .bg-modal__tabs-row,
+body.student-book-builder-active .bg-modal-sub__head,
+body.student-book-builder-active .paper-size-modal__footer,
+body.student-book-builder-active .saved-char-modal__footer {
+  border-color: hsl(var(--border));
+}
+
+body.student-book-builder-active .builder-modal__title,
+body.student-book-builder-active .bg-modal__title,
+body.student-book-builder-active .bg-modal-sub__title,
+body.student-book-builder-active .char-save-dialog h3 {
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .builder-modal__sub,
+body.student-book-builder-active .bg-modal__sub,
+body.student-book-builder-active .char-save-dialog p,
+body.student-book-builder-active .bg-modal__loading,
+body.student-book-builder-active .saved-char-modal__empty,
+body.student-book-builder-active .saved-char-modal__when {
+  color: hsl(var(--muted-foreground));
+}
+
+body.student-book-builder-active .builder-modal__close,
+body.student-book-builder-active .bg-modal__close,
+body.student-book-builder-active .bg-modal-sub__close {
+  color: hsl(var(--muted-foreground));
+}
+
+body.student-book-builder-active .builder-modal__close:hover,
+body.student-book-builder-active .bg-modal__close:hover,
+body.student-book-builder-active .bg-modal-sub__close:hover {
+  background: hsl(var(--muted) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+/* Modal tabs — orange active state (Write to Read tabs) */
+body.student-book-builder-active .bg-modal__tab {
+  color: hsl(var(--muted-foreground));
+}
+
+body.student-book-builder-active .bg-modal__tab:hover {
+  color: rgb(249 115 22);
+}
+
+body.student-book-builder-active .bg-modal__tab--active {
+  color: rgb(249 115 22);
+  border-bottom-color: rgb(249 115 22);
+}
+
+body.student-book-builder-active .bg-modal__tab-action,
+body.student-book-builder-active .paper-size-modal__quick-btn--active,
+body.student-book-builder-active .bg-modal-sub__btn--primary,
+body.student-book-builder-active .paper-size-modal__btn--primary,
+body.student-book-builder-active .saved-char-modal__create-link {
+  background: var(--wtr-green);
+  border-color: rgba(70, 162, 23, 0.5);
+  color: #fff;
+}
+
+body.student-book-builder-active .bg-modal__tab-action:hover,
+body.student-book-builder-active .paper-size-modal__quick-btn--active:hover,
+body.student-book-builder-active .bg-modal-sub__btn--primary:hover:not(:disabled),
+body.student-book-builder-active .paper-size-modal__btn--primary:hover,
+body.student-book-builder-active .saved-char-modal__create-link:hover {
+  background: var(--wtr-green-hover);
+}
+
+body.student-book-builder-active .paper-size-modal__btn--ghost {
+  background: hsl(var(--muted) / 0.25);
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .paper-size-modal__btn--ghost:hover {
+  background: hsl(var(--muted) / 0.4);
+}
+
+body.student-book-builder-active .paper-size-modal__quick-btn {
+  background: hsl(var(--muted) / 0.25);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .paper-size-modal__quick-btn:hover {
+  border-color: hsl(var(--border));
+  background: hsl(var(--muted) / 0.4);
+}
+
+body.student-book-builder-active .paper-size-modal__field-label,
+body.student-book-builder-active .paper-size-modal__preview-caption {
+  color: hsl(var(--muted-foreground));
+}
+
+body.student-book-builder-active .paper-size-modal__preview-caption strong {
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .paper-size-modal__select,
+body.student-book-builder-active .paper-size-modal__num,
+body.student-book-builder-active .char-save-dialog input {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .bg-modal__tile,
+body.student-book-builder-active .saved-char-modal__card {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .bg-modal__tile:hover,
+body.student-book-builder-active .saved-char-modal__pick-btn:hover {
+  background: hsl(var(--muted) / 0.25);
+}
+
+body.student-book-builder-active .saved-char-modal__preview {
+  background: hsl(var(--muted) / 0.2);
+}
+
+body.student-book-builder-active .saved-char-modal__btn {
+  background: hsl(var(--muted) / 0.2);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .saved-char-modal__btn--ghost {
+  background: transparent;
+}
+
+body.student-book-builder-active .saved-char-modal__btn--danger {
+  background: hsl(0 84% 60% / 0.12);
+  border-color: hsl(0 84% 60% / 0.35);
+  color: hsl(0 84% 65%);
+}
+
+body.student-book-builder-active .bg-modal-sub__btn--ghost {
+  background: hsl(var(--muted) / 0.25);
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .bg-modal-sub__btn--ghost:hover:not(:disabled) {
+  background: hsl(var(--muted) / 0.4);
+}
+
+body.student-book-builder-active .bg-modal-sub__actions {
+  border-color: hsl(var(--border));
+}
+
+body.student-book-builder-active .char-save-dialog__actions button {
+  background: hsl(var(--muted) / 0.25);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .char-save-dialog__actions button[type='submit'] {
+  background: var(--wtr-green);
+  border-color: rgba(70, 162, 23, 0.5);
+  color: #fff;
+}
+
+body.student-book-builder-active .char-save-dialog__actions button[type='submit']:hover {
+  background: var(--wtr-green-hover);
+}

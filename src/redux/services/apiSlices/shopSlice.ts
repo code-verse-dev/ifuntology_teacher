@@ -1,30 +1,38 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 
+import type { LmsKitVariant } from "@/constants/lmsKitVariants";
+
 export type ShopPreviewPayload = {
   organizationName: string;
+  email: string;
+  address: string;
+  shippingAddress: string;
+  shippingCountry: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZipCode: string;
+  country: string;
+  city: string;
+  state: string;
+  streetAddress: string;
+  zipCode: string;
+  taxExempt?: boolean;
   lms?: {
-    email: string;
-    address: string;
     lmsCourses: {
       courseType: string;
-      subscriptionType: string;
+      kitVariant?: LmsKitVariant;
       noOfKits: string;
       webSubscriptions: string;
     }[];
   };
   enrichment?: {
     products: { product: string; quantity: number }[];
-    city?: string;
-    streetAddress?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
     couponCode?: string;
   };
   wtr?: {
     subscriberKind: "TEACHER" | "INDIVIDUAL";
-    subscriptionType: "monthly" | "yearly";
+    subscriptionType?: "monthly" | "yearly";
     numberOfSeats?: number;
     noOfSubscriptions?: number;
     bookPrintingRequests?: boolean;

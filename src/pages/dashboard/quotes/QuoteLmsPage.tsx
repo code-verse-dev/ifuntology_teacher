@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-
 import QuoteSubmittedDialog from "@/components/quotes/QuoteSubmittedDialog";
 import QuoteShell from "@/pages/dashboard/quotes/QuoteShell";
 import { Button } from "@/components/ui/button";
@@ -85,7 +84,7 @@ export default function QuoteLmsPage() {
               <Input
                 id="org"
                 className="h-11 rounded-full"
-                placeholder="Enter Name"
+                placeholder="Springfield High School"
                 value={values.organizationName}
                 onChange={(e) => setValues((s) => ({ ...s, organizationName: e.target.value }))}
               />
@@ -96,7 +95,7 @@ export default function QuoteLmsPage() {
                 id="email"
                 type="email"
                 className="h-11 rounded-full"
-                placeholder="Enter Email"
+                placeholder="teacher@school.edu"
                 value={values.email}
                 onChange={(e) => setValues((s) => ({ ...s, email: e.target.value }))}
               />
@@ -108,7 +107,7 @@ export default function QuoteLmsPage() {
             <Input
               id="address"
               className="h-11 rounded-full"
-              placeholder="Enter Address"
+              placeholder="142 W 34th Ave, Anchorage, AK 99503"
               value={values.address}
               onChange={(e) => setValues((s) => ({ ...s, address: e.target.value }))}
             />
@@ -121,6 +120,7 @@ export default function QuoteLmsPage() {
                 id="kits"
                 inputMode="numeric"
                 className="h-11 rounded-full"
+                placeholder="e.g. 12"
                 value={String(values.kits)}
                 onChange={(e) => setValues((s) => ({ ...s, kits: Number(e.target.value || 0) }))}
               />
@@ -131,6 +131,7 @@ export default function QuoteLmsPage() {
                 id="students"
                 inputMode="numeric"
                 className="h-11 rounded-full"
+                placeholder="e.g. 24"
                 value={String(values.students)}
                 onChange={(e) => setValues((s) => ({ ...s, students: Number(e.target.value || 0) }))}
               />
@@ -141,6 +142,7 @@ export default function QuoteLmsPage() {
                 id="subs"
                 inputMode="numeric"
                 className="h-11 rounded-full"
+                placeholder="e.g. 30"
                 value={String(values.webSubscriptions)}
                 onChange={(e) => setValues((s) => ({ ...s, webSubscriptions: Number(e.target.value || 0) }))}
               />

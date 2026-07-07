@@ -1,12 +1,15 @@
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import type { ShopEligibility } from "@/redux/services/apiSlices/shopSlice";
 
 type PricingData = {
   lms?: {
     lmsCourses?: {
       courseType: string;
+      kitVariant?: string;
       kitsTotal: number;
       subscriptionTotal: number;
       total: number;
@@ -27,8 +30,16 @@ type PricingData = {
     numberOfSeats?: number;
     noOfSubscriptions?: number;
   };
+  bundledWtr?: {
+    numberOfSeats: number;
+    subscriptionType: "lifetime";
+    lineTotal: 0;
+  };
   subtotalBeforeTax?: number;
+  shippingAmount?: number;
   taxAmount?: number;
+  taxExempt?: boolean;
+  taxRatePercent?: number;
   grandTotal?: number;
   eligibility?: ShopEligibility;
 };
@@ -42,6 +53,8 @@ type Props = {
   canPreview: boolean;
   canSubmit: boolean;
   submitBlockReason?: string | null;
+  taxExempt: boolean;
+  onTaxExemptChange: (value: boolean) => void;
   onPayNow: () => void;
   onRequestQuote: () => void;
   isQuoteLoading: boolean;
@@ -59,6 +72,8 @@ export default function ShopPricingPanel({
   canPreview,
   canSubmit,
   submitBlockReason,
+  taxExempt,
+  onTaxExemptChange,
   onPayNow,
   onRequestQuote,
   isQuoteLoading,
@@ -72,14 +87,14 @@ export default function ShopPricingPanel({
   const actionsDisabled = !canSubmit || !canProceed || !hasTotal;
 
   return (
-    <Card className="sticky top-6 rounded-2xl border border-border/60 p-5">
+    <Card className="sticky top-6 rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">Pricing preview</h2>
+        <h2 className="text-lg font-bold text-foreground">Pricing preview</h2>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="h-8 gap-1.5 rounded-full text-xs"
+          className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
           onClick={onRefresh}
           disabled={!canPreview || isLoading}
         >
@@ -92,7 +107,7 @@ export default function ShopPricingPanel({
         </Button>
       </div>
 
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         Server-calculated totals based on your current selections.
       </p>
 
@@ -121,7 +136,7 @@ export default function ShopPricingPanel({
       )}
 
       {!pricing && !error && !isLoading && (
-        <div className="mt-6 rounded-lg border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
+        <div className="mt-6 rounded-xl border border-sky-100 bg-sky-50 px-4 py-5 text-center text-sm leading-relaxed text-sky-900/80 dark:border-sky-900/30 dark:bg-sky-950/20 dark:text-sky-100/80">
           Enable at least one section and fill in the required fields, then
           update pricing to see your estimate.
         </div>
@@ -146,13 +161,28 @@ export default function ShopPricingPanel({
                   key={`${course.courseType}-${idx}`}
                   className="text-sm text-muted-foreground"
                 >
-                  {course.courseType}: kits {fmt(course.kitsTotal)} + subs{" "}
-                  {fmt(course.subscriptionTotal)} = {fmt(course.total)}
+                  {course.courseType}
+{course.kitVariant === "BUNDLE_4_IN_1"
+  ? " · Bundle Kit (4 in 1)"
+  : course.kitVariant
+    ? " · Standard Kits"
+    : ""}
+: kits {fmt(course.kitsTotal)}
                 </div>
               ))}
               <div className="text-sm font-medium">
                 LMS subtotal: {fmt(pricing.lms.total)}
               </div>
+              {pricing.bundledWtr && pricing.bundledWtr.numberOfSeats > 0 && (
+                <div className="rounded-lg border border-lime-200/80 bg-lime-50/80 px-3 py-2 text-sm text-lime-900 dark:border-lime-900/40 dark:bg-lime-950/30 dark:text-lime-100">
+                  <div className="font-medium">Write to Read included</div>
+                  <p className="mt-0.5 text-xs leading-relaxed opacity-90">
+                    {pricing.bundledWtr.numberOfSeats} lifetime student seat
+                    {pricing.bundledWtr.numberOfSeats === 1 ? "" : "s"} granted
+                    with your LMS purchase — no additional charge.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -177,9 +207,15 @@ export default function ShopPricingPanel({
             <div className="space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Write to Read
+                {pricing.bundledWtr && pricing.bundledWtr.numberOfSeats > 0
+                  ? " (additional seats)"
+                  : ""}
               </div>
               <div className="text-sm text-muted-foreground">
-                {pricing.wtr.subscriberKind} · {pricing.wtr.subscriptionType}
+                {pricing.wtr.subscriberKind}
+                {pricing.wtr.subscriptionType
+                  ? ` · ${pricing.wtr.subscriptionType}`
+                  : " · lifetime"}
                 {pricing.wtr.numberOfSeats
                   ? ` · ${pricing.wtr.numberOfSeats} seats`
                   : pricing.wtr.noOfSubscriptions
@@ -194,11 +230,22 @@ export default function ShopPricingPanel({
 
           <div className="space-y-1 border-t border-border/60 pt-4">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Subtotal (before tax)</span>
+              <span>Subtotal</span>
               <span>{fmt(pricing.subtotalBeforeTax)}</span>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Tax</span>
+              <span>Shipping</span>
+              <span>{fmt(pricing.shippingAmount)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>
+                Tax
+                {pricing.taxExempt
+                  ? " (exempt)"
+                  : typeof pricing.taxRatePercent === "number"
+                    ? ` (${pricing.taxRatePercent}%)`
+                    : ""}
+              </span>
               <span>{fmt(pricing.taxAmount)}</span>
             </div>
             <div className="flex justify-between pt-1 text-lg font-bold">
@@ -207,7 +254,29 @@ export default function ShopPricingPanel({
             </div>
           </div>
 
+          <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3">
+            <Checkbox
+              id="shop-tax-exempt"
+              checked={taxExempt}
+              onCheckedChange={(checked) => onTaxExemptChange(checked === true)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="shop-tax-exempt" className="cursor-pointer text-sm font-medium">
+                Tax exempt
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Check this box if this order qualifies for tax exemption. Tax will
+                not be charged when selected.
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-2 border-t border-border/60 pt-4">
+            {!canSubmit && submitBlockReason && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                {submitBlockReason}
+              </div>
+            )}
             <Button
               type="button"
               variant="brand"
@@ -215,7 +284,7 @@ export default function ShopPricingPanel({
               disabled={actionsDisabled}
               onClick={onPayNow}
             >
-              Pay now
+              Pay Electronically
             </Button>
             <Button
               type="button"
@@ -230,14 +299,9 @@ export default function ShopPricingPanel({
                   Submitting quote…
                 </>
               ) : (
-                "Request quote"
+                "Request quote / Purchase Order"
               )}
             </Button>
-            {!canSubmit && submitBlockReason && (
-              <p className="text-center text-xs text-muted-foreground">
-                {submitBlockReason}
-              </p>
-            )}
             {!canSubmit && !submitBlockReason && (
               <p className="text-center text-xs text-muted-foreground">
                 Complete all required fields for enabled sections to pay or

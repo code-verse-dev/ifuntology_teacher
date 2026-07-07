@@ -1,17 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  Calendar,
-  dateFnsLocalizer,
-  EventProps,
-  DayPropGetter,
-} from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
-import { enUS } from "date-fns/locale/en-US";
-import "react-big-calendar/lib/css/react-big-calendar.css";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CSSProperties } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,18 +14,18 @@ import {
   Clock,
   Monitor,
   Trash2,
-  Check,
   Video,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
-  Sparkles,
+  BookOpen,
+  Pencil,
+  MessageCircle,
+  ShieldCheck,
+  Send,
 } from "lucide-react";
-import "./calendar-custom.css";
 import { useFindScheduleQuery } from "@/redux/services/apiSlices/availabilitySlice";
 import {
   useCreateSessionMutation,
-  useGetMySessionsQuery,
+  useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
@@ -42,6 +33,7 @@ import { toast } from "sonner";
 import swal from "sweetalert";
 import { useNavigate } from "react-router-dom";
 
+/*
 const locales = {
   "en-US": enUS,
 };
@@ -53,6 +45,7 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+*/
 
 // Event interface matching the calendar's expected structure + custom fields
 interface MyEvent {
@@ -67,12 +60,6 @@ interface MyEvent {
   teacherHosted?: boolean;
 }
 
-interface Query {
-  from?: string;
-  to?: string;
-  status: string;
-}
-
 export default function BookaSessionDashboard() {
   const [createSession, { isLoading: bookingLoading, error, isSuccess }] =
     useCreateSessionMutation();
@@ -84,21 +71,20 @@ export default function BookaSessionDashboard() {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
+  /*
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   const lastDayStr = format(lastDayOfMonth, "yyyy-MM-dd");
+  */
 
   const [purpose, setPurpose] = useState("");
-  const [queryOptions, setQueryOptions] = useState<Query>({
-    from: todayStr,
-    to: lastDayStr,
-    status: "approved",
-  });
   const navigate = useNavigate();
 
+  /*
   const EVENT_COLORS = ["#fce7f3", "#fef3c7", "#dcfce7"];
 
   const getRandomColor = () =>
     EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)];
+  */
 
   const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null);
 
@@ -114,15 +100,26 @@ export default function BookaSessionDashboard() {
   );
   const slots = data?.data || [];
 
+  /*
+  const { data: mySessionsData } = useGetMySessionsQuery({
+    from: todayStr,
+    to: lastDayStr,
+    status: "approved",
+  });
+  */
+
   const {
-    data: mySessionsData,
-    error: mySessionsError,
-    isLoading: mySessionsLoading,
-  } = useGetMySessionsQuery(queryOptions);
+    data: upcomingSessionsData,
+    isLoading: upcomingSessionsLoading,
+  } = useGetTeacherUpcomingSessionsQuery({
+    from: todayStr,
+    limit: 10,
+  });
 
   const upcomingSession =
-    mySessionsData?.data?.docs && mySessionsData.data.docs.length > 0
-      ? mySessionsData.data.docs[0]
+    upcomingSessionsData?.data?.docs &&
+    upcomingSessionsData.data.docs.length > 0
+      ? upcomingSessionsData.data.docs[0]
       : null;
 
   const handleMeetingAction = async () => {
@@ -154,7 +151,7 @@ export default function BookaSessionDashboard() {
   };
 
   useEffect(() => {
-    document.title = "Book a Session • iFuntology Teacher";
+    document.title = "Book With Admin • iFuntology Teacher";
   }, []);
 
   const to12Hour = (time: string) => {
@@ -164,6 +161,7 @@ export default function BookaSessionDashboard() {
     return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
   };
 
+  /*
   const events: MyEvent[] = useMemo(() => {
     if (!mySessionsData?.data?.docs) return [];
 
@@ -172,7 +170,7 @@ export default function BookaSessionDashboard() {
 
       return {
         id: session._id,
-        title: session.platform, // shown in calendar cell
+        title: session.platform,
         start: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
         end: new Date(format(sessionDate, "yyyy-MM-dd") + "T00:00:00"),
         platform: session.platform,
@@ -189,6 +187,7 @@ export default function BookaSessionDashboard() {
       };
     });
   }, [mySessionsData]);
+
   const handleSelectSlot = ({ start }: { start: Date }) => {
     setSelectedDate(format(start, "yyyy-MM-dd"));
   };
@@ -202,7 +201,7 @@ export default function BookaSessionDashboard() {
 
     const eventOnDay = events.find((ev) => {
       const evDate = new Date(ev.start);
-      evDate.setHours(0, 0, 0, 0); // normalize
+      evDate.setHours(0, 0, 0, 0);
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
       return evDate.getTime() === d.getTime();
@@ -237,7 +236,7 @@ export default function BookaSessionDashboard() {
 
     return { style };
   };
-  // Custom Event Component
+
   const EventComponent = ({ event }: EventProps<MyEvent>) => {
     return (
       <div className="flex flex-col gap-1 p-1 text-xs text-foreground">
@@ -245,10 +244,7 @@ export default function BookaSessionDashboard() {
           {event.platform === "Zoom Meeting" ? (
             <Video className="h-3 w-3 text-blue-600" />
           ) : (
-            // Simple placeholder for Google Meet icon color/shape
             <div className="h-3 w-3 rounded-full bg-green-500" />
-            // Or use an icon like Video but styled differently.
-            // Keeping it simple with Lucide 'Video' for now or the same Video icon.
           )}
           <span>{event.title}</span>
         </div>
@@ -256,9 +252,7 @@ export default function BookaSessionDashboard() {
           <Check className="h-3 w-3 text-green-600 mt-[1px]" />
           <span>
             {event.teacherHosted ? (
-              <>
-                Your session ({event.timeRange})
-              </>
+              <>Your session ({event.timeRange})</>
             ) : (
               <>
                 Confirmed: {event.platform.split(" ")[0]} with <br />
@@ -271,7 +265,6 @@ export default function BookaSessionDashboard() {
     );
   };
 
-  // Custom Toolbar
   const CustomToolbar = (toolbar: any) => {
     const goToBack = () => {
       toolbar.onNavigate("PREV");
@@ -311,6 +304,7 @@ export default function BookaSessionDashboard() {
       </div>
     );
   };
+  */
 
   const formatTimeRange = (start: string, end: string) => {
     const to12Hour = (time: string) => {
@@ -379,42 +373,48 @@ export default function BookaSessionDashboard() {
     }
   };
 
+  const fieldClass =
+    "w-full rounded-xl border border-border/50 bg-muted/20 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-lime-500/25";
+
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full  space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section className="mx-auto w-full max-w-7xl space-y-8">
+        {/* Page header */}
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lime-500/15">
+            <CalendarIcon className="h-6 w-6 text-lime-500" />
+          </div>
           <div>
-            <h1 className="text-2xl font-extrabold">Book a Session</h1>
-            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Request a session with an admin for approval, or create your own Zoom session and invite
-              students when you are ready.
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">
+              Book With Admin
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              Request a session with an admin for approval. Choose a date, time slot,
+              and platform — we will notify you once it is confirmed.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="shrink-0 rounded-full border-orange-500/50 text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/40"
-            onClick={() => navigate("/book-a-session/create-own")}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Create your own session
-          </Button>
         </div>
 
-        <Card className="rounded-2xl border border-border/60 p-6">
-          {/* Top Section matching the screenshot */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-12 mb-8">
-            {/* Left: Session form (Session Title, Type, Select Date) - Spans 4 cols */}
-            <div className="md:col-span-4 space-y-5">
+        {/* Three-column layout */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Session Details */}
+          <Card className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-lime-500" />
+              <h2 className="text-base font-bold text-lime-500">Session Details</h2>
+            </div>
+
+            <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">
                   Session Title <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
+                  <Pencil className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-500" />
                   <input
                     type="text"
                     placeholder="e.g., Review Session"
-                    className="w-full rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={`${fieldClass} pl-11 pr-4`}
                     onChange={(e) => setTitle(e.target.value)}
                     value={title}
                   />
@@ -426,30 +426,19 @@ export default function BookaSessionDashboard() {
                   Session Type <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
+                  <Monitor className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-500 z-10" />
                   <select
+                    value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
-                    className="w-full appearance-none rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={`${fieldClass} appearance-none pl-11 pr-10`}
                   >
                     <option value="">Select Platform</option>
-                    <option>Zoom Meeting</option>
-                    {/* <option>Google Meet</option> */}
+                    <option value="Zoom Meeting">Zoom Meeting</option>
+                    <option value="Call">Call</option>
                   </select>
-
                   <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <svg
-                      width="10"
-                      height="6"
-                      viewBox="0 0 10 6"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M1 1L5 5L9 1"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden>
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
@@ -460,37 +449,22 @@ export default function BookaSessionDashboard() {
                   Subject <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
+                  <BookOpen className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-500 z-10" />
                   <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full appearance-none rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={`${fieldClass} appearance-none pl-11 pr-10`}
                   >
                     <option value="">Select Subject</option>
                     <option value="Funtology">Funtology</option>
                     <option value="Barbertology">Barbertology</option>
-                    <option value="Skintology Fundamentals">
-                      Skintology Fundamentals
-                    </option>
-                    <option value="Nailtology Fundamentals">
-                      Nailtology Fundamentals
-                    </option>
+                    <option value="Skintology Fundamentals">Skintology Fundamentals</option>
+                    <option value="Nailtology Fundamentals">Nailtology Fundamentals</option>
+                    <option value="Others">Others</option>
                   </select>
-
                   <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <svg
-                      width="10"
-                      height="6"
-                      viewBox="0 0 10 6"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M1 1L5 5L9 1"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden>
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
@@ -500,218 +474,193 @@ export default function BookaSessionDashboard() {
                 <label className="text-sm font-semibold text-foreground">
                   Select Date <span className="text-red-500">*</span>
                 </label>
-                <div className="text-lg font-bold">December, 2025</div>
+                <div className="relative">
+                  <CalendarIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-500" />
+                  <input
+                    type="date"
+                    min={todayStr}
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedSlot(null);
+                    }}
+                    className={`${fieldClass} pl-11 pr-4`}
+                  />
+                </div>
               </div>
             </div>
+          </Card>
 
-            <div className="md:col-span-4 rounded-xl bg-muted/30 p-5">
-              <h3 className="text-sm font-bold text-foreground mb-4">
-                Available Time Slots
-              </h3>
-
-              {isLoading ? (
-                <div className="text-sm text-muted-foreground">
-                  Loading slots...
-                </div>
-              ) : slots.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No slots available for this date
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {slots.map((slot: any, i: number) => {
-                    const active =
-                      selectedSlot?.startTime === slot.startTime &&
-                      selectedSlot?.endTime === slot.endTime;
-
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`rounded-full px-3 py-2 text-xs flex gap-2 items-center justify-center
-                          ${
-                            active
-                              ? "bg-orange-600 text-white"
-                              : "border hover:bg-orange-600 hover:text-white"
-                          }`}
-                      >
-                        <Clock className="h-3.5 w-3.5" />
-                        {formatTimeRange(slot.startTime, slot.endTime)}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+          {/* Available Time Slots */}
+          <Card className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-foreground" />
+              <h2 className="text-base font-bold text-foreground">Available Time Slots</h2>
             </div>
 
-            {/* Right: Upcoming Sessions - Spans 4 cols */}
-            <div className="md:col-span-4 rounded-xl bg-muted/30 p-5">
-              <h3 className="text-sm font-bold text-foreground mb-4">
-                Upcoming Sessions
-              </h3>
-              {/* <div className="rounded-xl bg-background p-4 shadow-sm border border-border/40">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="space-y-1">
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading slots...
+              </div>
+            ) : slots.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No slots available for this date</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {slots.map((slot: any, i: number) => {
+                  const active =
+                    selectedSlot?.startTime === slot.startTime &&
+                    selectedSlot?.endTime === slot.endTime;
+
+                  return (
+                    <button
+                      key={`${slot.startTime}-${slot.endTime}-${i}`}
+                      type="button"
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-medium transition-colors ${
+                        active
+                          ? "border-orange-500 bg-orange-500 text-white shadow-sm"
+                          : "border-border/60 bg-muted/20 text-foreground hover:border-orange-500/50 hover:bg-orange-500/10"
+                      }`}
+                    >
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                      {formatTimeRange(slot.startTime, slot.endTime)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Upcoming Sessions */}
+          <Card className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-blue-500" />
+              <h2 className="text-base font-bold text-foreground">Upcoming Sessions</h2>
+            </div>
+
+            {upcomingSessionsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading upcoming sessions...
+              </div>
+            ) : upcomingSession ? (
+              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <CalendarIcon className="h-3.5 w-3.5" />
-                      2024-12-18
+                      {format(new Date(upcomingSession.date), "yyyy-MM-dd")}
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-medium">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                       <Clock className="h-3.5 w-3.5" />
-                      10:00 AM
+                      {to12Hour(upcomingSession.slots[0].startTime)}
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-medium text-blue-600 mt-1">
+                    <div className="flex items-center gap-2 text-xs font-medium text-blue-500">
                       <Video className="h-3.5 w-3.5" />
-                      Zoom
+                      {upcomingSession.platform}
                     </div>
                   </div>
-                  <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
-                    confirmed
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    {upcomingSession.teacherHosted ? (
+                      <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                        Your session
+                      </span>
+                    ) : null}
+                    <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
+                      confirmed
+                    </span>
+                  </div>
                 </div>
 
-                <Button className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3">
-                  Join Meeting
+                <Button
+                  className="mb-3 w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white"
+                  onClick={handleMeetingAction}
+                  disabled={joinMeetingLoading || startMeetingLoading}
+                >
+                  {joinMeetingLoading || startMeetingLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {upcomingSession.teacherHosted ? "Starting…" : "Joining…"}
+                    </>
+                  ) : upcomingSession.teacherHosted ? (
+                    "Start meeting"
+                  ) : (
+                    "Join Meeting"
+                  )}
                 </Button>
 
-                <div className="pt-3 border-t border-border/30 text-xs text-muted-foreground">
-                  Discuss LMS implementation
+                <p className="border-t border-border/40 pt-3 text-xs text-muted-foreground">
+                  {upcomingSession.title}
+                </p>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 w-full text-lime-500 hover:text-lime-400"
+                  onClick={() => navigate("/all-sessions")}
+                >
+                  View All
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-6 text-center">
+                <div className="relative mb-4 flex h-24 w-24 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-muted/40" />
+                  <CalendarIcon className="relative h-10 w-10 text-muted-foreground/50" />
+                  <div className="absolute -right-1 top-2 h-3 w-3 rounded-full bg-lime-500/60" />
+                  <div className="absolute -left-2 bottom-3 h-2 w-2 rounded-full bg-orange-400/60" />
+                  <div className="absolute right-0 bottom-1 h-2.5 w-2.5 rounded-full bg-blue-400/60" />
                 </div>
-              </div> */}
-              {mySessionsLoading ? (
-                <div className="text-sm text-muted-foreground">
-                  Loading upcoming sessions...
-                </div>
-              ) : upcomingSession ? (
-                <div className="rounded-xl bg-background p-4 shadow-sm border border-border/40">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <CalendarIcon className="h-3.5 w-3.5" />
-                        {format(new Date(upcomingSession.date), "yyyy-MM-dd")}
-                      </div>
+                <p className="text-sm font-semibold text-foreground">No upcoming sessions</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your booked sessions will appear here.
+                </p>
+              </div>
+            )}
+          </Card>
+        </div>
 
-                      <div className="flex items-center gap-2 text-xs font-medium">
-                        <Clock className="h-3.5 w-3.5" />
-                        {to12Hour(upcomingSession.slots[0].startTime)}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs font-medium text-blue-600 mt-1">
-                        <Video className="h-3.5 w-3.5" />
-                        {upcomingSession.platform}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                      {upcomingSession.teacherHosted ? (
-                        <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[9px] font-bold text-white">
-                          Your session
-                        </span>
-                      ) : null}
-                      <span className="rounded-full bg-green-500 px-3 py-0.5 text-[10px] font-bold text-white">
-                        confirmed
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full rounded-full bg-orange-600 hover:bg-orange-700 text-white font-medium h-9 mb-3"
-                    onClick={handleMeetingAction}
-                    disabled={joinMeetingLoading || startMeetingLoading}
-                  >
-                    {joinMeetingLoading || startMeetingLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        {upcomingSession.teacherHosted ? "Starting…" : "Joining…"}
-                      </>
-                    ) : upcomingSession.teacherHosted ? (
-                      "Start meeting"
-                    ) : (
-                      "Join Meeting"
-                    )}
-                  </Button>
-
-                  <div className="pt-3 border-t border-border/30 text-xs text-muted-foreground">
-                    {upcomingSession.title}
-                  </div>
-
-                  <div className="mt-4 flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate("/all-sessions")}
-                    >
-                      View All
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground text-center py-6">
-                  No upcoming sessions
-                </div>
-              )}
+        {/* Purpose + Submit */}
+        <Card className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-violet-400" />
+              <label className="text-sm font-semibold text-foreground">
+                Purpose <span className="font-normal text-muted-foreground">(Optional)</span>
+              </label>
             </div>
-          </div>
-
-          <div className="rounded-md border border-border/60 bg-white/50 dark:bg-card/30 p-4 h-[800px]">
-            <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              views={["month"]}
-              selectable
-              onSelectSlot={handleSelectSlot}
-              style={{ height: "100%" }}
-              defaultDate={new Date()}
-              dayPropGetter={dayPropGetter}
-              components={{
-                event: EventComponent,
-                toolbar: CustomToolbar,
-              }}
-              onSelectEvent={(event) => setSelectedEvent(event)}
+            <textarea
+              placeholder="Describe the purpose of this meeting..."
+              rows={4}
+              className="w-full resize-none rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-lime-500/25"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
             />
           </div>
-          {/* Bottom Section: Purpose + Actions */}
-          <div className="mt-8 rounded-xl border border-border/60 bg-background p-6 space-y-6">
-            {/* Purpose */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-muted-foreground">
-                Purpose{" "}
-                <span className="text-muted-foreground">(Optional)</span>
-              </label>
 
-              <textarea
-                placeholder="Describe the purpose of this meeting..."
-                rows={4}
-                className="w-full resize-none rounded-xl border border-border/40 bg-muted/30 px-4 py-3 text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-              />
+          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-lime-500" />
+              <span>You&apos;ll be notified once your session is confirmed.</span>
             </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTitle("");
-                  setPlatform("");
-                  setSubject("");
-                  setSelectedSlot(null);
-                }}
-              >
-                Cancel
-              </Button>
-
-              <Button
-                onClick={handleBookSession}
-                disabled={bookingLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {bookingLoading ? "Booking..." : "Book a Session"}
-              </Button>
-            </div>
+            <Button
+              onClick={handleBookSession}
+              disabled={bookingLoading}
+              className="h-11 shrink-0 rounded-xl bg-gradient-to-r from-lime-500 to-cyan-500 px-8 font-semibold text-white shadow-md hover:from-lime-600 hover:to-cyan-600"
+            >
+              {bookingLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit Request
+                </>
+              )}
+            </Button>
           </div>
         </Card>
 

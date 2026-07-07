@@ -15,10 +15,12 @@ export default defineConfig(({ mode }) => ({
       "/api": { target: "http://localhost:3030", changeOrigin: true },
       "/Uploads": { target: "http://localhost:3030", changeOrigin: true },
       "/uploads": { target: "http://localhost:3030", changeOrigin: true },
+      "/fonts": { target: "http://localhost:3030", changeOrigin: true },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
+    dedupe: ["react", "react-dom", "react-router-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },

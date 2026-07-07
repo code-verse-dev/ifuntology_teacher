@@ -1,17 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
-    GraduationCap,
     ArrowLeft,
     Video,
     FileText,
     CheckCircle2,
-    Lock,
-    Download
+    Download,
+    Eye,
+    ClipboardList,
+    FileQuestion,
+    GraduationCap,
+    Package,
+    ChevronRight,
+    Users,
+    Compass,
 } from "lucide-react";
 import {
     Accordion,
@@ -19,21 +23,34 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { UPLOADS_URL } from "@/constants/api";
+import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, FUNTOLOGY_BRAIDING_PDF } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
 import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
+import { isImportedAssessmentModule } from "@/constants/quiz";
+import { cn } from "@/lib/utils";
+
+const MODULE_ICON_COLORS = [
+    "from-pink-500 to-rose-600",
+    "from-violet-500 to-purple-600",
+    "from-blue-500 to-cyan-600",
+    "from-amber-500 to-orange-600",
+    "from-emerald-500 to-teal-600",
+];
 
 export default function CourseDetails() {
     const { courseType } = useParams();
     const navigate = useNavigate();
-    const { data, isLoading, error } = useFindByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
+    const { data } = useFindByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
     const courseModules = data?.data;
+
+    const visibleModules = useMemo(
+        () => courseModules?.filter((module: any) => !isImportedAssessmentModule(module.title)) ?? [],
+        [courseModules],
+    );
     const { data: courseData } = useGetCourseModuleByCourseTypeQuery({ courseType: courseType ?? "" }, { skip: !courseType });
     const course = courseData?.data;
     const { data: averageProgress } = useGetAverageProgressQuery({ courseType: courseType ?? "" }, { skip: !courseType });
-    const averageProgressPercentage = averageProgress?.data?.averageProgress ?? 0;
-    
+
     useEffect(() => {
         document.title = "Course Details • iFuntology Teacher";
     }, []);
@@ -55,330 +72,304 @@ export default function CourseDetails() {
         }
     };
 
+    const canPreviewPdf = (lesson: any) => lesson?.allowPdfPreview ?? false;
+    const canDownloadPdf = (lesson: any) => lesson?.allowPdfDownload ?? true;
+
+    const handlePreviewPdf = (lessonId: string) => {
+        navigate(`/my-courses/pdf/${lessonId}`);
+    };
+
+    const encodedCourseType = encodeURIComponent(courseType ?? "");
+    const courseTitle = course?.courseType ?? courseType ?? "Course";
+    const courseImage = course?.image
+        ? UPLOADS_URL + course.image
+        : "https://images.unsplash.com/photo-1522337660859-02fbefca4702?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+
+    const resources = [
+        {
+            label: "Quizzes",
+            icon: ClipboardList,
+            onClick: () => navigate(`/my-courses/${encodedCourseType}/quizzes`),
+            className: "border-orange-500/25 bg-orange-500/10 text-orange-600 dark:text-orange-300 hover:bg-orange-500/20",
+        },
+        {
+            label: "Tests",
+            icon: FileQuestion,
+            onClick: () => navigate(`/my-courses/${encodedCourseType}/tests`),
+            className: "border-blue-500/25 bg-blue-500/10 text-blue-600 dark:text-blue-300 hover:bg-blue-500/20",
+        },
+        {
+            label: "Exams",
+            icon: GraduationCap,
+            onClick: () => navigate(`/my-courses/${encodedCourseType}/exams`),
+            className: "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20",
+        },
+        {
+            label: "Braidology",
+            icon: Eye,
+            onClick: () => window.open(FUNTOLOGY_BRAIDING_PDF, "_blank", "noopener,noreferrer"),
+            className: "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20",
+        },
+    ];
+
     return (
         <DashboardWithSidebarLayout>
-            <div className="mx-auto w-full max-w-7xl space-y-6">
-                {/* Back Link */}
-                <Link to="/my-courses" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Courses
-                </Link>
+            <div className="mx-auto w-full space-y-8">
+                {/* Hero */}
+                <section className="relative overflow-hidden rounded-3xl bg-slate-950 text-white shadow-xl">
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-40"
+                        style={{ backgroundImage: `url(${courseImage})` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-indigo-950/80 to-purple-950/70" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(99,102,241,0.35),_transparent_55%)]" />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Course Info & Stats */}
-                    <div className="space-y-6 lg:col-span-1">
+                    <div className="relative px-6 py-8 sm:px-10 sm:py-12">
+                        <Link
+                            to="/my-courses"
+                            className="mb-8 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
 
-                        {/* Course Info Card */}
-                        <Card className="overflow-hidden rounded-3xl border-2 border-pink-200 bg-pink-50/50 dark:bg-slate-900/50 dark:border-pink-900/20 p-6">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-500 text-white shadow-sm">
-                                        <GraduationCap className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                                            {course?.courseType ?? courseType ?? "Course"}
-                                        </h2>
-                                        <Badge className="bg-lime-500 hover:bg-lime-600 border-none text-white font-normal px-3">Active</Badge>
-                                    </div>
-                                </div>
-                            </div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Course</p>
+                        <h1 className="mt-2 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+                            {courseTitle}
+                        </h1>
 
-                            {/* Course Image */}
-                            <div className="mb-4 overflow-hidden rounded-2xl bg-pink-200 h-48 w-full relative">
-                                <img
-                                    src={course?.image ? UPLOADS_URL + course.image : "https://images.unsplash.com/photo-1522337660859-02fbefca4702?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
-                                    alt={course?.courseType ? `${course.courseType} thumbnail` : "Course Thumbnail"}
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
-
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                                {course?.description ?? "—"}
-                            </p>
-                        </Card>
-
-                        {/* Progress Card */}
-                        <Card className="rounded-3xl border-none bg-slate-900 p-6 text-white shadow-lg">
-                            <h3 className="text-lg font-bold mb-4">Your Progress</h3>
-
-                            <div className="mb-2 flex justify-between text-sm">
-                                <span className="text-slate-400">Avg Student Progress</span>
-                                <span className="font-bold">{averageProgressPercentage}%</span>
-                            </div>
-                            <Progress value={averageProgressPercentage} className="h-2 bg-slate-700" indicatorClassName="bg-lime-500" />
-
-                            <div className="mt-6 space-y-3">
-                                <div className="flex justify-between text-sm py-2 border-b border-slate-800">
-                                    <span className="text-slate-400">Modules</span>
-                                    <span className="font-medium">{courseModules?.length ?? 0}</span>
-                                </div>
-                                <div className="flex justify-between text-sm py-2">
-                                    <span className="text-slate-400">Student Certificates Issued</span>
-                                    <span className="font-medium">{averageProgress?.data?.subscription?.certificatesIssued ?? 0}</span>
-                                </div>
-                            </div>
-                        </Card>
-
-                        {/* Students Card */}
-                        <Card className="rounded-3xl border-none bg-slate-900 p-6 text-white shadow-lg">
-                            <h3 className="text-lg font-bold mb-2">Students</h3>
-
-                            <div className="flex justify-between items-center mb-6">
-                                <span className="text-slate-400 text-sm">Enrolled Students</span>
-                                <span className="text-2xl font-bold">{averageProgress?.data?.subscription?.usedSeats ?? 0}</span>
-                            </div>
-
-                            <Button className="w-full rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white font-semibold py-6 shadow-lg shadow-lime-900/20"
-                            onClick={() => navigate("/my-students")}
-                            >
-                                View All Students
-                            </Button>
-                        </Card>
-
+                        <div className="mt-8">
+                            <span className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm">
+                                {visibleModules.length} modules
+                            </span>
+                        </div>
                     </div>
+                </section>
 
-                    {/* Right Column: Modules Accordion */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card className="rounded-[2rem] border-none bg-white/50 dark:bg-slate-900/50 p-6 md:p-8 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Course Modules</h2>
-                            <Accordion type="single" collapsible defaultValue="module-1" className="space-y-4">
+                {/* Main content */}
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+                    {/* Lessons */}
+                    <div className="lg:col-span-8">
+                        <div className="mb-4 flex flex-wrap gap-3">
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
+                            >
+                                <a
+                                    href={WORKFORCE_EXPLORATION_FORM_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Workforce Exploration Form
+                                </a>
+                            </Button>
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
+                            >
+                                <a
+                                    href={IFUNTOLOGY_GLOSSARY_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    iFuntology Glossary
+                                </a>
+                            </Button>
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                onClick={() =>
+                                    navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`)
+                                }
+                            >
+                                <Compass className="h-4 w-4" />
+                                Career Explorer Pathway
+                            </Button>
+                        </div>
+                        <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">Lessons</h2>
+                        <Accordion
+                            type="single"
+                            collapsible
+                            defaultValue={visibleModules[0]?._id ?? (visibleModules.length > 0 ? "module-0" : undefined)}
+                            className="space-y-3"
+                        >
+                            {visibleModules.map((module: any, moduleIndex: number) => {
+                                const moduleValue = module._id ?? `module-${moduleIndex}`;
+                                const iconColor = MODULE_ICON_COLORS[moduleIndex % MODULE_ICON_COLORS.length];
 
-                                {courseModules?.map((module: any, index: number) => (
-                                    <AccordionItem value="module-1" className="border-none rounded-2xl bg-white dark:bg-secondary/10 shadow-sm px-2">
-                                        <AccordionTrigger className="px-4 py-4 hover:no-underline [&[data-state=open]]:pb-2 dark:text-white">
-                                            <div className="flex items-center gap-4 text-left">
-                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-white">
-                                                    <CheckCircle2 className="h-6 w-6" />
+                                return (
+                                    <AccordionItem
+                                        key={moduleValue}
+                                        value={moduleValue}
+                                        className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
+                                    >
+                                        <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-5 [&[data-state=open]]:border-b [&[data-state=open]]:border-slate-100 dark:[&[data-state=open]]:border-slate-800">
+                                            <div className="flex w-full items-center gap-4 text-left">
+                                                <div
+                                                    className={cn(
+                                                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm",
+                                                        iconColor
+                                                    )}
+                                                >
+                                                    <CheckCircle2 className="h-5 w-5" />
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className="font-bold text-slate-900 dark:text-white">Module {index + 1}: {module.title}</h3>
-                                                        {/* <Badge className="bg-lime-500 hover:bg-lime-600 text-xs font-normal border-none">Completed</Badge> */}
-                                                    </div>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{module.description}</p>
-                                                    <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                                                        <span>{module.duration} mins</span>
-                                                        <span>{module.totalLessons} lessons</span>
-                                                    </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="truncate font-semibold text-slate-900 dark:text-white">
+                                                        {module.title}
+                                                    </h3>
+                                                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                        {module.totalLessons} lessons
+                                                    </p>
                                                 </div>
                                             </div>
                                         </AccordionTrigger>
-                                        {module.lessons.length > 0 && module.lessons.map((lesson: any, index: number) => (
-                                            <AccordionContent className="px-4 pb-4 pt-2">
-                                                <div className="space-y-3 pl-[3.5rem]">
-
-                                                    <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500">
-                                                                {lesson.type === 'VIDEO' && <Video className="h-4 w-4" />}
-                                                                {lesson.type === 'PDF' && <FileText className="h-4 w-4" />}
-                                                                {lesson.type === 'QUIZ' && <CheckCircle2 className="h-4 w-4" />}
-                                                            </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="text-sm font-semibold text-slate-900 dark:text-white">{lesson.title}</div>
-                                                                    <CheckCircle2 className="h-3 w-3 text-lime-500" />
+                                        <AccordionContent className="px-4 pb-4 pt-3 sm:px-5">
+                                            {module.description && (
+                                                <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                                                    {module.description}
+                                                </p>
+                                            )}
+                                            <div className="space-y-2">
+                                                {module.lessons?.length > 0 ? (
+                                                    module.lessons.map((lesson: any) => (
+                                                        <div
+                                                            key={lesson._id ?? lesson.title}
+                                                            className="flex flex-col gap-3 rounded-xl bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between dark:bg-slate-800/50"
+                                                        >
+                                                            <div className="flex min-w-0 items-center gap-3">
+                                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">
+                                                                    {lesson.type === "VIDEO" && <Video className="h-4 w-4" />}
+                                                                    {lesson.type === "PDF" && <FileText className="h-4 w-4" />}
+                                                                    {lesson.type === "QUIZ" && <CheckCircle2 className="h-4 w-4" />}
                                                                 </div>
-                                                                <div className="text-xs text-slate-500 dark:text-slate-400">{lesson.duration} mins</div>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                                                                            {lesson.title}
+                                                                        </p>
+                                                                        <CheckCircle2 className="h-3 w-3 shrink-0 text-lime-500" />
+                                                                    </div>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                        {lesson.duration} mins
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex shrink-0 flex-wrap gap-2 sm:ml-4">
+                                                                {lesson.type === "VIDEO" && (
+                                                                    <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600">
+                                                                        View Lesson
+                                                                    </Button>
+                                                                )}
+                                                                {lesson.type === "PDF" && (
+                                                                    <>
+                                                                        {canPreviewPdf(lesson) && (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                className="rounded-full gap-1"
+                                                                                onClick={() => lesson?._id && handlePreviewPdf(lesson._id)}
+                                                                                disabled={!lesson?._id || !lesson?.fileUrl}
+                                                                            >
+                                                                                <Eye className="h-3 w-3" />
+                                                                                Preview
+                                                                            </Button>
+                                                                        )}
+                                                                        {canDownloadPdf(lesson) && (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                className="rounded-full bg-lime-600 hover:bg-lime-700 gap-1"
+                                                                                onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
+                                                                                disabled={!lesson?.fileUrl}
+                                                                            >
+                                                                                <Download className="h-3 w-3" />
+                                                                                Download
+                                                                            </Button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                                {lesson.type === "QUIZ" && (
+                                                                    <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700">
+                                                                        Preview Quiz
+                                                                    </Button>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        {lesson.type === 'VIDEO' && <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs h-8 px-4">
-                                                            View Lesson
-                                                        </Button>}
-                                                        {lesson.type === 'PDF' && (
-                                                            <Button
-                                                                size="sm"
-                                                                className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1"
-                                                                onClick={() => lesson?.fileUrl && handleDownloadPdf(lesson.fileUrl, lesson?.title)}
-                                                                disabled={!lesson?.fileUrl}
-                                                            >
-                                                                <Download className="h-3 w-3" />
-                                                                Download
-                                                            </Button>
-                                                        )}
-                                                        {lesson.type === 'QUIZ' && <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4">
-                                                            Preview Quiz
-                                                        </Button>}
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        ))}
+                                                    ))
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground">No lessons in this module yet.</p>
+                                                )}
+                                            </div>
+                                        </AccordionContent>
                                     </AccordionItem>
-                                ))}
-
-
-                                {/* Module 1: Active/Expanded */}
-
-                                {/* <AccordionItem value="module-1" className="border-none rounded-2xl bg-white dark:bg-secondary/10 shadow-sm px-2">
-                                    <AccordionTrigger className="px-4 py-4 hover:no-underline [&[data-state=open]]:pb-2 dark:text-white">
-                                        <div className="flex items-center gap-4 text-left">
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-white">
-                                                <CheckCircle2 className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Module 1: Introduction to Cosmetology</h3>
-                                                    <Badge className="bg-lime-500 hover:bg-lime-600 text-xs font-normal border-none">Completed</Badge>
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Understanding the fundamentals of hair, makeup and skincare.</p>
-                                                <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                                                    <span>45 mins</span>
-                                                    <span>4 lessons</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="px-4 pb-4 pt-2">
-                                        <div className="space-y-3 pl-[3.5rem]">
-
-                                            <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500">
-                                                        <Video className="h-4 w-4" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-sm font-semibold text-slate-900 dark:text-white">What is cosmetology?</div>
-                                                            <CheckCircle2 className="h-3 w-3 text-lime-500" />
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">15 mins</div>
-                                                    </div>
-                                                </div>
-                                                <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs h-8 px-4">
-                                                    View Lesson
-                                                </Button>
-                                            </div>
-
-                                            <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-500">
-                                                        <FileText className="h-4 w-4" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-sm font-semibold text-slate-900 dark:text-white">Tools, hygiene, safety basics</div>
-                                                            <CheckCircle2 className="h-3 w-3 text-lime-500" />
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">15 mins</div>
-                                                    </div>
-                                                </div>
-                                                <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4 gap-1">
-                                                    <Download className="h-3 w-3" />
-                                                    Download
-                                                </Button>
-                                            </div>
-
-                                            <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500">
-                                                        <Video className="h-4 w-4" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-sm font-semibold text-slate-900 dark:text-white">Funtology Theory</div>
-                                                            <CheckCircle2 className="h-3 w-3 text-lime-500" />
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">15 mins</div>
-                                                    </div>
-                                                </div>
-                                                <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs h-8 px-4">
-                                                    View Lesson
-                                                </Button>
-                                            </div>
-
-                                            <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100 text-pink-500">
-                                                        <CheckCircle2 className="h-4 w-4" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-sm font-semibold text-slate-900 dark:text-white">Module Quiz</div>
-                                                            <CheckCircle2 className="h-3 w-3 text-lime-500" />
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">15 mins</div>
-                                                    </div>
-                                                </div>
-                                                <Button size="sm" className="rounded-full bg-lime-600 hover:bg-lime-700 text-white text-xs h-8 px-4">
-                                                    Preview Quiz
-                                                </Button>
-                                            </div>
-
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem> */}
-
-                                {/* Module 2 */}
-                                {/* <AccordionItem value="module-2" className="border-none rounded-2xl bg-white dark:bg-secondary/10 shadow-sm px-2">
-                                    <AccordionTrigger className="px-4 py-4 hover:no-underline dark:text-white">
-                                        <div className="flex items-center gap-4 text-left">
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-white">
-                                                <CheckCircle2 className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Module 2: Hair Fundamentals</h3>
-                                                    <Badge className="bg-lime-500 hover:bg-lime-600 text-xs font-normal border-none">Completed</Badge>
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Understanding the fundamentals of child psychology and development.</p>
-                                                <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                                                    <span>45 mins</span>
-                                                    <span>4 lessons</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </AccordionTrigger>
-                                </AccordionItem> */}
-
-                                {/* Module 3 */}
-                                {/* <AccordionItem value="module-3" className="border-none rounded-2xl bg-white dark:bg-secondary/10 shadow-sm px-2">
-                                    <AccordionTrigger className="px-4 py-4 hover:no-underline dark:text-white">
-                                        <div className="flex items-center gap-4 text-left">
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-white">
-                                                <CheckCircle2 className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Module 3: Makeup Fundamentals</h3>
-                                                    <Badge className="bg-lime-500 hover:bg-lime-600 text-xs font-normal border-none">Completed</Badge>
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Understanding the fundamentals of child psychology and development.</p>
-                                                <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                                                    <span>45 mins</span>
-                                                    <span>4 lessons</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </AccordionTrigger>
-                                </AccordionItem> */}
-
-                                {/* Module 4 */}
-                                {/* <AccordionItem value="module-4" className="border-none rounded-2xl bg-white dark:bg-secondary/10 shadow-sm px-2 opacity-80">
-                                    <AccordionTrigger className="px-4 py-4 hover:no-underline dark:text-white">
-                                        <div className="flex items-center gap-4 text-left">
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-500 text-white">
-                                                <Lock className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Module 4: Skincare Basics</h3>
-                                                    <Badge variant="secondary" className="bg-slate-600 text-white hover:bg-slate-700 text-xs font-normal border-none">Locked For Students</Badge>
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Understanding the fundamentals of child psychology and development.</p>
-                                                <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                                                    <span>45 mins</span>
-                                                    <span>4 lessons</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </AccordionTrigger>
-                                </AccordionItem> */}
-
-                            </Accordion>
-                        </Card>
+                                );
+                            })}
+                        </Accordion>
                     </div>
 
+                    {/* Sidebar */}
+                    <div className="space-y-8 lg:col-span-4">
+                        <section>
+                            <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Course overview</h2>
+                            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                                {course?.description ?? "—"}
+                            </p>
+                        </section>
+
+                        <section>
+                            <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Testing Center</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                                {resources.map((resource) => (
+                                    <button
+                                        key={resource.label}
+                                        type="button"
+                                        onClick={resource.onClick}
+                                        className={cn(
+                                            "group flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm font-semibold transition-all",
+                                            resource.className
+                                        )}
+                                    >
+                                        <resource.icon className="h-4 w-4 shrink-0 opacity-80" />
+                                        <span className="min-w-0 truncate">{resource.label}</span>
+                                        <ChevronRight className="ml-auto h-4 w-4 shrink-0 opacity-50 transition-transform group-hover:translate-x-0.5" />
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className="rounded-2xl bg-slate-900 p-5 text-white">
+                            <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-slate-400" />
+                                <h3 className="text-base font-bold">Students</h3>
+                            </div>
+                            <div className="mt-4 flex items-end justify-between">
+                                <span className="text-sm text-slate-400">Enrolled students</span>
+                                <span className="text-2xl font-bold">{averageProgress?.data?.subscription?.usedSeats ?? 0}</span>
+                            </div>
+                            <Button
+                                className="mt-5 w-full rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 font-semibold"
+                                onClick={() => navigate("/my-students")}
+                            >
+                                View All Students
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="mt-3 w-full rounded-full border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                                onClick={() =>
+                                    window.open(
+                                        "https://funtologyenrichmentsupplies.com/interactive-science-kits/",
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                    )
+                                }
+                            >
+                                <Package className="mr-2 h-4 w-4" />
+                                Classroom Kits
+                            </Button>
+                        </section>
+                    </div>
                 </div>
             </div>
         </DashboardWithSidebarLayout>

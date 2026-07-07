@@ -10,8 +10,34 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import {
   useInviteStudentBulkCsvMutation,
   useInviteStudentBulkMutation,
+  useInviteStudentMutation,
 } from "@/redux/services/apiSlices/invitationSlice";
 import { useGetMySubscriptionsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+
+type CreatedCredential = {
+  username: string;
+  password: string;
+};
+
+const extractManualCredentials = (res: any): CreatedCredential[] => {
+  const data = res?.data;
+  if (!data) return [];
+
+  if (typeof data.username === "string" && typeof data.password === "string") {
+    return [{ username: data.username, password: data.password }];
+  }
+
+  if (Array.isArray(data.successes)) {
+    return data.successes
+      .filter((item: any) => item?.username && item?.password)
+      .map((item: any) => ({
+        username: String(item.username),
+        password: String(item.password),
+      }));
+  }
+
+  return [];
+};
 
 type BulkInviteRow = {
   key: string;
@@ -46,9 +72,10 @@ export default function InviteStudent() {
   const [manualRows, setManualRows] = useState<BulkInviteRow[]>([makeRow()]);
 
   // Credentials from MANUAL response (if API returns them)
-  const [createdCredentials, setCreatedCredentials] = useState<{ username?: string; password?: string } | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<CreatedCredential[]>([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
 
+  const [inviteStudent] = useInviteStudentMutation();
   const [inviteStudentBulk] = useInviteStudentBulkMutation();
   const [inviteStudentBulkCsv] = useInviteStudentBulkCsvMutation();
   const [submittingType, setSubmittingType] = useState<"EMAIL" | "MANUAL" | null>(null);
@@ -258,19 +285,22 @@ export default function InviteStudent() {
     }
 
     try {
-      const res: any = await inviteStudentBulk(body).unwrap();
-      if(res.status){
-          toast.message(res.message);
-          const first = Array.isArray(res?.data) ? res.data[0] : res?.data;
-          setCreatedCredentials(first ? {
-            username: first?.username ?? first?.data?.username ?? res?.username,
-            password: first?.password ?? first?.data?.password ?? res?.password,
-          } : null);
-          setCreatedOpen(true);
-          setManualRows([makeRow()]);
-          refetchSubscriptions();
-      }
-      else{
+      const res: any =
+        body.length === 1
+          ? await inviteStudent(body[0]).unwrap()
+          : await inviteStudentBulk(body).unwrap();
+
+      if (res.status) {
+        toast.message(res.message);
+        const credentials = extractManualCredentials(res);
+        if (credentials.length === 0) {
+          toast.error("Account created, but credentials were not returned. Please contact support.");
+        }
+        setCreatedCredentials(credentials);
+        setCreatedOpen(true);
+        setManualRows([makeRow()]);
+        refetchSubscriptions();
+      } else {
         toast.error(res?.message || "Failed to create student account");
       }
     } catch (err: any) {
@@ -321,7 +351,7 @@ export default function InviteStudent() {
                         First Name
                       </label>
                       <Input
-                        placeholder="First Name"
+                        placeholder="Jane"
                         value={row.firstName}
                         onChange={(e) => updateEmailRow(row.key, "firstName", e.target.value)}
                       />
@@ -331,7 +361,7 @@ export default function InviteStudent() {
                         Last Name
                       </label>
                       <Input
-                        placeholder="Last Name"
+                        placeholder="Doe"
                         value={row.lastName}
                         onChange={(e) => updateEmailRow(row.key, "lastName", e.target.value)}
                       />
@@ -341,7 +371,7 @@ export default function InviteStudent() {
                         Email
                       </label>
                       <Input
-                        placeholder="Email"
+                        placeholder="student@school.edu"
                         type="email"
                         value={row.email}
                         onChange={(e) => updateEmailRow(row.key, "email", e.target.value)}
@@ -452,7 +482,7 @@ export default function InviteStudent() {
                         First Name
                       </label>
                       <Input
-                        placeholder="First Name"
+                        placeholder="Jane"
                         value={row.firstName}
                         onChange={(e) => updateManualRow(row.key, "firstName", e.target.value)}
                       />
@@ -462,7 +492,7 @@ export default function InviteStudent() {
                         Last Name
                       </label>
                       <Input
-                        placeholder="Last Name"
+                        placeholder="Doe"
                         value={row.lastName}
                         onChange={(e) => updateManualRow(row.key, "lastName", e.target.value)}
                       />
@@ -555,7 +585,7 @@ export default function InviteStudent() {
           </DialogContent>
         </Dialog>
         {/* Dialog: Student Account Created (screen 18) */}
-        <Dialog open={createdOpen} onOpenChange={(open) => { setCreatedOpen(open); if (!open) setCreatedCredentials(null); }}>
+        <Dialog open={createdOpen} onOpenChange={(open) => { setCreatedOpen(open); if (!open) setCreatedCredentials([]); }}>
           <DialogContent>
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-full bg-green-500/10 p-4">
@@ -564,36 +594,55 @@ export default function InviteStudent() {
                 </svg>
               </div>
               <DialogTitle>System Alert</DialogTitle>
-              <DialogDescription>Student Account Created!</DialogDescription>
+              <DialogDescription>
+                {createdCredentials.length > 1
+                  ? `${createdCredentials.length} student accounts created!`
+                  : "Student Account Created!"}
+              </DialogDescription>
 
-              <div className="w-full text-sm text-muted-foreground">
-                <div className="flex items-center justify-between border-b border-border/60 py-2">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="M16 11V8a4 4 0 10-8 0v3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div>Username</div>
-                  </div>
-                  <div className="font-mono">{createdCredentials?.username ?? "—"}</div>
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="M12 11v2m0 4h.01" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div>Password</div>
-                  </div>
-                  <div className="font-mono">{createdCredentials?.password ?? "—"}</div>
-                </div>
+              <div className="w-full max-h-64 overflow-y-auto text-sm text-muted-foreground space-y-3">
+                {createdCredentials.length === 0 ? (
+                  <p className="text-center text-xs">Credentials were not included in the response.</p>
+                ) : (
+                  createdCredentials.map((cred, index) => (
+                    <div
+                      key={`${cred.username}-${index}`}
+                      className="rounded-lg border border-border/60 p-3 space-y-2"
+                    >
+                      {createdCredentials.length > 1 ? (
+                        <div className="text-xs font-semibold text-foreground">Student {index + 1}</div>
+                      ) : null}
+                      <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                        <div className="flex items-center gap-2">
+                          <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M16 11V8a4 4 0 10-8 0v3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <div>Username</div>
+                        </div>
+                        <div className="font-mono text-foreground">{cred.username}</div>
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 11v2m0 4h.01" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <div>Password</div>
+                        </div>
+                        <div className="font-mono text-foreground">{cred.password}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="w-full">
                 <Button
                   className="w-full"
+                  disabled={createdCredentials.length === 0}
                   onClick={() => {
-                    const text = createdCredentials?.username && createdCredentials?.password
-                      ? `${createdCredentials.username}:${createdCredentials.password}`
-                      : "";
+                    const text = createdCredentials
+                      .map((cred) => `${cred.username}:${cred.password}`)
+                      .join("\n");
                     if (text && navigator.clipboard?.writeText) {
                       navigator.clipboard.writeText(text);
                       toast.success("Credentials copied to clipboard");

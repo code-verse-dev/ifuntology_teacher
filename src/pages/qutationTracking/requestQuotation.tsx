@@ -20,6 +20,7 @@ import {
 import { useRequestQuoteMutation } from "@/redux/services/apiSlices/quoteSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import swal from "sweetalert";
+import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
 
 export default function RequestQuotation() {
   type LmsCourseItem = {
@@ -36,9 +37,11 @@ export default function RequestQuotation() {
   });
 
   const [requestQuote] = useRequestQuoteMutation();
+  
   useEffect(() => {
     document.title = "Request Quotation • iFuntology Teacher";
   }, []);
+
   const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
   const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
   const { data: settingData } = useGetAllSettingsQuery({});
@@ -173,16 +176,7 @@ export default function RequestQuotation() {
 
   const [submitOpen, setSubmitOpen] = useState(false);
 
-  const availableLmsCourses = useMemo(
-    () => [
-      "Funtology",
-      "Skintology",
-      "Barbertology",
-      "Nailtology",
-      "iTeach iFuntology",
-    ],
-    []
-  );
+  const availableLmsCourses = LMS_COURSE_TYPES;
 
   const updateLmsCourseItem = (
     key: string,
@@ -491,7 +485,7 @@ export default function RequestQuotation() {
                     <Input
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
-                      placeholder="Enter Name"
+                      placeholder="Springfield High School"
                     />
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -502,7 +496,7 @@ export default function RequestQuotation() {
                       <Input
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter Email"
+                        placeholder="teacher@school.edu"
                       />
                     </div>
                     <div>
@@ -512,7 +506,7 @@ export default function RequestQuotation() {
                       <Input
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Enter Address"
+                        placeholder="142 W 34th Ave, Anchorage, AK 99503"
                       />
                     </div>
                   </div>
@@ -582,6 +576,7 @@ export default function RequestQuotation() {
                             <input
                               type="number"
                               className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              placeholder="e.g. 30"
                               value={row.webSubscriptions}
                               onChange={(e) =>
                                 updateLmsCourseItem(
@@ -600,6 +595,7 @@ export default function RequestQuotation() {
                             <input
                               type="number"
                               className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                              placeholder="e.g. 12"
                               value={row.noOfKits}
                               onChange={(e) =>
                                 updateLmsCourseItem(
@@ -628,7 +624,7 @@ export default function RequestQuotation() {
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
                         Organization Name *
                       </label>
-                      <Input placeholder="Enter Name" />
+                      <Input placeholder="Springfield High School" />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -653,6 +649,7 @@ export default function RequestQuotation() {
                       <input
                         type="number"
                         className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        placeholder="e.g. 30"
                         value={subscriptions}
                         onChange={(e) =>
                           setSubscriptions(Number(e.target.value))
@@ -667,6 +664,7 @@ export default function RequestQuotation() {
                       <input
                         type="number"
                         className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                        placeholder="e.g. 24"
                         value={batchStudents}
                         onChange={(e) =>
                           setBatchStudents(Number(e.target.value))
@@ -687,7 +685,7 @@ export default function RequestQuotation() {
                     <Input
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
-                      placeholder="Enter Name"
+                      placeholder="Springfield High School"
                     />
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-1">
@@ -768,6 +766,7 @@ export default function RequestQuotation() {
                                 type="number"
                                 min={0}
                                 className="w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                                placeholder="e.g. 5"
                                 value={item.quantity}
                                 onChange={(e) =>
                                   handleProductChange(
@@ -815,7 +814,7 @@ export default function RequestQuotation() {
                       <Input
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
-                        placeholder="Enter Country"
+                        placeholder="United States"
                       />
                     </div>
                     <div>
@@ -825,7 +824,7 @@ export default function RequestQuotation() {
                       <Input
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        placeholder="Enter City"
+                        placeholder="Anchorage"
                       />
                     </div>
                     <div>
@@ -835,7 +834,7 @@ export default function RequestQuotation() {
                       <Input
                         value={stateVal}
                         onChange={(e) => setStateVal(e.target.value)}
-                        placeholder="Enter State"
+                        placeholder="Alaska"
                       />
                     </div>
                   </div>
@@ -848,7 +847,7 @@ export default function RequestQuotation() {
                       <Input
                         value={streetAddress}
                         onChange={(e) => setStreetAddress(e.target.value)}
-                        placeholder="Enter Street Address"
+                        placeholder="142 W 34th Ave"
                       />
                     </div>
                     <div>
@@ -858,7 +857,7 @@ export default function RequestQuotation() {
                       <Input
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
-                        placeholder="Enter Zip Code"
+                        placeholder="99503"
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -872,7 +871,7 @@ export default function RequestQuotation() {
                             setCoupon(e.target.value);
                             setAppliedCoupon(null);
                           }}
-                          placeholder="Enter Coupon / Discount Code"
+                          placeholder="SAVE10"
                           className="flex-1"
                         />
                         {coupon?.toString().trim() && isEnrichmentCurrentProductFilled && (

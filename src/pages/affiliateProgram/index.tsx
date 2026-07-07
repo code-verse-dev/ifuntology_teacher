@@ -10,9 +10,7 @@ import {
     DollarSign,
     Link as LinkIcon,
     Copy,
-    LayoutList,
     Wallet,
-    CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -160,6 +158,7 @@ export default function AffiliateProgram() {
                         <Input
                             readOnly
                             value={affiliateLinkData?.data?.link || ""}
+                            placeholder="Your affiliate link will appear here"
                             className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12 pr-12 text-sm text-slate-600 dark:text-slate-300"
                         />
                     </div>
@@ -341,7 +340,7 @@ export default function AffiliateProgram() {
                                 name="fullName"
                                 value={form.fullName}
                                 onChange={handleFormChange}
-                                placeholder="Enter Name"
+                                placeholder="Jane Doe"
                                 className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12"
                             />
                         </div>
@@ -380,7 +379,7 @@ export default function AffiliateProgram() {
                                 name="accountNo"
                                 value={form.accountNo}
                                 onChange={handleFormChange}
-                                placeholder="Enter Account Number"
+                                placeholder="1234567890"
                                 className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12"
                             />
                         </div>
@@ -392,7 +391,7 @@ export default function AffiliateProgram() {
                                 name="accountTitle"
                                 value={form.accountTitle}
                                 onChange={handleFormChange}
-                                placeholder="Enter Account Title"
+                                placeholder="Jane Doe"
                                 className="rounded-full bg-slate-50 dark:bg-slate-800 border-none h-12"
                             />
                         </div>

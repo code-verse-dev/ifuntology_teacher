@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,9 @@ function formatDate(iso: string) {
 
 export default function MessagesPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const openStudentId = (location.state as { studentUserId?: string } | null)?.studentUserId;
   const user = useSelector((state: any) => state.user.userData);
   const currentUserId = user?._id;
 
@@ -65,11 +69,11 @@ export default function MessagesPage() {
   const contacts = React.useMemo(() => {
     if (selectedTab === "student") {
       return myStudents.map((t: any) => ({
-        _id: t.user._id,
-        firstName: t.user.firstName,
-        lastName: t.user.lastName,
-        name: `${t.user.firstName ?? ""} ${t.user.lastName ?? ""}`.trim() || "Student",
-        image: t.user.image,
+        _id: t.user?._id,
+        firstName: t.user?.firstName,
+        lastName: t.user?.lastName,
+        name: `${t.user?.firstName ?? ""} ${t.user?.lastName ?? ""}`.trim() || "Student",
+        image: t.user?.image,
       }));
     }
     if (selectedTab === "admin" && adminAccount) {
@@ -210,21 +214,36 @@ export default function MessagesPage() {
     : "";
 
   React.useEffect(() => {
-    document.title = "Chats • iFuntology Student";
+    document.title = "Chats • iFuntology Teacher";
   }, []);
+
+  React.useEffect(() => {
+    if (openStudentId) {
+      setSelectedTab("student");
+    }
+  }, [openStudentId]);
 
   const handleSelectContactRef = React.useRef(handleSelectContact);
   handleSelectContactRef.current = handleSelectContact;
 
   React.useEffect(() => {
-    if (contacts.length === 0) return;
+    if (!openStudentId || contacts.length === 0) return;
+    const contact = contacts.find((c: any) => c._id === openStudentId);
+    if (contact) {
+      handleSelectContactRef.current(contact);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [openStudentId, contacts, navigate, location.pathname]);
+
+  React.useEffect(() => {
+    if (openStudentId || contacts.length === 0) return;
     const first = contacts[0];
     const shouldSelectFirst =
       !selectedContact || !contacts.some((c: any) => c._id === selectedContact._id);
     if (shouldSelectFirst) {
       handleSelectContactRef.current(first);
     }
-  }, [selectedTab, contacts]);
+  }, [selectedTab, contacts, openStudentId, selectedContact]);
 
   return (
     <DashboardWithSidebarLayout>
@@ -253,7 +272,7 @@ export default function MessagesPage() {
                 <div className="relative mt-3">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search students..."
+                    placeholder="e.g. Emma Wilson"
                     value={studentSearchQuery}
                     onChange={(e) => setStudentSearchQuery(e.target.value)}
                     className="pl-9 h-10 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
@@ -275,13 +294,13 @@ export default function MessagesPage() {
                   </div>
                 ) : (
                   filteredContacts.map((contact) => {
-                    const chat = getChatForContact(contact._id);
-                    const isSelected = selectedContact?._id === contact._id;
-                    const isCreating = creatingForContact === contact._id;
+                    const chat = getChatForContact(contact?._id);
+                    const isSelected = selectedContact?._id === contact?._id;
+                    const isCreating = creatingForContact === contact?._id;
 
                     return (
                       <button
-                        key={contact._id}
+                        key={contact?._id}
                         onClick={() => handleSelectContact(contact)}
                         disabled={isCreating}
                         className={cn(
@@ -293,17 +312,17 @@ export default function MessagesPage() {
                       >
                         <div className="relative shrink-0">
                           <Avatar className="h-12 w-12">
-                            {contact.image ? (
-                              <AvatarImage src={UPLOADS_URL + contact.image} alt={contact.name} />
+                            {contact?.image ? (
+                              <AvatarImage src={UPLOADS_URL + contact?.image} alt={contact?.name} />
                             ) : null}
                             <AvatarFallback className="bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300">
-                              {contact.name.charAt(0)}
+                              {contact?.name?.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-slate-900 dark:text-white truncate">
-                            {contact.name}
+                            {contact?.name}
                           </p>
                           <p className="text-sm text-muted-foreground truncate">
                             {isCreating ? "Starting chat…" : chat ? "Chat" : "Start conversation"}
@@ -390,9 +409,9 @@ export default function MessagesPage() {
                               <div className="space-y-4">
                                 {g.items.map((msg) => {
                                   const isMe =
-                                    msg.sender?._id === currentUserId || msg.sender === currentUserId;
-                                  const senderName = msg.sender?.firstName
-                                    ? `${msg.sender.firstName} ${msg.sender.lastName}`.trim()
+                                    msg?.sender?._id === currentUserId || msg?.sender?._id === currentUserId;
+                                  const senderName = msg?.sender?.firstName
+                                    ? `${msg.sender?.firstName} ${msg.sender?.lastName}`.trim()
                                     : "User";
 
                                   return (
@@ -405,9 +424,9 @@ export default function MessagesPage() {
                                     >
                                       {!isMe && (
                                         <Avatar className="h-8 w-8 shrink-0">
-                                          {msg.sender?.image ? (
+                                          {msg?.sender?.image ? (
                                             <AvatarImage
-                                              src={UPLOADS_URL + msg.sender.image}
+                                              src={UPLOADS_URL + msg?.sender?.image}
                                               alt={senderName}
                                             />
                                           ) : null}
@@ -467,7 +486,7 @@ export default function MessagesPage() {
                       <Smile className="h-5 w-5 text-muted-foreground" />
                     </Button>
                     <Input
-                      placeholder="Type your message here"
+                    placeholder="e.g. Hi Emma, please review chapter 3 before Friday…"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}

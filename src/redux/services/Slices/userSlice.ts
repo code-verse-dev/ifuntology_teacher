@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { clearActorPortalSession } from "@/utils/actorPortalSession";
 
 const initialState: any = {
   userData: {},
@@ -18,6 +19,7 @@ export const userSlice = createSlice({
       state.userData = payload.user.user;
     },
     removeUser: (state) => {
+      clearActorPortalSession();
       state.userData = {};
       state.userToken = null;
       localStorage.clear();

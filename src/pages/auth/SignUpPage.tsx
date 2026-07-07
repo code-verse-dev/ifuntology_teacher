@@ -9,15 +9,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
+import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 import { Avatar } from "@/components/ui/avatar";
+import {
+  getPasswordValidationError,
+  PASSWORD_POLICY_HINT,
+} from "@/utils/passwordValidation";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
-  const [register, { isLoading }] = useRegisterMutation();
   const [searchParams] = useSearchParams();
-  const referralFromUrl = searchParams.get("ref");
-  const isReferredUser = !!referralFromUrl;
-  // State for all fields
+  const referralCode = searchParams.get("ref")?.trim();
+  const [register, { isLoading }] = useRegisterMutation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,15 +35,38 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
-  const [role, setRole] = useState("teacher");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper for image preview
   const imageUrl = image ? URL.createObjectURL(image) : null;
 
   useEffect(() => {
     document.title = "Sign Up • iFuntology Teacher";
   }, []);
+
+  useEffect(() => {
+    if (!referralCode) return;
+
+    const { hostname, origin } = window.location;
+    let affiliateBase = "http://localhost:8081";
+
+    if (hostname.includes("react.customdev.solutions")) {
+      affiliateBase = "https://react.customdev.solutions/ifuntology/affiliate";
+    } else if (hostname.includes("teacher-erp.ifuntology.com")) {
+      affiliateBase = "https://affiliate-erp.ifuntology.com";
+    } else if (hostname === "localhost") {
+      affiliateBase = "http://localhost:8081";
+    } else {
+      affiliateBase = origin.replace("teacher", "affiliate");
+    }
+
+    window.location.replace(
+      `${affiliateBase.replace(/\/$/, "")}/sign-up?ref=${encodeURIComponent(referralCode)}`,
+    );
+  }, [referralCode]);
+
+  if (referralCode) {
+    return null;
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -50,6 +76,11 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
+      toast.error(passwordError);
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -63,7 +94,7 @@ export default function SignUpPage() {
     formData.append("lastName", lastName);
     formData.append("email", email);
     formData.append("password", password);
-    if (isReferredUser && role === "teacher" || !isReferredUser) formData.append("organization", org);
+    formData.append("organization", org);
     formData.append("country", country);
     formData.append("phoneNumber", phone);
     formData.append("city", city);
@@ -71,19 +102,14 @@ export default function SignUpPage() {
     formData.append("streetAddress", streetAddress);
     formData.append("zipCode", zipCode);
     if (image) formData.append("image", image);
-    if (isReferredUser) {
-      formData.append("role", role);
-      formData.append("referralCode", referralFromUrl);
-    } else {
-      formData.append("role", "teacher"); // default normal signup
-    }
+    formData.append("role", "teacher");
+
     try {
       const res: any = await register(formData).unwrap();
       if (res?.status) {
         toast.success("Account created successfully");
         navigate("/login");
-      }
-      else {
+      } else {
         toast.error(res?.message || "Failed to create account");
       }
     } catch (err: any) {
@@ -94,7 +120,6 @@ export default function SignUpPage() {
   return (
     <AuthLayout>
       <section className="mx-auto w-full max-w-4xl">
-        {/* Avatar preview at the top */}
         <div className="surface-glass min-h-[560px] rounded-2xl border border-border/60 p-8 shadow-elev backdrop-blur-xl">
           <h1 className="text-4xl font-extrabold tracking-tight text-primary">
             Sign Up
@@ -102,12 +127,6 @@ export default function SignUpPage() {
           <p className="mt-2 text-base text-foreground/90">
             Begin Your Funtology Journey Now!
           </p>
-
-          {isReferredUser && (
-            <p className="mt-2 text-green-600 font-medium">
-              🎉 You were invited! Complete your registration below.
-            </p>
-          )}
 
           <div className="flex mt-4">
             <div className="flex flex-col items-center mb-2">
@@ -166,32 +185,12 @@ export default function SignUpPage() {
             encType="multipart/form-data"
           >
             <div>
-              {isReferredUser && (
-                <>
-                  <div className="space-y-2 mb-2">
-                    <Label>Register As *</Label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4"
-                      disabled={isLoading}
-                    >
-                      <option value="teacher">Teacher</option>
-                      <option value="user">User</option>
-                    </select>
-                  </div>
-
-                </>
-              )}
               <div className="text-sm font-medium text-foreground">
                 Personal Information
               </div>
               <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="first"
-                    className="text-sm font-normal text-foreground"
-                  >
+                  <Label htmlFor="first">
                     First Name <span className="text-accent">*</span>
                   </Label>
                   <div className="relative">
@@ -199,7 +198,7 @@ export default function SignUpPage() {
                     <Input
                       id="first"
                       required
-                      placeholder="Enter Name"
+                      placeholder="Jane"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -208,10 +207,7 @@ export default function SignUpPage() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="last"
-                    className="text-sm font-normal text-foreground"
-                  >
+                  <Label htmlFor="last">
                     Last Name <span className="text-accent">*</span>
                   </Label>
                   <div className="relative">
@@ -219,7 +215,7 @@ export default function SignUpPage() {
                     <Input
                       id="last"
                       required
-                      placeholder="Enter Name"
+                      placeholder="Doe"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -228,10 +224,7 @@ export default function SignUpPage() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="email"
-                    className="text-sm font-normal text-foreground"
-                  >
+                  <Label htmlFor="email">
                     Email Address <span className="text-accent">*</span>
                   </Label>
                   <div className="relative">
@@ -240,7 +233,7 @@ export default function SignUpPage() {
                       id="email"
                       type="email"
                       required
-                      placeholder="your@email.com"
+                      placeholder="teacher@school.edu"
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -261,6 +254,13 @@ export default function SignUpPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                   />
+                  {getPasswordValidationError(password) ? (
+                    <p className="text-xs text-rose-600">
+                      {getPasswordValidationError(password)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw2">Confirm Password *</Label>
@@ -277,43 +277,35 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              {(isReferredUser && role === "teacher" || !isReferredUser) && <div className="text-sm font-semibold">
-                Organization Information
-              </div>}
+              <div className="text-sm font-semibold">Organization Information</div>
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                {(isReferredUser && role === "teacher" || !isReferredUser) && (
-                  <div className="space-y-2 md:col-span-1">
-                    <Label htmlFor="org">Organization / School Name *</Label>
-                    <Input
-                      id="org"
-                      required
-                      placeholder="Enter Name"
-                      className="h-11 rounded-full border-border/80 bg-background/80"
-                      value={org}
-                      onChange={(e) => setOrg(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                )}
                 <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="country">Country *</Label>
+                  <Label htmlFor="org">Organization / School Name *</Label>
                   <Input
-                    id="country"
+                    id="org"
                     required
-                    placeholder="Enter Name"
+                    placeholder="Springfield High School"
                     className="h-11 rounded-full border-border/80 bg-background/80"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    value={org}
+                    onChange={(e) => setOrg(e.target.value)}
                     disabled={isLoading}
                   />
                 </div>
+                <CountryStateCityFields
+                  idPrefix="signup"
+                  country={country}
+                  state={stateVal}
+                  city={city}
+                  onCountryChange={setCountry}
+                  onStateChange={setStateVal}
+                  onCityChange={setCity}
+                  disabled={isLoading}
+                  required
+                  fieldClassName="space-y-2 md:col-span-1"
+                  selectClassName="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
                 <div className="space-y-3 md:col-span-1">
-                  <Label
-                    htmlFor="phone"
-                    className="text-sm font-normal text-foreground"
-                  >
-                    Phone Number (optional)
-                  </Label>
+                  <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -327,35 +319,11 @@ export default function SignUpPage() {
                   </div>
                 </div>
                 <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    required
-                    placeholder="Enter City"
-                    className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="state">State *</Label>
-                  <Input
-                    id="state"
-                    required
-                    placeholder="Enter State"
-                    className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
-                    value={stateVal}
-                    onChange={(e) => setStateVal(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
                   <Input
                     id="streetAddress"
                     required
-                    placeholder="Enter Street Address"
+                    placeholder="142 W 34th Ave"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
@@ -367,7 +335,7 @@ export default function SignUpPage() {
                   <Input
                     id="zipCode"
                     required
-                    placeholder="Enter Zip Code"
+                    placeholder="99503"
                     className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     value={zipCode}
                     onChange={(e) => setZipCode(e.target.value)}
@@ -385,40 +353,29 @@ export default function SignUpPage() {
                 disabled={isLoading}
               />
               I Agree to the{" "}
-              <span className="text-accent hover:underline">
+              <a
+                href="https://erp.ifuntology.com/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
                 Privacy Policy
-              </span>{" "}
-              &amp; <span className="text-accent hover:underline">Terms</span>.
+              </a>{" "}
+              &amp; <a
+                href="https://erp.ifuntology.com/terms-and-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >Terms</a>.
             </label>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* <Button
-                type="submit"
-                variant="brand"
-                size="pill"
-                className="w-full sm:w-auto"
-                disabled={isLoading}
-              >
+              <Button type="submit" variant="brand" size="pill" disabled={isLoading}>
                 {isLoading ? "Creating..." : "Create Teacher Account"}
-              </Button> */}
-              <Button
-                type="submit"
-                variant="brand"
-                size="pill"
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? "Creating..."
-                  : isReferredUser
-                    ? "Create Account"
-                    : "Create Teacher Account"}
               </Button>
               <p className="text-sm text-foreground">
                 Already Have An Account?{" "}
-                <Link
-                  to="/login"
-                  className="font-medium text-accent hover:underline"
-                >
+                <Link to="/login" className="font-medium text-accent hover:underline">
                   Login
                 </Link>
               </p>

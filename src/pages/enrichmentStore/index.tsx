@@ -1,99 +1,174 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  ChevronDown,
+  ChevronUp,
+  GraduationCap,
+  Package,
+  Paintbrush,
+  Scissors,
+  Search,
+  ShoppingCart,
+  Sparkles,
+} from "lucide-react";
+import { Pagination } from "antd";
+
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
-import { useNavigate } from "react-router-dom";
 import { buildCartItems } from "@/utils/Functions";
-import { Link } from "react-router-dom";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
-import {
-  useGetProductsQuery,
-  useGetInteractiveProductsQuery,
-} from "@/redux/services/apiSlices/productSlice";
+import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
 import {
   useGetCartQuery,
   useCreateCartMutation,
 } from "@/redux/services/apiSlices/cartSlice";
-import { Pagination } from "antd";
 import { UPLOADS_URL } from "@/constants/api";
 
 interface Query {
-  from?: string;
-  to?: string;
   limit: number;
   page: number;
   keyword?: string;
   category?: string;
 }
 
+type CategoryMeta = {
+  description: string;
+  icon: typeof Package;
+  iconClass: string;
+};
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+  "All Products": {
+    description: "Explore all available products and kits",
+    icon: Package,
+    iconClass: "bg-lime-500 text-white",
+  },
+};
+
+const getCategoryMeta = (title: string): CategoryMeta => {
+  const lower = title.toLowerCase();
+  if (lower.includes("funtology")) {
+    return {
+      description: "Complete kits for foundational learning",
+      icon: GraduationCap,
+      iconClass: "bg-violet-500 text-white",
+    };
+  }
+  if (lower.includes("barber")) {
+    return {
+      description: "Professional tools and kits for barbering",
+      icon: Scissors,
+      iconClass: "bg-blue-500 text-white",
+    };
+  }
+  if (lower.includes("nail")) {
+    return {
+      description: "Essential kits for nail technology",
+      icon: Sparkles,
+      iconClass: "bg-orange-500 text-white",
+    };
+  }
+  if (lower.includes("skin")) {
+    return {
+      description: "Skincare learning essentials",
+      icon: Paintbrush,
+      iconClass: "bg-teal-500 text-white",
+    };
+  }
+  return {
+    description: "Browse curated products and learning kits",
+    icon: Package,
+    iconClass: "bg-slate-600 text-white",
+  };
+};
+
+function CategoryProductCount({ categoryId }: { categoryId?: string }) {
+  const { data } = useGetProductsQuery({
+    page: 1,
+    limit: 1,
+    ...(categoryId ? { category: categoryId } : {}),
+  });
+  const count = data?.data?.totalDocs ?? 0;
+  if (!count) return <span className="text-slate-400">0</span>;
+  return (
+    <span className="text-slate-300 font-medium">
+      {count}
+      {count >= 100 ? "+" : ""}
+    </span>
+  );
+}
+
 export default function EnrichmentStore() {
+  const navigate = useNavigate();
+  const productsRef = useRef<HTMLDivElement>(null);
+
   const [paginationConfig, setPaginationConfig] = useState({
     pageNumber: 1,
-    limit: 10,
+    limit: 12,
     totalDocs: 0,
     totalPages: 0,
   });
   const [queryOptions, setQueryOptions] = useState<Query>({
     page: 1,
-    limit: 10,
+    limit: 12,
   });
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  const [addedDialogOpen, setAddedDialogOpen] = useState(false);
+  const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>();
 
   const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: productsData, isLoading: productsLoading } =
     useGetProductsQuery(queryOptions);
+  const { data: cartData } = useGetCartQuery();
+  const [createCart, { isLoading: cartLoading }] = useCreateCartMutation();
 
-  const [tab, setTab] = useState<"categories" | "interactive">("categories");
+  const cartCount =
+    cartData?.data?.items?.reduce(
+      (sum: number, item: any) => sum + (item.quantity ?? 1),
+      0
+    ) ?? 0;
 
-  const {
-    data: interactiveProductsData,
-    isLoading: interactiveProductsLoading,
-  } = useGetInteractiveProductsQuery(
-    tab === "interactive" ? queryOptions : undefined
+  const storeCategories = useMemo(
+    () =>
+      categoriesData?.data?.filter(
+        (cat: any) => cat.title !== "Interactive STEM Kits"
+      ) ?? [],
+    [categoriesData]
   );
 
-  const productsList =
-    tab === "interactive" ? interactiveProductsData : productsData;
-  const productsLoadingState =
-    tab === "interactive" ? interactiveProductsLoading : productsLoading;
+  const visibleCategories = showAllCategories
+    ? storeCategories
+    : storeCategories.slice(0, 4);
 
-  const navigate = useNavigate();
-  const [addedDialogOpen, setAddedDialogOpen] = useState(false);
-  const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>(
-    undefined
-  );
+  const hasMoreCategories = storeCategories.length > 4;
+
+  const selectedCategoryTitle = selectedCategory
+    ? storeCategories.find((cat: any) => cat._id === selectedCategory)?.title
+    : null;
 
   useEffect(() => {
-    const activeData =
-      tab === "interactive" ? interactiveProductsData : productsData;
-
-    if (activeData?.data) {
+    if (productsData?.data) {
       setPaginationConfig({
-        pageNumber: activeData.data.page,
-        limit: activeData.data.limit,
-        totalDocs: activeData.data.totalDocs,
-        totalPages: activeData.data.totalPages,
+        pageNumber: productsData.data.page,
+        limit: productsData.data.limit,
+        totalDocs: productsData.data.totalDocs,
+        totalPages: productsData.data.totalPages,
       });
     }
-  }, [productsData, interactiveProductsData, tab]);
+  }, [productsData]);
 
   useEffect(() => {
     setQueryOptions((prev) => ({
       ...prev,
       keyword: search || undefined,
       category: selectedCategory || undefined,
-      page: 1, // reset to first page on filter change
+      page: 1,
     }));
   }, [search, selectedCategory]);
 
@@ -101,211 +176,296 @@ export default function EnrichmentStore() {
     document.title = "Enrichment Store • iFuntology Teacher";
   }, []);
 
-  const interactiveCategoryId = categoriesData?.data?.find(
-    (cat: any) => cat.title === "Interactive STEM Kits"
-  )?._id;
+  const handleViewProducts = (categoryId: string | null) => {
+    setSelectedCategory(categoryId);
+    window.requestAnimationFrame(() => {
+      productsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
-  useEffect(() => {
-    if (tab === "interactive" && interactiveCategoryId) {
-      setSelectedCategory(interactiveCategoryId);
-    }
-
-    if (tab === "categories") {
-      setSelectedCategory(null);
-    }
-  }, [tab, interactiveCategoryId]);
-
-  const { data: cartData } = useGetCartQuery();
-  const [createCart, { isLoading: cartLoading }] = useCreateCartMutation();
+  const handleClearFilters = () => {
+    setSelectedCategory(null);
+    setSearch("");
+  };
 
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full  space-y-6">
-        <h1 className="text-2xl font-extrabold">E-commerce Enrichment Store</h1>
+      <section className="mx-auto w-full max-w-7xl space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            E-commerce Enrichment Store
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Explore curated products and kits to enhance learning and creativity.
+          </p>
+        </div>
 
-        <Card className="rounded-2xl border border-border/60 p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3 w-full md:w-2/3">
-              <Input
-                placeholder="Search Products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+        {/* Search + Cart */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search products, kits, and more..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-12 rounded-xl border-border/60 bg-card pl-11 text-base"
+            />
           </div>
-          <div className="mt-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setTab("categories")}
-                className={`rounded-t-md px-4 py-2 text-sm ${
-                  tab === "categories"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "surface-glass text-card-foreground"
-                }`}
-              >
-                Categories
-              </button>
-              <button
-                onClick={() => setTab("interactive")}
-                className={`rounded-t-md px-4 py-2 text-sm ${
-                  tab === "interactive"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "surface-glass text-card-foreground"
-                }`}
-              >
-                Interactive STEM Kits
-              </button>
-            </div>
+          <Button
+            className="h-12 shrink-0 rounded-xl bg-lime-500 px-6 font-semibold text-white hover:bg-lime-600"
+            onClick={() => navigate("/cart")}
+          >
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            View Cart ({cartCount})
+          </Button>
+        </div>
 
-            <div className="rounded-b-md border border-border/60 p-3">
-              <Collapsible defaultOpen>
-                <div className="flex items-center justify-between">
+        {/* Categories */}
+        <Card className="overflow-hidden rounded-2xl border border-border/60 bg-card/80">
+          <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+            <h2 className="text-lg font-bold text-foreground">Categories</h2>
+            {hasMoreCategories ? (
+              <button
+                type="button"
+                onClick={() => setShowAllCategories((open) => !open)}
+                className="flex items-center gap-1 text-sm font-semibold text-lime-500 hover:text-lime-400 transition-colors"
+              >
+                {showAllCategories ? "Show Less" : "View All Categories"}
+                {showAllCategories ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="hidden md:grid md:grid-cols-[2fr_3fr_1fr_1fr] gap-4 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border/40">
+            <span>Category</span>
+            <span>Description</span>
+            <span>Products</span>
+            <span className="text-right">Action</span>
+          </div>
+
+          <div className="divide-y divide-border/40">
+            {/* All Products row */}
+            {(() => {
+              const meta = CATEGORY_META["All Products"];
+              const Icon = meta.icon;
+              const isActive = selectedCategory === null;
+              return (
+                <div
+                  className={`grid grid-cols-1 gap-3 px-6 py-4 md:grid-cols-[2fr_3fr_1fr_1fr] md:items-center md:gap-4 ${
+                    isActive ? "bg-lime-500/5" : ""
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <Badge>
-                      {tab === "categories"
-                        ? "Categories"
-                        : "Interactive STEM Kits"}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {tab === "categories"
-                        ? "Browse by category"
-                        : "Featured kits"}
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${meta.iconClass}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold text-foreground">All Products</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground md:col-span-1">
+                    {meta.description}
+                  </p>
+                  <div className="text-sm md:col-span-1">
+                    <span className="md:hidden text-xs font-semibold uppercase text-muted-foreground mr-2">
+                      Products:
                     </span>
+                    <CategoryProductCount />
                   </div>
-                  <CollapsibleTrigger asChild>
-                    <button className="rounded-full p-2 hover:bg-muted">
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                  </CollapsibleTrigger>
+                  <div className="md:text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 rounded-lg font-semibold text-lime-500 hover:text-lime-400 hover:bg-lime-500/10"
+                      onClick={() => handleViewProducts(null)}
+                    >
+                      View Products
+                    </Button>
+                  </div>
                 </div>
+              );
+            })()}
 
-                <CollapsibleContent>
-                  <div className="mt-3 flex gap-3 flex-wrap">
-                    {tab === "categories" &&
-                      categoriesData?.data
-                        ?.filter(
-                          (cat: any) =>
-                            cat.title !== "Interactive STEM Kits"
-                        )
-                        .map((cat: any) => (
-                          <button
-                            key={cat._id}
-                            className={`rounded-full border border-border/60 px-3 py-1 text-sm hover:bg-muted ${
-                              selectedCategory === cat._id
-                                ? "bg-primary text-white border-primary"
-                                : "text-muted-foreground"
-                            }`}
-                            onClick={() =>
-                              setSelectedCategory(
-                                selectedCategory === cat._id ? null : cat._id
-                              )
-                            }
-                          >
-                            {cat.title}
-                          </button>
-                        ))}
+            {visibleCategories.map((cat: any) => {
+              const meta = getCategoryMeta(cat.title);
+              const Icon = meta.icon;
+              const isActive = selectedCategory === cat._id;
+              return (
+                <div
+                  key={cat._id}
+                  className={`grid grid-cols-1 gap-3 px-6 py-4 md:grid-cols-[2fr_3fr_1fr_1fr] md:items-center md:gap-4 ${
+                    isActive ? "bg-lime-500/5" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${meta.iconClass}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold text-foreground">{cat.title}</span>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
+                  <p className="text-sm text-muted-foreground">{meta.description}</p>
+                  <div className="text-sm">
+                    <span className="md:hidden text-xs font-semibold uppercase text-muted-foreground mr-2">
+                      Products:
+                    </span>
+                    <CategoryProductCount categoryId={cat._id} />
+                  </div>
+                  <div className="md:text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 rounded-lg font-semibold text-lime-500 hover:text-lime-400 hover:bg-lime-500/10"
+                      onClick={() => handleViewProducts(cat._id)}
+                    >
+                      View Products
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
 
-        {productsLoadingState && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i} className="p-4 animate-pulse">
-                <div className="aspect-[4/3] rounded-md bg-muted" />
-                <div className="mt-3 h-4 w-3/4 rounded bg-muted" />
-                <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
-                <div className="mt-4 h-9 rounded bg-muted" />
-              </Card>
-            ))}
-          </div>
-        )}
-
         {/* Products */}
-        {!productsLoadingState && productsList?.data?.docs?.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            {productsList.data.docs.map((p: any) => (
-              <Card key={p._id} className="p-4 flex flex-col">
-                <Link
-                  to={`/enrichment-store/product/${p._id}`}
-                  state={{ fromTab: tab }}
-                  className="block"
+        <div ref={productsRef} className="scroll-mt-6 space-y-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">
+                {selectedCategoryTitle ?? "Featured Products"}
+              </h2>
+              {selectedCategoryTitle ? (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Showing products in {selectedCategoryTitle}
+                </p>
+              ) : null}
+            </div>
+            {(selectedCategory || search) && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="text-sm font-semibold text-lime-500 hover:text-lime-400 w-fit"
+              >
+                View All Products
+              </button>
+            )}
+          </div>
+
+          {productsLoading && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="overflow-hidden border-border/60 animate-pulse">
+                  <div className="aspect-[4/3] bg-muted" />
+                  <div className="space-y-3 p-4">
+                    <div className="h-4 w-3/4 rounded bg-muted" />
+                    <div className="h-5 w-1/3 rounded bg-muted" />
+                    <div className="h-10 rounded bg-muted" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {!productsLoading && productsData?.data?.docs?.length > 0 && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+              {productsData.data.docs.map((p: any) => (
+                <Card
+                  key={p._id}
+                  className="group overflow-hidden rounded-2xl border border-border/60 bg-card/80 transition-shadow hover:shadow-lg"
                 >
-                  <div className="aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
+                  <Link
+                    to={`/enrichment-store/product/${p._id}`}
+                    className="relative block aspect-[4/3] overflow-hidden bg-muted"
+                  >
                     <img
                       src={UPLOADS_URL + p.image}
                       alt={p.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                  </Link>
+
+                  <div className="space-y-3 p-4">
+                    <Link
+                      to={`/enrichment-store/product/${p._id}`}
+                      className="line-clamp-2 text-sm font-semibold leading-snug text-foreground hover:text-lime-500 transition-colors"
+                    >
+                      {p.name}
+                    </Link>
+                    <p className="text-lg font-bold text-foreground">
+                      ${Number(p.price).toFixed(2)}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-xl border-border/60 font-semibold"
+                        asChild
+                      >
+                        <Link to={`/enrichment-store/product/${p._id}`}>View Detail</Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-xl border-lime-500/50 font-semibold text-lime-500 hover:bg-lime-500/10 hover:text-lime-400"
+                        disabled={cartLoading}
+                        onClick={async () => {
+                          try {
+                            const items = buildCartItems(p._id, cartData);
+                            await createCart({ items }).unwrap();
+                            setLastAddedTitle(p.name);
+                            setAddedDialogOpen(true);
+                          } catch (err: unknown) {
+                            console.error(err);
+                          }
+                        }}
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Add to Cart
+                      </Button>
+                    </div>
                   </div>
-                </Link>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                <Link
-                  to={`/enrichment-store/product/${p._id}`}
-                  state={{ fromTab: tab }}
-                  className="mt-1 font-medium text-base hover:underline"
-                >
-                  {p.name}
-                </Link>
-
-                {p.courseType && (
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="text-lg font-semibold">{p.courseType}</div>
-                  </div>
-                )}
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="text-lg font-semibold">${p.price}</div>
-                </div>
-
+          {!productsLoading && productsData?.data?.docs?.length === 0 && (
+            <Card className="rounded-2xl border border-border/60 py-16 text-center">
+              <p className="text-lg font-medium text-foreground">No products found</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Try adjusting your search or category filter
+              </p>
+              {(selectedCategory || search) && (
                 <Button
-                  className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                  onClick={async () => {
-                    try {
-                      const items = buildCartItems(p._id, cartData);
-
-                      await createCart({ items }).unwrap();
-
-                      setLastAddedTitle(p.name);
-                      setAddedDialogOpen(true);
-                    } catch (err: any) {
-                      console.error(err);
-                    }
-                  }}
-                  disabled={cartLoading}
+                  variant="outline"
+                  className="mt-4 rounded-full border-lime-500/50 text-lime-500"
+                  onClick={handleClearFilters}
                 >
-                  Add to Cart
+                  View All Products
                 </Button>
-              </Card>
-            ))}
-          </div>
-        )}
+              )}
+            </Card>
+          )}
 
-        {/* Empty state */}
-        {!productsLoadingState && productsList?.data?.docs?.length === 0 && (
-          <div className="py-16 text-center text-muted-foreground">
-            <p className="text-lg font-medium">No products found</p>
-            <p className="text-sm mt-1">
-              Try adjusting your search or category filter
-            </p>
-          </div>
-        )}
-
-        {productsList?.data?.docs?.length && (
-          <div className="flex justify-end mt-6">
-            <Pagination
-              current={paginationConfig.pageNumber}
-              pageSize={paginationConfig.limit}
-              total={paginationConfig.totalDocs}
-              onChange={(p) => {
-                setQueryOptions((prev) => ({ ...prev, page: p }));
-              }}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
+          {productsData?.data?.docs?.length > 0 && (
+            <div className="flex justify-end pt-2">
+              <Pagination
+                current={paginationConfig.pageNumber}
+                pageSize={paginationConfig.limit}
+                total={paginationConfig.totalDocs}
+                onChange={(page) => {
+                  setQueryOptions((prev) => ({ ...prev, page }));
+                  productsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
+        </div>
 
         <AddedToCartDialog
           open={addedDialogOpen}

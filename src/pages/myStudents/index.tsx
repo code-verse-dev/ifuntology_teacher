@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
+import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,10 @@ export default function MyStudents() {
     const [courseTypeFilter, setCourseTypeFilter] = useState<string | undefined>(undefined);
     const [page, setPage] = useState(1);
     const limit = 10;
+    const [resetTarget, setResetTarget] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
 
     const debouncedKeyword = useDebounce(keyword, 400);
 
@@ -250,8 +255,30 @@ export default function MyStudents() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                                <DropdownMenuItem>Message</DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => student.user?._id && navigate(`/my-students/${student.user._id}`)}
+                                                >
+                                                    View Profile
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        navigate("/messages", { state: { studentUserId: student.user._id } })
+                                                    }
+                                                >
+                                                    Message
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        setResetTarget({
+                                                            id: student.user._id,
+                                                            name: fullName,
+                                                        })
+                                                    }
+                                                >
+                                                    Reset password
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -300,12 +327,12 @@ export default function MyStudents() {
                                                 {isActive ? "Active" : "Inactive"}
                                             </Badge>
                                         </div>
-                                        <div className="flex justify-between items-center text-[11px]">
+                                        {/* <div className="flex justify-between items-center text-[11px]">
                                             <span className="text-slate-500 dark:text-slate-400 font-medium">Subscription</span>
                                             <span className="font-semibold text-slate-900 dark:text-white capitalize">
                                                 {student.subscription?.subscriptionType?.toLowerCase() ?? "—"}
                                             </span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </Card>
                             );
@@ -344,6 +371,15 @@ export default function MyStudents() {
                     </div>
                 )}
             </div>
+
+            <ResetStudentPasswordDialog
+                open={Boolean(resetTarget)}
+                onOpenChange={(open) => {
+                    if (!open) setResetTarget(null);
+                }}
+                studentId={resetTarget?.id}
+                studentName={resetTarget?.name}
+            />
         </DashboardWithSidebarLayout>
     );
 }

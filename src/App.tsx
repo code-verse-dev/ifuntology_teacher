@@ -16,7 +16,7 @@ import DashboardWelcomePage from "./pages/dashboard/DashboardWelcomePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
 import BookSessionPage from "./pages/dashboard/BookSessionPage";
 import BookaSessionDashboard from "./pages/BookaSessionDashboard";
-import CreateTeacherHostedSession from "./pages/CreateTeacherHostedSession";
+import ClassroomSessionsPage from "./pages/ClassroomSessionsPage";
 import SessionBookedPage from "./pages/dashboard/SessionBookedPage";
 import QuoteLmsPage from "./pages/dashboard/quotes/QuoteLmsPage";
 import QuoteWriteToReadPage from "./pages/dashboard/quotes/QuoteWriteToReadPage";
@@ -42,7 +42,15 @@ import PayInvoice from "./pages/payInvoice";
 import SubscribetoLMS from "./pages/subscribetoLMS";
 import MyCourses from "./pages/myCourses";
 import CourseDetails from "./pages/myCourses/CourseDetails";
+import CourseQuizzes from "./pages/myCourses/CourseQuizzes";
+import CourseTests from "./pages/myCourses/CourseTests";
+import CourseExams from "./pages/myCourses/CourseExams";
+import AssessmentPreview from "./pages/myCourses/AssessmentPreview";
+import PdfFullPage from "./pages/myCourses/PdfFullPage";
+import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
+import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplorerPathway";
 import MyStudents from "./pages/myStudents";
+import StudentProfile from "./pages/myStudents/StudentProfile";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -54,7 +62,12 @@ import LmsFaqs from "./pages/supportTickets/LmsFaqs";
 import BookingFaqs from "./pages/supportTickets/BookingFaqs";
 import WriteToReadFaqs from "./pages/supportTickets/WriteToReadFaqs";
 import WriteToReadGate from "./pages/writeToRead/WriteToReadGate";
+import WriteToReadRouterLayout from "./pages/writeToRead/WriteToReadRouterLayout";
+import WriteToRead from "./pages/writeToRead";
+import BookBuilderPage from "./pages/writeToRead/BookBuilderPage";
+import WtrAssignmentPreviewPage from "./pages/writeToRead/WtrAssignmentPreviewPage";
 import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
+import PublicBookReaderPage from "./pages/writeToRead/PublicBookReaderPage";
 import AllSessions from "./pages/allSessions";
 import SurveysList from "./pages/surveys";
 import SurveyResponseView from "./pages/surveys/SurveyResponseView";
@@ -65,6 +78,14 @@ import { useEffect } from "react";
 import socket from "@/config/socket";
 import MessagesPage from "./pages/messages";
 import VideoLibraryPage from "./pages/videoLibrary";
+import IfuntologyPlatformPage from "./pages/ifuntology/PlatformPage";
+import IfuntologyWriteToReadPage from "./pages/ifuntology/WriteToReadPage";
+import FuntologyPage from "./pages/ifuntology/courses/FuntologyPage";
+import BarbertologyPage from "./pages/ifuntology/courses/BarbertologyPage";
+import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
+import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
+import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
+import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
   const user = useSelector((state: any) => state.user.userData);
@@ -86,6 +107,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter basename={getBasename()}>
+            <ActorPortalSessionSync />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
@@ -96,6 +118,7 @@ const App = () => {
               />
               <Route path="/verify-otp" element={<VerifyOtp />} />
               <Route path="/sign-up" element={<SignUpPage />} />
+              <Route path="/read/:shareToken" element={<PublicBookReaderPage />} />
 
               <Route
                 path="/dashboard"
@@ -118,10 +141,18 @@ const App = () => {
                 }
               />
               <Route
+                path="/book-a-session/classroom"
+                element={
+                  <ProtectedRoute>
+                    <ClassroomSessionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/book-a-session/create-own"
                 element={
                   <ProtectedRoute>
-                    <CreateTeacherHostedSession />
+                    <ClassroomSessionsPage />
                   </ProtectedRoute>
                 }
               />
@@ -258,9 +289,49 @@ const App = () => {
                   <MyCourses />
                 </ProtectedRoute>
               } />
+              <Route path="/my-courses/pdf/:id/fullscreen" element={
+                <ProtectedRoute>
+                  <PdfFullscreenPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/pdf/:id" element={
+                <ProtectedRoute>
+                  <PdfFullPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/quizzes" element={
+                <ProtectedRoute>
+                  <CourseQuizzes />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/tests" element={
+                <ProtectedRoute>
+                  <CourseTests />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/exams" element={
+                <ProtectedRoute>
+                  <CourseExams />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/:courseType/career-explorer-pathway" element={
+                <ProtectedRoute>
+                  <TeacherCareerExplorerPathway />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses/assessment/:id/preview" element={
+                <ProtectedRoute>
+                  <AssessmentPreview />
+                </ProtectedRoute>
+              } />
               <Route path="/my-courses/:courseType" element={
                 <ProtectedRoute>
                   <CourseDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-students/:studentId" element={
+                <ProtectedRoute>
+                  <StudentProfile />
                 </ProtectedRoute>
               } />
               <Route path="/my-students" element={
@@ -341,11 +412,20 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/write-to-read" element={
-                <ProtectedRoute>
-                  <WriteToReadGate />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/write-to-read"
+                element={
+                  <ProtectedRoute>
+                    <WriteToReadGate />
+                  </ProtectedRoute>
+                }
+              >
+                <Route element={<WriteToReadRouterLayout />}>
+                  <Route path="builder/:bookId/*" element={<BookBuilderPage />} />
+                  <Route path="assignment-preview/:assignmentId" element={<WtrAssignmentPreviewPage />} />
+                  <Route index element={<WriteToRead />} />
+                </Route>
+              </Route>
 
               <Route path="/invite-student" element={
                 <ProtectedRoute>
@@ -380,6 +460,95 @@ const App = () => {
                   <MessagesPage />
                 </ProtectedRoute>
               } />
+
+              <Route
+                path="/courses/funtology"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/barbertology"
+                element={
+                  <ProtectedRoute>
+                    <BarbertologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/nailtology"
+                element={
+                  <ProtectedRoute>
+                    <NailtologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/skintology"
+                element={
+                  <ProtectedRoute>
+                    <SkintologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/funtology"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/barbertology"
+                element={
+                  <ProtectedRoute>
+                    <BarbertologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/nailtology"
+                element={
+                  <ProtectedRoute>
+                    <NailtologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/courses/skintology"
+                element={
+                  <ProtectedRoute>
+                    <SkintologyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/platform"
+                element={
+                  <ProtectedRoute>
+                    <IfuntologyPlatformPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ifuntology/write-to-read"
+                element={
+                  <ProtectedRoute>
+                    <IfuntologyWriteToReadPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder"
+                element={
+                  <ProtectedRoute>
+                    <FuntologyBusinessBuilderPage />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route path="/quotes/lms" element={<QuoteLmsPage />} />
               <Route

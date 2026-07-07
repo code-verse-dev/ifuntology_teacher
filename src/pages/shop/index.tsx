@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Check, GraduationCap, PenTool, Store } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AlertTriangle, Check, ChevronDown, GraduationCap, PenTool, Store } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,14 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
-import {
-  useGetProductsQuery,
-  useLazyGetProductByIdQuery,
-  useLazyGetProductsByCategoryQuery,
-  useLazyGetProductByCourseTypeQuery,
-} from "@/redux/services/apiSlices/productSlice";
-import { useGetCharacterCatalogQuery } from "@/redux/services/apiSlices/characterSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { quoteSlice } from "@/redux/services/apiSlices/quoteSlice";
 import {
@@ -30,39 +24,61 @@ import {
   usePreviewShopPricingMutation,
 } from "@/redux/services/apiSlices/shopSlice";
 import ShopPricingPanel from "./components/ShopPricingPanel";
-import ShopSectionPreview, {
-  type ShopPreviewItem,
-} from "./components/ShopSectionPreview";
+import EnrichmentProductPickerDialog from "./components/EnrichmentProductPickerDialog";
+import ShopSectionCard, {
+  shopFieldInput,
+  shopFieldLabel,
+  shopFieldSelect,
+} from "./components/ShopSectionCard";
+import ShopAddButton from "./components/ShopAddButton";
+import LmsKitVariantSelect from "./components/LmsKitVariantSelect";
+import {
+  lmsCourseCard,
+  lmsCourseCardLabel,
+  lmsCourseFieldInput,
+  lmsCourseFieldSelect,
+  lmsCourseFieldSelectIcon,
+  lmsCourseFieldSelectWrap,
+  lmsCoursePills,
+} from "./components/shopLmsStyles";
+import { IFUNTOLOGY_FROM_SHOP_KEY } from "@/pages/ifuntology/constants/navItems";
 import { buildPreviewPayload, buildSubmitPayload } from "./shopPayload";
-import { pickRandom, resolveAssetUrl } from "./utils/resolveAssetUrl";
-import { UPLOADS_URL } from "@/constants/api";
+import type { CatalogSelectedProduct } from "./shopPayload";
+import { getLmsKitQuantityError } from "./utils/lmsKitQuantity";
+import {
+  getShopContactDetailsError,
+  isShopContactDetailsComplete,
+} from "./utils/shopContactDetails";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import swal from "sweetalert";
+import { LMS_COURSE_TYPES } from "@/constants/lmsCourseTypes";
+import {
+  DEFAULT_LMS_KIT_VARIANT,
+  type LmsKitVariant,
+} from "@/constants/lmsKitVariants";
+import { ImageUrl } from "@/utils/Functions";
+import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 
 type LmsCourseItem = {
   key: string;
   courseType: string;
+  kitVariant: LmsKitVariant;
   noOfKits: string;
   webSubscriptions: string;
 };
 
-const LMS_COURSES = [
-  "Funtology",
-  "Skintology",
-  "Barbertology",
-  "Nailtology",
-  "iTeach iFuntology",
-];
-
 const makeLmsCourseItem = (): LmsCourseItem => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   courseType: "Funtology",
+  kitVariant: DEFAULT_LMS_KIT_VARIANT,
   noOfKits: "",
   webSubscriptions: "",
 });
 
 export default function ShopPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const user = useSelector((state: any) => state.user.userData);
 
@@ -70,30 +86,29 @@ export default function ShopPage() {
     document.title = "Shop • iFuntology Teacher";
   }, []);
 
-  useEffect(() => {
-    if (user?.email) {
-      setLmsEmail((prev) => prev || user.email);
-    }
-  }, [user?.email]);
-
   const [includeLms, setIncludeLms] = useState(true);
-  const [includeEnrichment, setIncludeEnrichment] = useState(false);
-  const [includeWtr, setIncludeWtr] = useState(false);
+  const [includeEnrichment, setIncludeEnrichment] = useState(true);
+  const [includeWtr, setIncludeWtr] = useState(true);
 
   const [orgName, setOrgName] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [shippingSameAsBilling, setShippingSameAsBilling] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingZip, setShippingZip] = useState("");
 
-  // LMS
-  const [lmsEmail, setLmsEmail] = useState("");
-  const [lmsAddress, setLmsAddress] = useState("");
-  const [lmsSubscriptionType, setLmsSubscriptionType] = useState("monthly");
   const [lmsCourses, setLmsCourses] = useState<LmsCourseItem[]>([
     makeLmsCourseItem(),
   ]);
 
   // Enrichment
-  const [products, setProducts] = useState([
-    { id: "", category: "", product: "", quantity: "" },
-  ]);
+  const [catalogSelectedProducts, setCatalogSelectedProducts] = useState<
+    Record<string, CatalogSelectedProduct>
+  >({});
+  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [city, setCity] = useState("");
   const [stateVal, setStateVal] = useState("");
   const [country, setCountry] = useState("");
@@ -103,9 +118,104 @@ export default function ShopPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   // WTR
-  const [wtrSubscriptionType, setWtrSubscriptionType] = useState("yearly");
-  const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("1");
+  const [wtrNumberOfSeats, setWtrNumberOfSeats] = useState("0");
   const [wtrBookPrinting, setWtrBookPrinting] = useState(false);
+  const [taxExempt, setTaxExempt] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.removeItem(IFUNTOLOGY_FROM_SHOP_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (user?.email) {
+      setEmail((prev) => prev || user.email);
+    }
+  }, [user?.email]);
+
+  const contactFields = useMemo(
+    () => ({
+      organizationName: orgName,
+      email,
+      address,
+      country,
+      city,
+      stateVal,
+      streetAddress,
+      zip,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingSameAsBilling,
+    }),
+    [
+      orgName,
+      email,
+      address,
+      country,
+      city,
+      stateVal,
+      streetAddress,
+      zip,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingSameAsBilling,
+    ]
+  );
+
+  const contactDetailsComplete = useMemo(
+    () => isShopContactDetailsComplete(contactFields),
+    [contactFields]
+  );
+
+  const contactDetailsError = useMemo(
+    () => getShopContactDetailsError(contactFields),
+    [contactFields]
+  );
+
+  const guardSectionToggle = (
+    value: boolean,
+    setter: (next: boolean) => void
+  ) => {
+    setter(value);
+  };
+
+  useEffect(() => {
+    const prefillCourseType = (location.state as { prefillLmsCourseType?: string })
+      ?.prefillLmsCourseType;
+    if (!prefillCourseType) return;
+
+    setLmsCourses([
+      {
+        key: `${Date.now()}-prefill`,
+        courseType: prefillCourseType,
+        kitVariant: DEFAULT_LMS_KIT_VARIANT,
+        noOfKits: "12",
+        webSubscriptions: "12",
+      },
+    ]);
+  }, [location.state]);
+
+  useEffect(() => {
+    const prefillCourseType = (location.state as { prefillLmsCourseType?: string })
+      ?.prefillLmsCourseType;
+    if (prefillCourseType) {
+      setIncludeLms(true);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const prefillWtr = (location.state as { prefillWtr?: boolean })?.prefillWtr;
+    if (!prefillWtr) return;
+
+    setIncludeLms(false);
+    setIncludeEnrichment(false);
+    setIncludeWtr(true);
+  }, [location.state]);
 
   const [pricing, setPricing] = useState<any>(null);
   const [eligibility, setEligibility] = useState<ShopEligibility | null>(null);
@@ -113,35 +223,15 @@ export default function ShopPage() {
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
 
   const { data: categoriesData } = useGetCategoriesQuery({});
-  const [triggerGetProducts] = useLazyGetProductsByCategoryQuery();
-  const [triggerGetProductByCourseType] = useLazyGetProductByCourseTypeQuery();
-  const [triggerGetProductById] = useLazyGetProductByIdQuery();
-  const { data: enrichmentProductsData, isLoading: enrichmentProductsLoading } =
-    useGetProductsQuery({ page: 1, limit: 32 });
-  const { data: characterCatalog, isLoading: characterCatalogLoading } =
-    useGetCharacterCatalogQuery();
   const [checkCoupon, { isLoading: checkingCoupon }] = useCheckCouponMutation();
   const [previewShopPricing, { isLoading: previewLoading }] =
     usePreviewShopPricingMutation();
   const [createShopQuote, { isLoading: quoteLoading }] =
     useCreateShopQuoteMutation();
 
-  const [categoryProducts, setCategoryProducts] = useState<{
-    [key: string]: any[];
-  }>({});
-
-  const [lmsPreviewItems, setLmsPreviewItems] = useState<ShopPreviewItem[]>([]);
-  const [lmsImagesLoading, setLmsImagesLoading] = useState(false);
-  const [enrichmentPreviewItems, setEnrichmentPreviewItems] = useState<
-    ShopPreviewItem[]
-  >([]);
-  const [productThumbnails, setProductThumbnails] = useState<
-    Record<string, { name: string; image?: string }>
-  >({});
-
   const updateLmsCourseItem = (
     key: string,
-    field: "courseType" | "noOfKits" | "webSubscriptions",
+    field: "courseType" | "kitVariant" | "noOfKits" | "webSubscriptions",
     value: string
   ) => {
     setLmsCourses((rows) =>
@@ -165,93 +255,30 @@ export default function ShopPage() {
       rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)
     );
 
-  const handleProductChange = async (
-    index: number,
-    field: "category" | "product" | "quantity",
-    value: string
+  const handleCatalogProductUpdate = (
+    productId: string,
+    product: CatalogSelectedProduct | null
   ) => {
-    const updated = [...products];
-    updated[index] = { ...updated[index], [field]: value };
-
-    if (field === "category") {
-      updated[index].product = "";
-      updated[index].id = "";
-      try {
-        const res: any = await triggerGetProducts({
-          categoryId: value,
-        }).unwrap();
-        const list = Array.isArray(res?.data) ? res.data : [];
-        setCategoryProducts((prev) => ({
-          ...prev,
-          [value]: list,
-        }));
-        const selectedId = updated[index].product;
-        if (selectedId) {
-          const match = list.find(
-            (p: any) => String(p._id) === String(selectedId)
-          );
-          if (match?.image) {
-            setProductThumbnails((prev) => ({
-              ...prev,
-              [selectedId]: { name: match.name, image: match.image },
-            }));
-          }
-        }
-      } catch {
-        /* ignore */
+    setCatalogSelectedProducts((prev) => {
+      if (!product) {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
       }
+      return { ...prev, [productId]: product };
+    });
+    if (product) {
+      setIncludeEnrichment(true);
     }
-    if (field === "product") {
-      updated[index].id = value;
-      if (value) {
-        const fromList = categoryProducts[updated[index].category]?.find(
-          (p: any) => String(p._id) === String(value)
-        );
-        if (fromList?.image) {
-          setProductThumbnails((prev) => ({
-            ...prev,
-            [value]: { name: fromList.name, image: fromList.image },
-          }));
-        } else {
-          triggerGetProductById(value)
-            .unwrap()
-            .then((res: any) => {
-              const prod = res?.data;
-              if (prod?._id) {
-                setProductThumbnails((prev) => ({
-                  ...prev,
-                  [String(prod._id)]: {
-                    name: prod.name,
-                    image: prod.image,
-                  },
-                }));
-              }
-            })
-            .catch(() => {
-              /* ignore */
-            });
-        }
-      }
-    }
-    setProducts(updated);
   };
 
-  const addProduct = () =>
-    setProducts([...products, { id: "", category: "", product: "", quantity: "" }]);
-
-  const removeProduct = (index: number) =>
-    setProducts(products.filter((_, i) => i !== index));
-
   const enrichmentSubtotalForCoupon = useMemo(() => {
-    return products
-      .filter((p) => p.category && p.product && Number(p.quantity) > 0)
-      .reduce((sum, p) => {
-        const list = categoryProducts[p.category] || [];
-        const prod = list.find((x: any) => x._id === p.product);
-        const unit = Number(prod?.price ?? 0);
-        return sum + unit * Number(p.quantity);
-      }, 0);
-  }, [products, categoryProducts]);
+    return Object.values(catalogSelectedProducts).reduce((sum, item) => {
+      const qty = Number(item.quantity);
+      if (qty <= 0) return sum;
+      return sum + item.price * qty;
+    }, 0);
+  }, [catalogSelectedProducts]);
 
   const handleApplyCoupon = async () => {
     const code = coupon?.trim();
@@ -278,43 +305,54 @@ export default function ShopPage() {
   const formState = useMemo(
     () => ({
       organizationName: orgName,
+      email,
+      address,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingSameAsBilling,
       includeLms,
       includeEnrichment,
       includeWtr,
-      lmsEmail,
-      lmsAddress,
-      lmsSubscriptionType,
       lmsCourses,
-      products,
+      products: [] as { id: string; quantity: string }[],
+      catalogSelectedProducts,
       city,
       stateVal,
       country,
       streetAddress,
       zip,
       appliedCoupon,
-      wtrSubscriptionType,
       wtrNumberOfSeats,
       wtrBookPrinting,
+      taxExempt,
     }),
     [
       orgName,
+      email,
+      address,
+      shippingAddress,
+      shippingCountry,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingSameAsBilling,
       includeLms,
       includeEnrichment,
       includeWtr,
-      lmsEmail,
-      lmsAddress,
-      lmsSubscriptionType,
       lmsCourses,
-      products,
+      catalogSelectedProducts,
       city,
       stateVal,
       country,
       streetAddress,
       zip,
       appliedCoupon,
-      wtrSubscriptionType,
       wtrNumberOfSeats,
       wtrBookPrinting,
+      taxExempt,
     ]
   );
 
@@ -328,8 +366,12 @@ export default function ShopPage() {
   );
 
   const canPreview = Boolean(previewPayload);
-  const canSubmit = Boolean(submitPayloadResult.payload);
-  const submitBlockReason = submitPayloadResult.error;
+  const canSubmit = contactDetailsComplete && Boolean(submitPayloadResult.payload);
+  const submitBlockReason = !contactDetailsComplete
+    ? "Complete organization and contact details before you can pay or request a quote."
+    : submitPayloadResult.error;
+  const contactPreviewError = contactDetailsError;
+  const pricingPanelError = previewError;
 
   const lmsConflictTypes = useMemo(
     () => new Set(eligibility?.lmsConflicts?.map((c) => c.courseType) ?? []),
@@ -341,7 +383,7 @@ export default function ShopPage() {
       setPricing(null);
       setEligibility(null);
       setPreviewError(
-        "Complete organization name and at least one enabled section to preview pricing."
+        "Enable at least one section with valid selections to preview pricing."
       );
       return;
     }
@@ -377,7 +419,7 @@ export default function ShopPage() {
       swal(
         "Not eligible",
         eligibility?.messages?.join("\n") ||
-          "You cannot purchase the selected bundle",
+        "You cannot purchase the selected bundle",
         "error"
       );
       return;
@@ -401,7 +443,7 @@ export default function ShopPage() {
       swal(
         "Not eligible",
         eligibility?.messages?.join("\n") ||
-          "You cannot request a quote for the selected bundle",
+        "You cannot request a quote for the selected bundle",
         "error"
       );
       return;
@@ -427,6 +469,9 @@ export default function ShopPage() {
     if (!canPreview) {
       setPricing(null);
       setEligibility(null);
+      if (!previewPayload) {
+        setPreviewError(null);
+      }
       return;
     }
     const timer = setTimeout(() => {
@@ -435,625 +480,440 @@ export default function ShopPage() {
     return () => clearTimeout(timer);
   }, [canPreview, runPreview, previewPayload]);
 
-  useEffect(() => {
-    const courseTypes = includeLms
-      ? Array.from(new Set(lmsCourses.map((c) => c.courseType).filter(Boolean)))
-      : pickRandom([...LMS_COURSES], 4);
-
-    let cancelled = false;
-
-    (async () => {
-      setLmsImagesLoading(true);
-      const items: ShopPreviewItem[] = [];
-
-      for (const courseType of courseTypes) {
-        try {
-          const res: any = await triggerGetProductByCourseType({
-            courseType,
-          }).unwrap();
-          const product = res?.data;
-          const src = resolveAssetUrl(product?.image);
-          if (src) {
-            items.push({
-              src,
-              label: courseType,
-              alt: product?.name ?? courseType,
-            });
-          }
-        } catch {
-          /* no kit image for this course */
-        }
-      }
-
-      if (!cancelled) {
-        setLmsPreviewItems(items.slice(0, 4));
-        setLmsImagesLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [includeLms, lmsCourses, triggerGetProductByCourseType]);
-
-  useEffect(() => {
-    const docs =
-      enrichmentProductsData?.data?.docs?.filter((p: any) => p?.image) ?? [];
-    if (!docs.length) {
-      setEnrichmentPreviewItems([]);
-      return;
-    }
-    setEnrichmentPreviewItems(
-      pickRandom(docs, 4).map((p: any) => ({
-        src: UPLOADS_URL + p.image,
-        label: p.name,
-        alt: p.name,
-      }))
-    );
-  }, [enrichmentProductsData]);
-
-  const wtrPreviewItems = useMemo((): ShopPreviewItem[] => {
-    if (!characterCatalog?.length) return [];
-
-    const pool: ShopPreviewItem[] = [];
-    for (const category of characterCatalog) {
-      const iconSrc = resolveAssetUrl(category.iconPath);
-      if (iconSrc) {
-        pool.push({
-          src: iconSrc,
-          label: category.name,
-          alt: category.iconTooltip ?? category.name,
-        });
-      }
-      for (const variation of category.variations ?? []) {
-        const src = resolveAssetUrl(variation.imagePath);
-        if (src) {
-          pool.push({
-            src,
-            label: variation.label || category.name,
-            alt: variation.label || category.name,
-          });
-        }
-      }
-    }
-
-    return pickRandom(pool, 4);
-  }, [characterCatalog]);
-
-  const SectionHeader = ({
-    title,
-    description,
-    icon: Icon,
-    enabled,
-    onToggle,
-  }: {
-    title: string;
-    description: string;
-    icon: React.ComponentType<{ className?: string }>;
-    enabled: boolean;
-    onToggle: (v: boolean) => void;
-  }) => (
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="font-semibold">{title}</h3>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Label htmlFor={`toggle-${title}`} className="text-xs text-muted-foreground">
-          Include
-        </Label>
-        <Switch
-          id={`toggle-${title}`}
-          checked={enabled}
-          onCheckedChange={onToggle}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-6xl space-y-6">
+      <section className="mx-auto w-full max-w-[1500px] space-y-6 px-1 pb-8">
         <div>
-          <h1 className="text-2xl font-extrabold">Shop</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Build a custom bundle from Workforce Readiness Courses, Enrichment
-            Store products, and Write to Read. Select any combination and preview
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            Shop
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Build a custom bundle from workforce readiness courses, enrichment
+            store products, &amp; write to read. Select any combination and preview
             pricing before checkout or requesting a quote.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            <Card className="rounded-2xl border border-border/60 p-5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Organization name *
-              </Label>
-              <Input
-                className="mt-1"
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                placeholder="School or organization name"
-              />
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-6">
+            <Card className="rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Organization &amp; contact details
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Required for checkout and quotes. You can preview pricing while filling these in.
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-foreground" htmlFor="shop-org-name">
+                    Organization Name <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="shop-org-name"
+                    className={cn(
+                      "mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none",
+                      contactPreviewError && !orgName.trim() && "ring-2 ring-rose-400"
+                    )}
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    placeholder="School or Organization Name..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-email">
+                      Email Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-email"
+                      type="email"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="teacher@school.edu"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-address">
+                      Organization Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-address"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Organization address"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-foreground">Organization location</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Billing and organization contact location.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <CountryStateCityFields
+                    idPrefix="shop-billing"
+                    country={country}
+                    state={stateVal}
+                    city={city}
+                    onCountryChange={setCountry}
+                    onStateChange={setStateVal}
+                    onCityChange={setCity}
+                    required
+                    fieldClassName="space-y-0"
+                    labelClassName="text-sm font-medium text-foreground"
+                    selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-zip">
+                      Zip Code <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-zip"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={zip}
+                      onChange={(e) => setZip(e.target.value)}
+                      placeholder="99503"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground" htmlFor="shop-street">
+                      Street Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      id="shop-street"
+                      className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                      value={streetAddress}
+                      onChange={(e) => setStreetAddress(e.target.value)}
+                      placeholder="142 W 34th Ave"
+                    />
+                  </div>
+                </div>
+
+                {contactPreviewError && (
+                  <p className="text-xs font-medium text-rose-600">{contactPreviewError}</p>
+                )}
+              </div>
             </Card>
 
-            {/* LMS */}
-            <Card
-              className={cn(
-                "rounded-2xl border border-border/60 p-5 transition-opacity",
-                !includeLms && "opacity-60"
-              )}
-            >
-              <SectionHeader
-                title="Workforce Readiness Courses"
-                description="LMS kits and interactive digital curriculum"
-                icon={GraduationCap}
-                enabled={includeLms}
-                onToggle={setIncludeLms}
-              />
-              <ShopSectionPreview
-                items={lmsPreviewItems}
-                loading={lmsImagesLoading}
-                className={cn(!includeLms && "opacity-70")}
-              />
-
-              {includeLms && (
-                <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Email *
-                      </Label>
-                      <Input
-                        className="mt-1"
-                        value={lmsEmail}
-                        onChange={(e) => setLmsEmail(e.target.value)}
-                        placeholder="Contact email"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Address *
-                      </Label>
-                      <Input
-                        className="mt-1"
-                        value={lmsAddress}
-                        onChange={(e) => setLmsAddress(e.target.value)}
-                        placeholder="Organization address"
-                      />
-                    </div>
-                  </div>
-
+            <Card className="rounded-2xl border border-border/40 bg-white p-6 shadow-sm dark:bg-card">
+              <div className="space-y-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Subscription type (all courses)
-                    </Label>
-                    <select
-                      className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                      value={lmsSubscriptionType}
-                      onChange={(e) => setLmsSubscriptionType(e.target.value)}
-                    >
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
+                    <h2 className="text-base font-semibold text-foreground">
+                      Shipping address
+                    </h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Where physical kits and enrichment products should be delivered.
+                    </p>
                   </div>
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                    <Switch
+                      id="shop-shipping-same-as-billing"
+                      checked={shippingSameAsBilling}
+                      onCheckedChange={setShippingSameAsBilling}
+                    />
+                    <Label
+                      htmlFor="shop-shipping-same-as-billing"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Same as billing address
+                    </Label>
+                  </div>
+                </div>
 
-                  {lmsCourses.map((row, idx) => (
-                    <div
-                      key={row.key}
+                {shippingSameAsBilling ? (
+                  <p className="rounded-xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                    Shipping will use your organization billing address above.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <Label
+                        className="text-sm font-medium text-foreground"
+                        htmlFor="shop-shipping-address"
+                      >
+                        Address <span className="text-rose-500">*</span>
+                      </Label>
+                      <Textarea
+                        id="shop-shipping-address"
+                        className="mt-2 min-h-[96px] rounded-xl border-0 bg-muted/50 px-4 py-3 text-sm shadow-none"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Building, suite, or delivery instructions"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <CountryStateCityFields
+                        idPrefix="shop-shipping"
+                        country={shippingCountry}
+                        state={shippingState}
+                        city={shippingCity}
+                        onCountryChange={setShippingCountry}
+                        onStateChange={setShippingState}
+                        onCityChange={setShippingCity}
+                        required
+                        fieldClassName="space-y-0"
+                        labelClassName="text-sm font-medium text-foreground"
+                        selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-sm font-medium text-foreground" htmlFor="shop-shipping-zip">
+                          Zip Code <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                          id="shop-shipping-zip"
+                          className="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none"
+                          value={shippingZip}
+                          onChange={(e) => setShippingZip(e.target.value)}
+                          placeholder="99503"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+
+            <ShopSectionCard
+              variant="lms"
+              title="Workforce Readiness Courses"
+              description="Learning Management System kits and interactive digital curriculum"
+              icon={GraduationCap}
+              enabled={includeLms}
+              onToggle={(value) => guardSectionToggle(value, setIncludeLms)}
+              imageSrc={ImageUrl("shop-section-1.png")}
+              backgroundVectorSrc={ImageUrl("vector-section-1.png")}
+              tagline="Discover More. Learn More. Become More."
+              footer={
+                <div className="mt-6 grid max-w-[360px] grid-cols-2 gap-3">
+                  {lmsCoursePills.map((pill) => (
+                    <Link
+                      key={pill.label}
+                      to={pill.link}
+                      onClick={() => sessionStorage.setItem(IFUNTOLOGY_FROM_SHOP_KEY, "1")}
                       className={cn(
-                        "rounded-xl border p-4 space-y-3",
-                        lmsConflictTypes.has(row.courseType)
-                          ? "border-amber-500/50 bg-amber-500/5"
-                          : "border-border/50"
+                        "rounded-md px-3 py-3 text-center text-sm font-bold tracking-wide text-white font-serif transition-opacity hover:opacity-90",
+                        pill.className
                       )}
                     >
-                      {lmsConflictTypes.has(row.courseType) && (
-                        <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          Active subscription or duplicate for {row.courseType}
-                        </p>
+                      {pill.label}
+                    </Link>
+                  ))}
+                </div>
+              }
+            >
+              {lmsCourses.map((row, idx) => {
+                const qtyError = getLmsKitQuantityError(row.noOfKits);
+                return (
+                  <div
+                    key={row.key}
+                    className={cn(
+                      lmsCourseCard,
+                      lmsConflictTypes.has(row.courseType) && "ring-2 ring-amber-400"
+                    )}
+                  >
+                    {lmsConflictTypes.has(row.courseType) && (
+                      <p className="mb-3 flex items-center gap-1.5 text-xs text-amber-800">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Active subscription or duplicate for {row.courseType}
+                      </p>
+                    )}
+                    <div className="mb-5 flex items-center justify-between">
+                      <span className={lmsCourseCardLabel}>Course {idx + 1}</span>
+                      {lmsCourses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeLmsCourseItem(row.key)}
+                          className="text-xs font-semibold text-rose-600 hover:underline"
+                        >
+                          Remove
+                        </button>
                       )}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          Course {idx + 1}
-                        </span>
-                        {lmsCourses.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs"
-                            onClick={() => removeLmsCourseItem(row.key)}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Course type
-                          </Label>
+                    </div>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Course Type</label>
+                        <div className={lmsCourseFieldSelectWrap}>
                           <select
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
+                            className={lmsCourseFieldSelect}
                             value={row.courseType}
                             onChange={(e) =>
-                              updateLmsCourseItem(
-                                row.key,
-                                "courseType",
-                                e.target.value
-                              )
+                              updateLmsCourseItem(row.key, "courseType", e.target.value)
                             }
                           >
-                            {LMS_COURSES.map((c) => (
+                            {LMS_COURSE_TYPES.map((c) => (
                               <option key={c} value={c}>
                                 {c}
                               </option>
                             ))}
                           </select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Interactive curriculum qty
-                          </Label>
-                          <input
-                            type="number"
-                            min={1}
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                            value={row.webSubscriptions}
-                            onChange={(e) =>
-                              updateLmsCourseItem(
-                                row.key,
-                                "webSubscriptions",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Number of kits
-                          </Label>
-                          <input
-                            type="number"
-                            min={1}
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                            value={row.noOfKits}
-                            onChange={(e) =>
-                              updateLmsCourseItem(
-                                row.key,
-                                "noOfKits",
-                                e.target.value
-                              )
-                            }
-                          />
+                          <ChevronDown className={lmsCourseFieldSelectIcon} aria-hidden />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" onClick={addLmsCourseItem}>
-                    Add course
-                  </Button>
-                </div>
-              )}
-            </Card>
-
-            {/* Enrichment */}
-            <Card
-              className={cn(
-                "rounded-2xl border border-border/60 p-5 transition-opacity",
-                !includeEnrichment && "opacity-60"
-              )}
-            >
-              <SectionHeader
-                title="Enrichment store"
-                description="Physical and digital enrichment products"
-                icon={Store}
-                enabled={includeEnrichment}
-                onToggle={setIncludeEnrichment}
-              />
-              <ShopSectionPreview
-                items={enrichmentPreviewItems}
-                loading={enrichmentProductsLoading}
-                className={cn(!includeEnrichment && "opacity-70")}
-              />
-
-              {includeEnrichment && (
-                <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
-                  {products.map((item, index) => {
-                    const selectedProduct =
-                      item.category && item.product
-                        ? categoryProducts[item.category]?.find(
-                            (p: any) => String(p._id) === String(item.product)
-                          )
-                        : null;
-                    const thumbnailMeta =
-                      item.product ? productThumbnails[item.product] : null;
-                    const selectedProductName =
-                      thumbnailMeta?.name ?? selectedProduct?.name;
-                    const selectedProductImage = resolveAssetUrl(
-                      thumbnailMeta?.image ?? selectedProduct?.image
-                    );
-
-                    return (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-border/50 p-4 space-y-3"
-                    >
-                      <div className="flex items-start gap-3">
-                        {item.product && (
-                          <div className="shrink-0">
-                            <div className="h-16 w-16 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-                              {selectedProductImage ? (
-                                <img
-                                  src={selectedProductImage}
-                                  alt={selectedProductName ?? "Selected product"}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[9px] text-muted-foreground">
-                                  …
-                                </div>
-                              )}
-                            </div>
-                            {selectedProductName && (
-                              <p className="mt-1 max-w-16 truncate text-[9px] text-muted-foreground">
-                                {selectedProductName}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Category
-                          </Label>
-                          <select
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                            value={item.category}
-                            onChange={(e) =>
-                              handleProductChange(index, "category", e.target.value)
-                            }
-                          >
-                            <option value="">Select category</option>
-                            {Array.isArray(categoriesData?.data) &&
-                              categoriesData.data
-                                .filter(
-                                  (cat: any) =>
-                                    cat.title !== "Interactive STEM Kits"
-                                )
-                                .map((cat: any) => (
-                                  <option key={cat._id} value={cat._id}>
-                                    {cat.title}
-                                  </option>
-                                ))}
-                          </select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Product
-                          </Label>
-                          <select
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                            value={item.product}
-                            onChange={(e) =>
-                              handleProductChange(index, "product", e.target.value)
-                            }
-                          >
-                            <option value="">Select product</option>
-                            {item.category &&
-                              categoryProducts[item.category]?.map((prod: any) => (
-                                <option key={prod._id} value={prod._id}>
-                                  {prod.name}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Quantity
-                          </Label>
-                          <input
-                            type="number"
-                            min={1}
-                            className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleProductChange(index, "quantity", e.target.value)
-                            }
-                          />
-                        </div>
-                        </div>
-                      </div>
-                      {products.length > 1 && (
-                        <div className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => removeProduct(index)}
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Remove product
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })}
-                  <Button type="button" variant="outline" onClick={addProduct}>
-                    Add product
-                  </Button>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Country</Label>
-                      <Input
-                        className="mt-1"
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        placeholder="For quote / shipping later"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">City</Label>
-                      <Input
-                        className="mt-1"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">State</Label>
-                      <Input
-                        className="mt-1"
-                        value={stateVal}
-                        onChange={(e) => setStateVal(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Zip code</Label>
-                      <Input
-                        className="mt-1"
-                        value={zip}
-                        onChange={(e) => setZip(e.target.value)}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label className="text-xs text-muted-foreground">
-                        Street address
-                      </Label>
-                      <Input
-                        className="mt-1"
-                        value={streetAddress}
-                        onChange={(e) => setStreetAddress(e.target.value)}
-                      />
-                    </div>
-                    {/* <div className="md:col-span-2">
-                      <Label className="text-xs text-muted-foreground">
-                        Coupon (optional)
-                      </Label>
-                      <div className="mt-1 flex gap-2">
-                        <Input
-                          value={coupon}
-                          onChange={(e) => {
-                            setCoupon(e.target.value);
-                            setAppliedCoupon(null);
-                          }}
-                          placeholder="Discount code"
-                          className="flex-1"
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Kit type</label>
+                        <LmsKitVariantSelect
+                          value={row.kitVariant}
+                          onChange={(kitVariant) =>
+                            updateLmsCourseItem(row.key, "kitVariant", kitVariant)
+                          }
                         />
-                        {coupon.trim() && enrichmentSubtotalForCoupon > 0 && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={handleApplyCoupon}
-                            disabled={checkingCoupon}
-                          >
-                            {checkingCoupon ? "…" : "Apply"}
-                          </Button>
-                        )}
                       </div>
-                      {appliedCoupon && (
-                        <p className="mt-1 text-xs text-emerald-600">
-                          Coupon {appliedCoupon} will be applied to preview
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Number of kits</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className={cn(
+                            lmsCourseFieldInput,
+                            qtyError && "ring-2 ring-rose-400"
+                          )}
+                          value={row.noOfKits}
+                          onChange={(e) =>
+                            updateLmsCourseItem(row.key, "noOfKits", e.target.value)
+                          }
+                          placeholder="12, 24, 15, 30…"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className={lmsCourseCardLabel}>Interactive Qty</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className={cn(
+                            lmsCourseFieldInput,
+                            qtyError && "ring-2 ring-rose-400"
+                          )}
+                          value={row.webSubscriptions}
+                          onChange={(e) =>
+                            updateLmsCourseItem(
+                              row.key,
+                              "webSubscriptions",
+                              e.target.value
+                            )
+                          }
+                          placeholder="12, 24, 15, 30…"
+                        />
+                      </div>
+                      {qtyError && (
+                        <p className="text-xs font-medium text-rose-600 sm:col-span-2">
+                          {qtyError}
                         </p>
                       )}
-                    </div> */}
+                    </div>
                   </div>
-                </div>
-              )}
-            </Card>
+                );
+              })}
 
-            {/* WTR */}
-            <Card
-              className={cn(
-                "rounded-2xl border border-border/60 p-5 transition-opacity",
-                !includeWtr && "opacity-60"
-              )}
+              <div className="flex justify-end pt-2">
+                <ShopAddButton label="Add Course" onClick={addLmsCourseItem} />
+              </div>
+            </ShopSectionCard>
+
+            <ShopSectionCard
+              variant="enrichment"
+              title="Shop On Enrichment Store"
+              description=""
+              icon={Store}
+              enabled={includeEnrichment}
+              onToggle={(value) => guardSectionToggle(value, setIncludeEnrichment)}
+              imageSrc={ImageUrl("shop-section-2.png")}
+              backgroundVectorSrc={ImageUrl("vector-section-1.png")}
+              tagline="Kits Related Resources"
+              onTaglineClick={() => setCatalogPickerOpen(true)}
             >
-              <SectionHeader
-                title="Write to Read"
-                description="Teacher subscription for student book authoring"
-                icon={PenTool}
-                enabled={includeWtr}
-                onToggle={setIncludeWtr}
-              />
-              <ShopSectionPreview
-                items={wtrPreviewItems}
-                loading={characterCatalogLoading}
-                className={cn(!includeWtr && "opacity-70")}
-              />
+              <div className="flex justify-end">
+                <ShopAddButton
+                  label="Add Product"
+                  onClick={() => setCatalogPickerOpen(true)}
+                />
+              </div>
+            </ShopSectionCard>
 
-              {includeWtr && (
-                <div className="mt-5 space-y-4 border-t border-border/40 pt-5">
-                  {eligibility?.wtrConflict && (
-                    <p className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      You already have an active Write to Read subscription.
-                    </p>
-                  )}
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Subscription type
-                      </Label>
-                      <select
-                        className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={wtrSubscriptionType}
-                        onChange={(e) => setWtrSubscriptionType(e.target.value)}
-                      >
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Number of student seats
-                      </Label>
-                      <input
-                        type="number"
-                        min={1}
-                        className="mt-1 w-full rounded-md border border-border/60 bg-background p-2 text-sm"
-                        value={wtrNumberOfSeats}
-                        onChange={(e) => setWtrNumberOfSeats(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id="wtr-printing"
-                      checked={wtrBookPrinting}
-                      onCheckedChange={setWtrBookPrinting}
-                    />
-                    <Label htmlFor="wtr-printing" className="text-sm">
-                      Include book printing requests
-                    </Label>
-                  </div>
-                </div>
-              )}
-            </Card>
+            <ShopSectionCard
+              variant="wtr"
+              title="Write to Read"
+              description="Teacher subscription for student book authoring"
+              icon={PenTool}
+              enabled={includeWtr}
+              onToggle={(value) => guardSectionToggle(value, setIncludeWtr)}
+              imageSrc={ImageUrl("shop-section-3.png")}
+              tagline="Everything You Need to Learn Beyond Limits"
+            >
+              <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-700">
+                Write to Read is an interactive literacy platform that brings story-building, creative writing, reading comprehension, and imagination together in one engaging learning experience.
+                Students participate in virtual classrooms, connect through teacher-to-class-chats, create and print their own books, and develop
+                lifelong literacy skills with exciting educational tools and activites. Available for just $4.99 per student, per month.
+              </p>
+              <div>
+                <label className={shopFieldLabel}>No of Student Seats</label>
+                <input
+                  type="number"
+                  min={1}
+                  className={shopFieldInput}
+                  placeholder="e.g. 24"
+                  value={wtrNumberOfSeats}
+                  onChange={(e) => setWtrNumberOfSeats(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3 rounded-lg bg-white/15 px-4 py-3">
+                <Switch
+                  id="wtr-printing"
+                  checked={wtrBookPrinting}
+                  onCheckedChange={setWtrBookPrinting}
+                  className="data-[state=checked]:bg-[#84cc16] data-[state=unchecked]:bg-white/40"
+                />
+                <Label htmlFor="wtr-printing" className="text-sm font-medium text-white">
+                  Include book printing requests
+                </Label>
+              </div>
+            </ShopSectionCard>
           </div>
 
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-1">
             <ShopPricingPanel
               pricing={pricing}
               eligibility={eligibility}
               isLoading={previewLoading}
-              error={previewError}
+              error={pricingPanelError}
               onRefresh={runPreview}
               canPreview={canPreview}
               canSubmit={canSubmit}
               submitBlockReason={submitBlockReason}
+              taxExempt={taxExempt}
+              onTaxExemptChange={setTaxExempt}
               onPayNow={handlePayNow}
               onRequestQuote={handleRequestQuote}
               isQuoteLoading={quoteLoading}
             />
           </div>
         </div>
+
+        <EnrichmentProductPickerDialog
+          open={catalogPickerOpen}
+          onOpenChange={setCatalogPickerOpen}
+          categories={
+            Array.isArray(categoriesData?.data) ? categoriesData.data : []
+          }
+          selectedProducts={catalogSelectedProducts}
+          onUpdateProduct={handleCatalogProductUpdate}
+        />
 
         <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
           <DialogContent>

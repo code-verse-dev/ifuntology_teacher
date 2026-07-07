@@ -1,17 +1,11 @@
 import {
-  BadgeDollarSign,
   BookOpen,
   Box,
-  ClipboardList,
   FileText,
-  Gift,
   GraduationCap,
   LayoutDashboard,
   MessagesSquare,
-  Package,
   PenTool,
-  Receipt,
-  ShoppingBag,
   Store,
   Ticket,
   UserCog,
@@ -21,10 +15,16 @@ import {
 import { toast } from "sonner";
 
 import IfuntologyMark from "@/components/branding/IfuntologyMark";
+import BookSessionSidebarGroup from "@/components/layout/BookSessionSidebarGroup";
+import PurchaseNowSidebarGroup from "@/components/layout/PurchaseNowSidebarGroup";
+import FuntologyBusinessBuilderSidebarItem from "@/components/layout/FuntologyBusinessBuilderSidebarItem";
+import FuntologyGlobalInstituteSidebarItem from "@/components/layout/FuntologyGlobalInstituteSidebarItem";
+import IfuntologySidebarGroup from "@/components/layout/IfuntologySidebarGroup";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -32,8 +32,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ImageUrl } from "@/utils/Functions";
 
 type Item = {
   title: string;
@@ -70,15 +74,10 @@ function MenuLink({ item }: { item: Item }) {
 }
 
 export default function DashboardSidebar() {
-  const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
 
-  const booking: Item[] = [
-    { title: "Book Session", url: "/book-a-session", icon: ClipboardList },
-    { title: "Shop", url: "/shop", icon: ShoppingBag },
-    { title: "Quotes", url: "/quotes", icon: Receipt },
-    { title: "Purchase Orders", url: "/purchase-orders", icon: Package },
-    // { title: "Pay Invoice", url: "/pay-invoice", icon: BadgeDollarSign },
-  ];
+  const main: Item[] = [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }];
 
   const ecommerce: Item[] = [
     { title: "Enrichment Store", url: "/enrichment-store", icon: Store },
@@ -86,7 +85,7 @@ export default function DashboardSidebar() {
   ];
 
   const learningManagement: Item[] = [
-    { title: "Subscribe to LMS", url: "/subscribe-to-lms", icon: GraduationCap },
+    { title: "Learning Management", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
     { title: "Video Library", url: "/video-library", icon: Video },
@@ -117,11 +116,26 @@ export default function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="p-3">
-        <div
-          className="overflow-hidden rounded-2xl border-sidebar-border p-2">
-          <div className="px-1">
-            <IfuntologyMark logoOnly size="medium" />
-          </div>
+        <div className="overflow-hidden rounded-2xl border-sidebar-border p-2 group-data-[collapsible=icon]:p-1">
+          <a
+            href="https://erp.ifuntology.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              collapsed ? "justify-center px-0 py-1" : "block px-1"
+            }`}
+            aria-label="Open iFuntology ERP website"
+          >
+            {collapsed ? (
+              <img
+                src={ImageUrl("logo.png")}
+                alt="iFuntology"
+                className="h-8 w-8 object-contain"
+              />
+            ) : (
+              <IfuntologyMark logoOnly size="medium" />
+            )}
+          </a>
         </div>
       </SidebarHeader>
 
@@ -140,14 +154,30 @@ export default function DashboardSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>BOOKING & QUOTES</SidebarGroupLabel>
+          <SidebarGroupLabel>BOOKING</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {booking.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <MenuLink item={item} />
-                </SidebarMenuItem>
-              ))}
+              <BookSessionSidebarGroup />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>PURCHASE NOW</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <PurchaseNowSidebarGroup />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>IFUNTOLOGY</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <IfuntologySidebarGroup />
+              <FuntologyGlobalInstituteSidebarItem />
+              <FuntologyBusinessBuilderSidebarItem />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -247,6 +277,28 @@ export default function DashboardSidebar() {
 
 
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="w-full justify-center gap-2 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-0"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <>
+              <PanelLeftClose className="h-4 w-4" />
+              <span className="text-xs font-medium">Collapse</span>
+            </>
+          )}
+        </Button>
+      </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

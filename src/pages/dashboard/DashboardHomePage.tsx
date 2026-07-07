@@ -2,14 +2,9 @@ import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
-  Award,
-  BookOpen,
   Calendar,
-  CheckCircle2,
-  ChevronRight,
   FileText,
   GraduationCap,
-  Package,
   TrendingUp,
   UserPlus,
   Users,
@@ -17,12 +12,12 @@ import {
   BadgeDollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  useGetMySessionsQuery,
+  useGetTeacherUpcomingSessionsQuery,
   useJoinMeetingMutation,
   useStartMeetingMutation,
 } from "@/redux/services/apiSlices/sessionSlice";
@@ -217,16 +212,14 @@ function AssignmentCard({
 
 export default function DashboardHomePage() {
   const {
-    data: mySessionsData,
+    data: upcomingSessionsData,
     isLoading: mySessionsLoading,
-  } = useGetMySessionsQuery({
-    from: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    to: format(addDays(new Date(), 30), "yyyy-MM-dd"),
-    status: "approved",
+  } = useGetTeacherUpcomingSessionsQuery({
+    from: format(new Date(), "yyyy-MM-dd"),
+    limit: 2,
   });
 
-  const docs = mySessionsData?.data?.docs ?? [];
-  const upcomingSessions = docs.slice(0, 2);
+  const upcomingSessions = upcomingSessionsData?.data?.docs ?? [];
 
   const to12Hour = (time: string) => {
     if (!time) return "—";
@@ -277,7 +270,7 @@ export default function DashboardHomePage() {
           <div className="relative p-6 sm:p-8">
             <div className="max-w-3xl">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Welcome back, {user?.firstName}! 
+                Welcome Back, {user?.firstName}! 
               </h1>
               <p className="mt-2 text-sm text-white/80 sm:text-base">
                 Here’s what’s happening with your classes today.
@@ -432,7 +425,7 @@ export default function DashboardHomePage() {
         </div>
 
         {/* Active Assignments */}
-        <div>
+        {/* <div>
           <h2 className="mb-4 text-lg font-extrabold tracking-tight">Active Assignments</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <AssignmentCard
@@ -457,7 +450,7 @@ export default function DashboardHomePage() {
               due="2024-12-20"
             />
           </div>
-        </div>
+        </div> */}
       </section>
     </DashboardWithSidebarLayout>
   );

@@ -4,12 +4,10 @@ import {
   BookOpen,
   Calendar,
   GraduationCap,
-  Mail,
   PenLine,
   School,
   Shield,
   ShoppingCart,
-  User,
   Users,
   Gift
 } from "lucide-react";
@@ -25,12 +23,13 @@ import PasswordField from "@/components/inputs/PasswordField";
 import { useLoginMutation } from "@/redux/services/apiSlices/authSlice";
 import { useDispatch } from "react-redux";
 import { addUser } from "@/redux/services/Slices/userSlice";
+import { setActorPortalSession } from "@/utils/actorPortalSession";
 
 const roleCards = [
-  { key: "affiliate", label: "Affiliate", icon: Gift },
-  { key: "teacher", label: "Teacher / Organization", icon: GraduationCap },
-  { key: "parent", label: "Individual User", icon: Users },
-  { key: "student", label: "Student", icon: School },
+  { key: "affiliate", label: "Affiliate", icon: Gift, link: "https://affiliate-erp.ifuntology.com/login" },
+  { key: "teacher", label: "Teacher / Organization", icon: GraduationCap, link: "https://teacher-erp.ifuntology.com/login" },
+  { key: "parent", label: "Individual User", icon: Users, link: "https://user-erp.ifuntology.com/login" },
+  { key: "student", label: "Student", icon: School, link: "https://student-erp.ifuntology.com/login" },
 ] as const;
 
 const features = [
@@ -53,7 +52,6 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<typeof roleCards[number]["key"]>("teacher");
 
   useEffect(() => {
     document.title = "Sign In • iFuntology Teacher";
@@ -67,6 +65,7 @@ export default function LoginPage() {
       if (res?.status) {
         toast.success("Signed in successfully");
         dispatch(addUser({ user: res?.data?.user }));
+        setActorPortalSession(res?.data?.user);
         navigate("/dashboard");
       }
       else {
@@ -86,7 +85,15 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           {/* Logo and Welcome Back — outside the box */}
           <div>
-            <IfuntologyMark logoOnly size="large" />
+            <a
+              href="https://erp.ifuntology.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block cursor-pointer"
+              aria-label="Open iFuntology ERP"
+            >
+              <IfuntologyMark logoOnly size="large" />
+            </a>
             <h1 className="mt-5 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl">
               Welcome Back!
             </h1>
@@ -134,7 +141,7 @@ export default function LoginPage() {
 
           <div className="mt-8 grid grid-cols-2 gap-4">
             {roleCards.map((r) => {
-              const selected = r.key === selectedRole;
+              const selected = r.key === "teacher";
               return (
                 <button
                   key={r.key}
@@ -145,8 +152,7 @@ export default function LoginPage() {
                       : "flex flex-col items-center justify-center gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-3 py-4 text-sm font-semibold text-muted-foreground transition hover:border-border hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   }
                   onClick={() => {
-                    setSelectedRole(r.key);
-                    // toast.message(`${r.label} selected`);
+                    window.open(r.link, "_blank", "noopener,noreferrer");
                   }}
                 >
                   <span
@@ -173,7 +179,7 @@ export default function LoginPage() {
                 Email Address *
               </Label>
               <div className="relative">
-                <Input id="email" type="email" required placeholder="your@email.com" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
+                <Input id="email" type="email" required placeholder="teacher@school.edu" className="h-11 rounded-full" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
               </div>
             </div>
             <div className="space-y-2">

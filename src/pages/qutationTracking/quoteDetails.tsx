@@ -4,6 +4,8 @@ import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebar
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGetQuoteByIdQuery } from "@/redux/services/apiSlices/quoteSlice";
+import QuoteItemsBreakdown from "@/components/quotes/QuoteItemsBreakdown";
+import { serviceTypeLabel } from "@/components/quotes/quoteBreakdownUtils";
 
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
@@ -16,18 +18,6 @@ const formatDate = (dateVal: string | undefined) => {
   });
 };
 
-const formatAmount = (value: number | string | undefined): string => {
-  if (value === undefined || value === null) return "—";
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(num);
-};
-
 const getStatusBadgeClass = (status: string) => {
   const s = (status || "").toLowerCase();
   if (s === "approved") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
@@ -35,12 +25,6 @@ const getStatusBadgeClass = (status: string) => {
   if (s === "pending") return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
   if (s === "revision") return "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400";
   return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
-};
-
-const serviceTypeLabel: Record<string, string> = {
-  lms: "Learning Management System",
-  write_to_read: "Write to Read",
-  enrichment_store: "Enrichment Store",
 };
 
 export default function QuoteDetails() {
@@ -116,11 +100,6 @@ export default function QuoteDetails() {
                   PO: {quote.poNumber}
                 </span>
               )}
-              {quote._id && (
-                <span className="text-sm text-muted-foreground">
-                  ID: {quote._id}
-                </span>
-              )}
               <span
                 className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(
                   quote.status ?? ""
@@ -134,6 +113,10 @@ export default function QuoteDetails() {
                 </span>
               )}
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Created {formatDate(quote.createdAt)}
+              {quote.updatedAt ? ` · Updated ${formatDate(quote.updatedAt)}` : ""}
+            </p>
           </div>
           <Button variant="outline" onClick={() => navigate("/quotes")}>
             Close
@@ -151,120 +134,7 @@ export default function QuoteDetails() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card className="rounded-xl border border-border/60 p-4">
-            <div className="text-sm font-semibold text-muted-foreground mb-3">
-              Organization &amp; Contact
-            </div>
-            <div className="space-y-1 text-sm">
-              <div>
-                <span className="text-muted-foreground">Organization: </span>
-                {quote.organizationName ?? "—"}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="rounded-xl border border-border/60 p-4">
-            <div className="text-sm font-semibold text-muted-foreground mb-3">
-              Dates
-            </div>
-            <div className="space-y-1 text-sm">
-              <div>
-                <span className="text-muted-foreground">Created: </span>
-                {formatDate(quote.createdAt)}
-              </div>
-              {quote.updatedAt && (
-                <div>
-                  <span className="text-muted-foreground">Updated: </span>
-                  {formatDate(quote.updatedAt)}
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {(quote.city || quote.state || quote.country || quote.zipCode) && (
-          <Card className="rounded-xl border border-border/60 p-4">
-            <div className="text-sm font-semibold text-muted-foreground mb-3">
-              Address
-            </div>
-            <div className="text-sm">
-              {[quote.city, quote.state, quote.country, quote.zipCode]
-                .filter(Boolean)
-                .join(", ") || "—"}
-            </div>
-          </Card>
-        )}
-
-        {Array.isArray(quote.products) && quote.products.length > 0 && (
-          <Card className="rounded-xl border border-border/60 p-4">
-            <div className="text-sm font-semibold text-muted-foreground mb-3">
-              Products / Items
-            </div>
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground border-b">
-                    <th className="pb-2 pr-2">Product</th>
-                    <th className="pb-2 pr-2 text-right">Qty</th>
-                    <th className="pb-2 text-right">Price / Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {quote.products.map((item: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="py-2 pr-2">
-                        {item.title ?? item.productName ?? item.product ?? "—"}
-                      </td>
-                      <td className="py-2 pr-2 text-right">
-                        {item.quantity ?? "—"}
-                      </td>
-                      <td className="py-2 text-right">
-                        {item.price != null && formatAmount(item.price)}
-                        {item.lineTotal != null && (
-                          <span className="text-muted-foreground ml-1">
-                            → {formatAmount(item.lineTotal)}
-                          </span>
-                        )}
-                        {item.price == null && item.lineTotal == null && "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
-
-        <Card className="rounded-xl border border-border/60 p-4">
-          <div className="text-sm font-semibold text-muted-foreground mb-3">
-            Financial Summary
-          </div>
-          <div className="space-y-2 text-sm">
-            {quote.subTotal != null && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatAmount(quote.subTotal)}</span>
-              </div>
-            )}
-            {quote.taxAmount != null && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax</span>
-                <span>{formatAmount(quote.taxAmount)}</span>
-              </div>
-            )}
-            {quote.couponCode && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Coupon</span>
-                <span>{quote.couponCode}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-semibold pt-2 border-t">
-              <span>Total</span>
-              <span>{formatAmount(quote.total)}</span>
-            </div>
-          </div>
-        </Card>
+        <QuoteItemsBreakdown quoteData={quote} />
       </section>
     </DashboardWithSidebarLayout>
   );

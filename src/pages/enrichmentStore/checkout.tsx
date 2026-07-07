@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                 ) : (
                   <div className="flex gap-3">
                     <Input
-                      placeholder="Enter Code"
+                      placeholder="FJN25"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                     />
@@ -307,7 +307,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="firstName"
-                      placeholder="Enter Name"
+                      placeholder="Jane"
                       value={formData.firstName}
                       onChange={(e) =>
                         handleInputChange("firstName", e.target.value)
@@ -320,7 +320,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="lastName"
-                      placeholder="Enter Name"
+                      placeholder="Doe"
                       value={formData.lastName}
                       onChange={(e) =>
                         handleInputChange("lastName", e.target.value)
@@ -363,7 +363,7 @@ export default function CheckoutPage() {
                   </Label>
                   <Input
                     id="streetAddress"
-                    placeholder="Enter Address"
+                    placeholder="142 W 34th Ave"
                     value={formData.streetAddress}
                     onChange={(e) =>
                       handleInputChange("streetAddress", e.target.value)
@@ -379,7 +379,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="city"
-                      placeholder="Enter City"
+                      placeholder="Anchorage"
                       value={formData.city}
                       onChange={(e) =>
                         handleInputChange("city", e.target.value)
@@ -392,7 +392,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="state"
-                      placeholder="Enter State"
+                      placeholder="Alaska"
                       value={formData.state}
                       onChange={(e) =>
                         handleInputChange("state", e.target.value)
@@ -409,7 +409,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="apartment"
-                      placeholder="Enter Country"
+                      placeholder="Suite 204"
                       value={formData.apartment}
                       onChange={(e) =>
                         handleInputChange("apartment", e.target.value)
@@ -422,7 +422,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="zipCode"
-                      placeholder="Enter Zip Code"
+                      placeholder="99503"
                       value={formData.zipCode}
                       onChange={(e) =>
                         handleInputChange("zipCode", e.target.value)
@@ -439,7 +439,7 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="organizationName"
-                      placeholder="Enter Name"
+                      placeholder="Springfield High School"
                       value={formData.organizationName}
                       onChange={(e) =>
                         handleInputChange("organizationName", e.target.value)
@@ -453,7 +453,7 @@ export default function CheckoutPage() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="Enter Email Address"
+                      placeholder="teacher@school.edu"
                       value={formData.email}
                       onChange={(e) =>
                         handleInputChange("email", e.target.value)
@@ -493,7 +493,7 @@ export default function CheckoutPage() {
                 <Label htmlFor="orderNotes">Order Notes (Optional)</Label>
                 <Textarea
                   id="orderNotes"
-                  placeholder="Write notes about your order..."
+                  placeholder="e.g. Deliver to front office, Room 204"
                   value={formData.orderNotes}
                   onChange={(e) =>
                     handleInputChange("orderNotes", e.target.value)
@@ -628,7 +628,7 @@ export default function CheckoutPage() {
                 <Label htmlFor="poNumber">PO Number</Label>
                 <Input
                   id="poNumber"
-                  placeholder="Enter PO number"
+                  placeholder="PO-2026-0042"
                   value={poNumber}
                   className="text-white"
                   onChange={(e) => setPoNumber(e.target.value)}

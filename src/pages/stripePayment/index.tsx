@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import {
+  useCreateClassroomSessionIntentMutation,
   useCreateSubscriptionMutation,
   useCreateWtrSubscriptionMutation,
   usePaymentConfigQuery,
@@ -31,6 +32,8 @@ const Payment = () => {
   const { data: paymentData } = usePaymentConfigQuery({});
 
   const [createPaymentIntent, { isLoading }] = usePaymentIntentMutation();
+  const [createClassroomSessionIntent] =
+    useCreateClassroomSessionIntentMutation();
   const [createSubscription] = useCreateSubscriptionMutation();
   const [createWtrSubscription] = useCreateWtrSubscriptionMutation();
   useEffect(() => {
@@ -65,7 +68,8 @@ const Payment = () => {
     const needsAmount =
       type !== "SUBSCRIPTION" &&
       type !== "WTR_SUBSCRIPTION" &&
-      type !== "WTR_PRINT";
+      type !== "WTR_PRINT" &&
+      type !== "CLASSROOM_SESSION";
     if (needsAmount && (!total || Number.isNaN(total))) {
       toast.error("Invalid payment amount");
       navigate(-1);
@@ -142,6 +146,24 @@ const Payment = () => {
         }
       };
       runPrint();
+    } else if (type === "CLASSROOM_SESSION") {
+      const runClassroom = async () => {
+        try {
+          const res: any = await createClassroomSessionIntent().unwrap();
+          if (res?.status && res?.data?.clientSecret) {
+            setClientSecret(res.data.clientSecret);
+          } else {
+            toast.error(res?.message || "Could not start classroom session payment.");
+            navigate("/book-a-session/classroom", { replace: true });
+          }
+        } catch (err: any) {
+          toast.error(
+            err?.data?.message || "Failed to create classroom session payment"
+          );
+          navigate("/book-a-session/classroom", { replace: true });
+        }
+      };
+      runClassroom();
     } else {
       const createIntent = async () => {
         try {
@@ -172,7 +194,9 @@ const Payment = () => {
         }}
       >
         <h1>
-          {type === "WTR_SUBSCRIPTION"
+          {type === "CLASSROOM_SESSION"
+            ? "Classroom Sessions — access payment"
+            : type === "WTR_SUBSCRIPTION"
             ? "Write to Read — payment"
             : type === "WTR_PRINT"
               ? "Write to Read — print order payment"

@@ -40,6 +40,19 @@ export const invitationSlice = createApi({
                 params: { page, limit, keyword, courseType },
             }),
         }),
+        getStudentById: builder.query<any, { studentId: string }>({
+            query: ({ studentId }) => ({
+                url: `/invitation/my-students/${studentId}`,
+                method: "GET",
+            }),
+        }),
+        resetStudentPassword: builder.mutation<any, { studentId: string; password: string }>({
+            query: ({ studentId, password }) => ({
+                url: `/invitation/my-students/${studentId}/reset-password`,
+                method: "POST",
+                body: { password },
+            }),
+        }),
         getAverageProgress: builder.query<
             any,
             { courseType?: string }
@@ -62,6 +75,8 @@ export const invitationSlice = createApi({
 export const {
     useInviteStudentMutation,
     useGetMyStudentsQuery,
+    useGetStudentByIdQuery,
+    useResetStudentPasswordMutation,
     useGetAverageProgressQuery,
     useGetAdminAccountQuery,
     useInviteStudentBulkMutation,
