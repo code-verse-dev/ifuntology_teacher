@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useCountryStateCity } from "@/hooks/useCountryStateCity";
+// import { useCountryStateCity } from "@/hooks/useCountryStateCity";
 
 type CountryStateCityFieldsProps = {
   idPrefix: string;
@@ -37,26 +38,26 @@ export default function CountryStateCityFields({
   stateLabel = "State",
   cityLabel = "City",
 }: CountryStateCityFieldsProps) {
-  const {
-    countries,
-    states,
-    cities,
-    countryIso,
-    stateIso,
-    handleCountryChange,
-    handleStateChange,
-    handleCityChange,
-  } = useCountryStateCity({
-    country,
-    state,
-    city,
-    onCountryChange,
-    onStateChange,
-    onCityChange,
-  });
+  // const {
+  //   countries,
+  //   states,
+  //   cities,
+  //   countryIso,
+  //   stateIso,
+  //   handleCountryChange,
+  //   handleStateChange,
+  //   handleCityChange,
+  // } = useCountryStateCity({
+  //   country,
+  //   state,
+  //   city,
+  //   onCountryChange,
+  //   onStateChange,
+  //   onCityChange,
+  // });
 
   const requiredMark = required ? <span className="text-red-500"> *</span> : null;
-  const selectStyles = cn(
+  const inputStyles = cn(
     "w-full disabled:cursor-not-allowed disabled:opacity-50",
     selectClassName
   );
@@ -68,21 +69,15 @@ export default function CountryStateCityFields({
           {countryLabel}
           {requiredMark}
         </Label>
-        <select
+        <Input
           id={`${idPrefix}-country`}
-          value={countryIso}
-          onChange={(e) => handleCountryChange(e.target.value)}
-          className={selectStyles}
+          value={country}
+          onChange={(e) => onCountryChange(e.target.value)}
+          className={inputStyles}
           disabled={disabled}
           required={required}
-        >
-          <option value="">Select country</option>
-          {countries.map((item) => (
-            <option key={item.isoCode} value={item.isoCode}>
-              {item.name}
-            </option>
-          ))}
-        </select>
+          placeholder="e.g. United States"
+        />
       </div>
 
       <div className={cn("space-y-2", fieldClassName)}>
@@ -90,27 +85,15 @@ export default function CountryStateCityFields({
           {stateLabel}
           {requiredMark}
         </Label>
-        <select
+        <Input
           id={`${idPrefix}-state`}
-          value={stateIso}
-          onChange={(e) => handleStateChange(e.target.value)}
-          className={selectStyles}
-          disabled={disabled || !countryIso || states.length === 0}
-          required={required && states.length > 0}
-        >
-          <option value="">
-            {!countryIso
-              ? "Select country first"
-              : states.length === 0
-                ? "No states available"
-                : "Select state"}
-          </option>
-          {states.map((item) => (
-            <option key={item.isoCode} value={item.isoCode}>
-              {item.name}
-            </option>
-          ))}
-        </select>
+          value={state}
+          onChange={(e) => onStateChange(e.target.value)}
+          className={inputStyles}
+          disabled={disabled}
+          required={required}
+          placeholder="e.g. Alaska"
+        />
       </div>
 
       <div className={cn("space-y-2", fieldClassName)}>
@@ -118,37 +101,15 @@ export default function CountryStateCityFields({
           {cityLabel}
           {requiredMark}
         </Label>
-        <select
+        <Input
           id={`${idPrefix}-city`}
           value={city}
-          onChange={(e) => handleCityChange(e.target.value)}
-          className={selectStyles}
-          disabled={
-            disabled ||
-            !countryIso ||
-            cities.length === 0 ||
-            (states.length > 0 && !stateIso)
-          }
+          onChange={(e) => onCityChange(e.target.value)}
+          className={inputStyles}
+          disabled={disabled}
           required={required}
-        >
-          <option value="">
-            {!countryIso
-              ? "Select country first"
-              : states.length > 0 && !stateIso
-                ? "Select state first"
-                : cities.length === 0
-                  ? "No cities available"
-                  : "Select city"}
-          </option>
-          {cities.map((item) => (
-            <option
-              key={`${item.name}-${item.latitude}-${item.longitude}`}
-              value={item.name}
-            >
-              {item.name}
-            </option>
-          ))}
-        </select>
+          placeholder="e.g. Anchorage"
+        />
       </div>
     </>
   );
