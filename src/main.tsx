@@ -1,4 +1,4 @@
-import "./lib/pdfWorkerSetup";
+// import "./lib/pdfWorkerSetup";
 import "./index.css";
 import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
