@@ -13,6 +13,17 @@ function storageKey(bookId: string): string {
   return `ifuntology.builderDraft.${bookId}`
 }
 
+/** Avoid one giant JSON.stringify over the full pages tree (Safari stack limits). */
+function stringifyDraftPayload(payload: BuilderDraftSnapshot): string {
+  const pagesPart = payload.pages.map((p) => JSON.stringify(p)).join(',')
+  return `{"pages":[${pagesPart}],"paperSize":${JSON.stringify(payload.paperSize)},"pageFrame":${JSON.stringify(payload.pageFrame)},"savedAt":${payload.savedAt}}`
+}
+
+export function stringifyBuilderDraftBody(snapshot: Omit<BuilderDraftSnapshot, 'savedAt'>): string {
+  const pagesPart = snapshot.pages.map((p) => JSON.stringify(p)).join(',')
+  return `{"pages":[${pagesPart}],"paperSize":${JSON.stringify(snapshot.paperSize)},"pageFrame":${JSON.stringify(snapshot.pageFrame)}}`
+}
+
 export function writeBuilderDraftCache(
   bookId: string,
   snapshot: Omit<BuilderDraftSnapshot, 'savedAt'>,
@@ -23,7 +34,7 @@ export function writeBuilderDraftCache(
       ...snapshot,
       savedAt: Date.now(),
     }
-    sessionStorage.setItem(storageKey(bookId), JSON.stringify(payload))
+    sessionStorage.setItem(storageKey(bookId), stringifyDraftPayload(payload))
   } catch {
     /* quota / private mode */
   }
