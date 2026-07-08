@@ -568,9 +568,9 @@ export default function ShopPage() {
                     onStateChange={setStateVal}
                     onCityChange={setCity}
                     required
+                    variant="shop"
                     fieldClassName="space-y-0"
                     labelClassName="text-sm font-medium text-foreground"
-                    selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>
 
@@ -665,9 +665,9 @@ export default function ShopPage() {
                         onStateChange={setShippingState}
                         onCityChange={setShippingCity}
                         required
+                        variant="shop"
                         fieldClassName="space-y-0"
                         labelClassName="text-sm font-medium text-foreground"
-                        selectClassName="mt-2 h-12 rounded-xl border-0 bg-muted/50 px-4 text-sm shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       />
                     </div>
 
