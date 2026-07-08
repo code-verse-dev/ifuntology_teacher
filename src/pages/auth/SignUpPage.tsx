@@ -1,17 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  getAllCitiesOfCountry,
-  getCitiesOfState,
-  getCountries,
-  getStatesOfCountry,
-} from "@countrystatecity/countries-browser";
-import type {
-  ICity,
-  ICountry,
-  IState,
-} from "@countrystatecity/countries-browser";
-import { Mail, Phone, User } from "lucide-react";
+  CitySelect,
+  CountrySelect,
+  StateSelect,
+} from "react-country-state-city";
+import "./signup-location-fields.css";
+import { Building2, Globe, Mail, MapPinned, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
 import AuthLayout from "@/components/layout/AuthLayout";
@@ -26,8 +21,10 @@ import {
   PASSWORD_POLICY_HINT,
 } from "@/utils/passwordValidation";
 
-const locationSelectClassName =
-  "h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+const locationDataSrc = "/country-state-city-data";
+
+const locationFieldClassName = "signup-location-field";
+const locationSelectWrapperClassName = "signup-location-select";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -48,36 +45,15 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
-  const [countries, setCountries] = useState<ICountry[]>([]);
-  const [states, setStates] = useState<IState[]>([]);
-  const [cities, setCities] = useState<ICity[]>([]);
-  const [countryIso, setCountryIso] = useState("");
-  const [stateIso, setStateIso] = useState("");
-  const [locationLoading, setLocationLoading] = useState(false);
+  const [countryId, setCountryId] = useState(0);
+  const [stateId, setStateId] = useState(0);
+  const [countryHasStates, setCountryHasStates] = useState(true);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const imageUrl = image ? URL.createObjectURL(image) : null;
 
   useEffect(() => {
     document.title = "Sign Up • iFuntology Teacher";
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    getCountries()
-      .then((list) => {
-        if (!cancelled) setCountries(list);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          toast.error("Could not load country list. Please refresh and try again.");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
@@ -111,55 +87,6 @@ export default function SignUpPage() {
     }
   };
 
-  const handleCountryChange = async (isoCode: string) => {
-    const selected = countries.find((item) => item.iso2 === isoCode);
-
-    setCountryIso(isoCode);
-    setStateIso("");
-    setStates([]);
-    setCities([]);
-    setCountry(selected?.name ?? "");
-    setStateVal("");
-    setCity("");
-
-    if (!isoCode) return;
-
-    setLocationLoading(true);
-    try {
-      const countryStates = await getStatesOfCountry(isoCode);
-      setStates(countryStates);
-      if (countryStates.length === 0) {
-        const countryCities = await getAllCitiesOfCountry(isoCode);
-        setCities(countryCities ?? []);
-      }
-    } catch {
-      toast.error("Could not load states for the selected country.");
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
-  const handleStateChange = async (isoCode: string) => {
-    const selected = states.find((item) => item.iso2 === isoCode);
-
-    setStateIso(isoCode);
-    setCities([]);
-    setStateVal(selected?.name ?? "");
-    setCity("");
-
-    if (!countryIso || !isoCode) return;
-
-    setLocationLoading(true);
-    try {
-      const stateCities = await getCitiesOfState(countryIso, isoCode);
-      setCities(stateCities ?? []);
-    } catch {
-      toast.error("Could not load cities for the selected state.");
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const passwordError = getPasswordValidationError(password);
@@ -173,6 +100,18 @@ export default function SignUpPage() {
     }
     if (!agree) {
       toast.error("You must agree to the Privacy Policy & Terms");
+      return;
+    }
+    if (!country.trim()) {
+      toast.error("Please select a country");
+      return;
+    }
+    if (countryHasStates && !stateVal.trim()) {
+      toast.error("Please select a state");
+      return;
+    }
+    if (!city.trim()) {
+      toast.error("Please select or enter a city");
       return;
     }
     const formData = new FormData();
@@ -377,27 +316,29 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-1">
+                <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="signup-country">
-                    Country <span className="text-red-500">*</span>
+                    Country <span className="text-accent">*</span>
                   </Label>
-                  <select
-                    id="signup-country"
-                    required
-                    value={countryIso}
-                    onChange={(e) => void handleCountryChange(e.target.value)}
-                    className={locationSelectClassName}
-                    disabled={isLoading || locationLoading || countries.length === 0}
-                  >
-                    <option value="">
-                      {countries.length === 0 ? "Loading countries…" : "Select country"}
-                    </option>
-                    {countries.map((item) => (
-                      <option key={item.iso2} value={item.iso2}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className={locationFieldClassName}>
+                    <Globe className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <CountrySelect
+                      id="signup-country"
+                      placeHolder="Select country"
+                      showFlag={false}
+                      src={locationDataSrc}
+                      containerClassName={locationSelectWrapperClassName}
+                      disabled={isLoading}
+                      onChange={(selected) => {
+                        setCountry(selected.name);
+                        setCountryId(selected.id);
+                        setCountryHasStates(selected.hasStates);
+                        setStateId(0);
+                        setStateVal("");
+                        setCity("");
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
@@ -413,74 +354,75 @@ export default function SignUpPage() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2 md:col-span-1">
+                <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="signup-state">
-                    State <span className="text-red-500">*</span>
+                    State{" "}
+                    {countryHasStates ? (
+                      <span className="text-accent">*</span>
+                    ) : (
+                      <span className="text-muted-foreground">(optional)</span>
+                    )}
                   </Label>
-                  <select
-                    id="signup-state"
-                    required={states.length > 0}
-                    value={stateIso}
-                    onChange={(e) => void handleStateChange(e.target.value)}
-                    className={locationSelectClassName}
-                    disabled={
-                      isLoading ||
-                      locationLoading ||
-                      !countryIso ||
-                      states.length === 0
-                    }
-                  >
-                    <option value="">
-                      {!countryIso
-                        ? "Select country first"
-                        : locationLoading
-                          ? "Loading states…"
-                          : states.length === 0
-                            ? "No states available"
-                            : "Select state"}
-                    </option>
-                    {states.map((item) => (
-                      <option key={item.iso2} value={item.iso2}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className={locationFieldClassName}>
+                    <MapPinned className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <StateSelect
+                      id="signup-state"
+                      placeHolder={
+                        !countryId
+                          ? "Select country first"
+                          : countryHasStates
+                            ? "Select state"
+                            : "No states available"
+                      }
+                      src={locationDataSrc}
+                      countryid={countryId}
+                      containerClassName={locationSelectWrapperClassName}
+                      disabled={isLoading || !countryId || !countryHasStates}
+                      onChange={(selected) => {
+                        setStateVal(selected.name);
+                        setStateId(selected.id);
+                        setCity("");
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2 md:col-span-1">
+                <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="signup-city">
-                    City <span className="text-red-500">*</span>
+                    City <span className="text-accent">*</span>
                   </Label>
-                  <select
-                    id="signup-city"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className={locationSelectClassName}
-                    disabled={
-                      isLoading ||
-                      locationLoading ||
-                      !countryIso ||
-                      cities.length === 0 ||
-                      (states.length > 0 && !stateIso)
-                    }
-                  >
-                    <option value="">
-                      {!countryIso
-                        ? "Select country first"
-                        : states.length > 0 && !stateIso
-                          ? "Select state first"
-                          : locationLoading
-                            ? "Loading cities…"
-                            : cities.length === 0
-                              ? "No cities available"
-                              : "Select city"}
-                    </option>
-                    {cities.map((item) => (
-                      <option key={`${item.id}-${item.name}`} value={item.name}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                  {countryHasStates ? (
+                    <div className={locationFieldClassName}>
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <CitySelect
+                        id="signup-city"
+                        placeHolder={
+                          !countryId
+                            ? "Select country first"
+                            : !stateId
+                              ? "Select state first"
+                              : "Select city"
+                        }
+                        countryid={countryId}
+                        stateid={stateId}
+                        containerClassName={locationSelectWrapperClassName}
+                        disabled={isLoading || !countryId || !stateId}
+                        onChange={(selected) => setCity(selected.name)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signup-city"
+                        required
+                        placeholder="Enter city"
+                        className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        disabled={isLoading || !countryId}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
