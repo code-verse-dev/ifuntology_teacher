@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { City, Country, State } from "country-state-city";
-import type { ICity, ICountry, IState } from "country-state-city";
+// import type { ICity, ICountry, IState } from "country-state-city";
 import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
@@ -39,9 +39,9 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
-  const [countries] = useState<ICountry[]>(() => Country.getAllCountries());
-  const [states, setStates] = useState<IState[]>([]);
-  const [cities, setCities] = useState<ICity[]>([]);
+  // const [countries] = useState<ICountry[]>(() => Country.getAllCountries());
+  // const [states, setStates] = useState<IState[]>([]);
+  // const [cities, setCities] = useState<ICity[]>([]);
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -83,35 +83,35 @@ export default function SignUpPage() {
     }
   };
 
-  const handleCountryChange = (isoCode: string) => {
-    const selected = countries.find((item) => item.isoCode === isoCode);
-    const countryStates = isoCode ? State.getStatesOfCountry(isoCode) : [];
+  // const handleCountryChange = (isoCode: string) => {
+  //   const selected = countries.find((item) => item.isoCode === isoCode);
+  //   const countryStates = isoCode ? State.getStatesOfCountry(isoCode) : [];
 
-    setCountryIso(isoCode);
-    setStateIso("");
-    setStates(countryStates);
-    setCities(
-      isoCode && countryStates.length === 0
-        ? City.getCitiesOfCountry(isoCode) ?? []
-        : [],
-    );
-    setCountry(selected?.name ?? "");
-    setStateVal("");
-    setCity("");
-  };
+  //   setCountryIso(isoCode);
+  //   setStateIso("");
+  //   setStates(countryStates);
+  //   setCities(
+  //     isoCode && countryStates.length === 0
+  //       ? City.getCitiesOfCountry(isoCode) ?? []
+  //       : [],
+  //   );
+  //   setCountry(selected?.name ?? "");
+  //   setStateVal("");
+  //   setCity("");
+  // };
 
-  const handleStateChange = (isoCode: string) => {
-    const selected = states.find((item) => item.isoCode === isoCode);
+  // const handleStateChange = (isoCode: string) => {
+  //   const selected = states.find((item) => item.isoCode === isoCode);
 
-    setStateIso(isoCode);
-    setCities(
-      countryIso && isoCode
-        ? City.getCitiesOfState(countryIso, isoCode) ?? []
-        : [],
-    );
-    setStateVal(selected?.name ?? "");
-    setCity("");
-  };
+  //   setStateIso(isoCode);
+  //   setCities(
+  //     countryIso && isoCode
+  //       ? City.getCitiesOfState(countryIso, isoCode) ?? []
+  //       : [],
+  //   );
+  //   setStateVal(selected?.name ?? "");
+  //   setCity("");
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,7 +330,7 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-1">
+                {/* <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="signup-country">
                     Country <span className="text-red-500">*</span>
                   </Label>
@@ -349,7 +349,7 @@ export default function SignUpPage() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
@@ -364,7 +364,7 @@ export default function SignUpPage() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2 md:col-span-1">
+                {/* <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="signup-state">
                     State <span className="text-red-500">*</span>
                   </Label>
@@ -425,7 +425,7 @@ export default function SignUpPage() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
                   <Input
