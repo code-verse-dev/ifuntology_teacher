@@ -5,7 +5,7 @@ import {
   CountrySelect,
   StateSelect,
 } from "react-country-state-city";
-import "./signup-location-fields.css";
+import "@/components/inputs/location-fields.css";
 import { Building2, Globe, Mail, MapPinned, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
@@ -23,8 +23,8 @@ import {
 
 const locationDataSrc = "/country-state-city-data";
 
-const locationFieldClassName = "signup-location-field";
-const locationSelectWrapperClassName = "signup-location-select";
+const locationFieldClassName = "location-field location-field--pill location-field--with-icon";
+const locationSelectWrapperClassName = "location-select-wrapper";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
