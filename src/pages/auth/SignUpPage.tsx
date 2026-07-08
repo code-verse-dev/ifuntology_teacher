@@ -1,7 +1,16 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { City, Country, State } from "country-state-city";
-// import type { ICity, ICountry, IState } from "country-state-city";
+import {
+  getAllCitiesOfCountry,
+  getCitiesOfState,
+  getCountries,
+  getStatesOfCountry,
+} from "@countrystatecity/countries-browser";
+import type {
+  ICity,
+  ICountry,
+  IState,
+} from "@countrystatecity/countries-browser";
 import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
@@ -39,17 +48,36 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
-  // const [countries] = useState<ICountry[]>(() => Country.getAllCountries());
-  // const [states, setStates] = useState<IState[]>([]);
-  // const [cities, setCities] = useState<ICity[]>([]);
+  const [countries, setCountries] = useState<ICountry[]>([]);
+  const [states, setStates] = useState<IState[]>([]);
+  const [cities, setCities] = useState<ICity[]>([]);
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const imageUrl = image ? URL.createObjectURL(image) : null;
 
   useEffect(() => {
     document.title = "Sign Up • iFuntology Teacher";
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getCountries()
+      .then((list) => {
+        if (!cancelled) setCountries(list);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error("Could not load country list. Please refresh and try again.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -83,35 +111,54 @@ export default function SignUpPage() {
     }
   };
 
-  // const handleCountryChange = (isoCode: string) => {
-  //   const selected = countries.find((item) => item.isoCode === isoCode);
-  //   const countryStates = isoCode ? State.getStatesOfCountry(isoCode) : [];
+  const handleCountryChange = async (isoCode: string) => {
+    const selected = countries.find((item) => item.iso2 === isoCode);
 
-  //   setCountryIso(isoCode);
-  //   setStateIso("");
-  //   setStates(countryStates);
-  //   setCities(
-  //     isoCode && countryStates.length === 0
-  //       ? City.getCitiesOfCountry(isoCode) ?? []
-  //       : [],
-  //   );
-  //   setCountry(selected?.name ?? "");
-  //   setStateVal("");
-  //   setCity("");
-  // };
+    setCountryIso(isoCode);
+    setStateIso("");
+    setStates([]);
+    setCities([]);
+    setCountry(selected?.name ?? "");
+    setStateVal("");
+    setCity("");
 
-  // const handleStateChange = (isoCode: string) => {
-  //   const selected = states.find((item) => item.isoCode === isoCode);
+    if (!isoCode) return;
 
-  //   setStateIso(isoCode);
-  //   setCities(
-  //     countryIso && isoCode
-  //       ? City.getCitiesOfState(countryIso, isoCode) ?? []
-  //       : [],
-  //   );
-  //   setStateVal(selected?.name ?? "");
-  //   setCity("");
-  // };
+    setLocationLoading(true);
+    try {
+      const countryStates = await getStatesOfCountry(isoCode);
+      setStates(countryStates);
+      if (countryStates.length === 0) {
+        const countryCities = await getAllCitiesOfCountry(isoCode);
+        setCities(countryCities ?? []);
+      }
+    } catch {
+      toast.error("Could not load states for the selected country.");
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  const handleStateChange = async (isoCode: string) => {
+    const selected = states.find((item) => item.iso2 === isoCode);
+
+    setStateIso(isoCode);
+    setCities([]);
+    setStateVal(selected?.name ?? "");
+    setCity("");
+
+    if (!countryIso || !isoCode) return;
+
+    setLocationLoading(true);
+    try {
+      const stateCities = await getCitiesOfState(countryIso, isoCode);
+      setCities(stateCities ?? []);
+    } catch {
+      toast.error("Could not load cities for the selected state.");
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,7 +377,7 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                {/* <div className="space-y-2 md:col-span-1">
+                <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="signup-country">
                     Country <span className="text-red-500">*</span>
                   </Label>
@@ -338,18 +385,20 @@ export default function SignUpPage() {
                     id="signup-country"
                     required
                     value={countryIso}
-                    onChange={(e) => handleCountryChange(e.target.value)}
+                    onChange={(e) => void handleCountryChange(e.target.value)}
                     className={locationSelectClassName}
-                    disabled={isLoading}
+                    disabled={isLoading || locationLoading || countries.length === 0}
                   >
-                    <option value="">Select country</option>
+                    <option value="">
+                      {countries.length === 0 ? "Loading countries…" : "Select country"}
+                    </option>
                     {countries.map((item) => (
-                      <option key={item.isoCode} value={item.isoCode}>
+                      <option key={item.iso2} value={item.iso2}>
                         {item.name}
                       </option>
                     ))}
                   </select>
-                </div> */}
+                </div>
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
@@ -364,7 +413,7 @@ export default function SignUpPage() {
                     />
                   </div>
                 </div>
-                {/* <div className="space-y-2 md:col-span-1">
+                <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="signup-state">
                     State <span className="text-red-500">*</span>
                   </Label>
@@ -372,19 +421,26 @@ export default function SignUpPage() {
                     id="signup-state"
                     required={states.length > 0}
                     value={stateIso}
-                    onChange={(e) => handleStateChange(e.target.value)}
+                    onChange={(e) => void handleStateChange(e.target.value)}
                     className={locationSelectClassName}
-                    disabled={isLoading || !countryIso || states.length === 0}
+                    disabled={
+                      isLoading ||
+                      locationLoading ||
+                      !countryIso ||
+                      states.length === 0
+                    }
                   >
                     <option value="">
                       {!countryIso
                         ? "Select country first"
-                        : states.length === 0
-                          ? "No states available"
-                          : "Select state"}
+                        : locationLoading
+                          ? "Loading states…"
+                          : states.length === 0
+                            ? "No states available"
+                            : "Select state"}
                     </option>
                     {states.map((item) => (
-                      <option key={item.isoCode} value={item.isoCode}>
+                      <option key={item.iso2} value={item.iso2}>
                         {item.name}
                       </option>
                     ))}
@@ -402,6 +458,7 @@ export default function SignUpPage() {
                     className={locationSelectClassName}
                     disabled={
                       isLoading ||
+                      locationLoading ||
                       !countryIso ||
                       cities.length === 0 ||
                       (states.length > 0 && !stateIso)
@@ -412,20 +469,19 @@ export default function SignUpPage() {
                         ? "Select country first"
                         : states.length > 0 && !stateIso
                           ? "Select state first"
-                          : cities.length === 0
-                            ? "No cities available"
-                            : "Select city"}
+                          : locationLoading
+                            ? "Loading cities…"
+                            : cities.length === 0
+                              ? "No cities available"
+                              : "Select city"}
                     </option>
                     {cities.map((item) => (
-                      <option
-                        key={`${item.name}-${item.latitude}-${item.longitude}`}
-                        value={item.name}
-                      >
+                      <option key={`${item.id}-${item.name}`} value={item.name}>
                         {item.name}
                       </option>
                     ))}
                   </select>
-                </div> */}
+                </div>
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
                   <Input
