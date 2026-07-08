@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { City, Country, State } from "country-state-city";
+import type { ICity, ICountry, IState } from "country-state-city";
 import { Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
@@ -9,12 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
-import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 import { Avatar } from "@/components/ui/avatar";
 import {
   getPasswordValidationError,
   PASSWORD_POLICY_HINT,
 } from "@/utils/passwordValidation";
+
+const locationSelectClassName =
+  "h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -35,6 +39,11 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [countries] = useState<ICountry[]>(() => Country.getAllCountries());
+  const [states, setStates] = useState<IState[]>([]);
+  const [cities, setCities] = useState<ICity[]>([]);
+  const [countryIso, setCountryIso] = useState("");
+  const [stateIso, setStateIso] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const imageUrl = image ? URL.createObjectURL(image) : null;
@@ -72,6 +81,36 @@ export default function SignUpPage() {
     if (e.target.files && e.target.files[0]) {
       setImage(e.target.files[0]);
     }
+  };
+
+  const handleCountryChange = (isoCode: string) => {
+    const selected = countries.find((item) => item.isoCode === isoCode);
+    const countryStates = isoCode ? State.getStatesOfCountry(isoCode) : [];
+
+    setCountryIso(isoCode);
+    setStateIso("");
+    setStates(countryStates);
+    setCities(
+      isoCode && countryStates.length === 0
+        ? City.getCitiesOfCountry(isoCode) ?? []
+        : [],
+    );
+    setCountry(selected?.name ?? "");
+    setStateVal("");
+    setCity("");
+  };
+
+  const handleStateChange = (isoCode: string) => {
+    const selected = states.find((item) => item.isoCode === isoCode);
+
+    setStateIso(isoCode);
+    setCities(
+      countryIso && isoCode
+        ? City.getCitiesOfState(countryIso, isoCode) ?? []
+        : [],
+    );
+    setStateVal(selected?.name ?? "");
+    setCity("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -291,19 +330,26 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                <CountryStateCityFields
-                  idPrefix="signup"
-                  country={country}
-                  state={stateVal}
-                  city={city}
-                  onCountryChange={setCountry}
-                  onStateChange={setStateVal}
-                  onCityChange={setCity}
-                  disabled={isLoading}
-                  required
-                  fieldClassName="space-y-2 md:col-span-1"
-                  selectClassName="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
+                <div className="space-y-2 md:col-span-1">
+                  <Label htmlFor="signup-country">
+                    Country <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="signup-country"
+                    required
+                    value={countryIso}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className={locationSelectClassName}
+                    disabled={isLoading}
+                  >
+                    <option value="">Select country</option>
+                    {countries.map((item) => (
+                      <option key={item.isoCode} value={item.isoCode}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
@@ -317,6 +363,68 @@ export default function SignUpPage() {
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     />
                   </div>
+                </div>
+                <div className="space-y-2 md:col-span-1">
+                  <Label htmlFor="signup-state">
+                    State <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="signup-state"
+                    required={states.length > 0}
+                    value={stateIso}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    className={locationSelectClassName}
+                    disabled={isLoading || !countryIso || states.length === 0}
+                  >
+                    <option value="">
+                      {!countryIso
+                        ? "Select country first"
+                        : states.length === 0
+                          ? "No states available"
+                          : "Select state"}
+                    </option>
+                    {states.map((item) => (
+                      <option key={item.isoCode} value={item.isoCode}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2 md:col-span-1">
+                  <Label htmlFor="signup-city">
+                    City <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="signup-city"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className={locationSelectClassName}
+                    disabled={
+                      isLoading ||
+                      !countryIso ||
+                      cities.length === 0 ||
+                      (states.length > 0 && !stateIso)
+                    }
+                  >
+                    <option value="">
+                      {!countryIso
+                        ? "Select country first"
+                        : states.length > 0 && !stateIso
+                          ? "Select state first"
+                          : cities.length === 0
+                            ? "No cities available"
+                            : "Select city"}
+                    </option>
+                    {cities.map((item) => (
+                      <option
+                        key={`${item.name}-${item.latitude}-${item.longitude}`}
+                        value={item.name}
+                      >
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
