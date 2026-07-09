@@ -1,4 +1,4 @@
-const MARKETING_IMAGE_BASE = "https://erp.ifuntology.com/images/";
+const MARKETING_IMAGE_BASE = "https://ifuntology.com/images/";
 
 export const marketingImageUrl = (image: string) => {
   const name = image.replace(/^\/+/, "");
