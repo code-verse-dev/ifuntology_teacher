@@ -47,6 +47,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     document.title = "Sign In • iFuntology Teacher";
+
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    if (!isMobile) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    }, 150);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
