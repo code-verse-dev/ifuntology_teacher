@@ -460,7 +460,7 @@ export default function SignUpPage() {
               />
               I Agree to the{" "}
               <a
-                href="https://erp.ifuntology.com/privacy-policy"
+                href="https://ifuntology.com/privacy-policy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"
@@ -468,7 +468,7 @@ export default function SignUpPage() {
                 Privacy Policy
               </a>{" "}
               &amp; <a
-                href="https://erp.ifuntology.com/terms-and-conditions"
+                href="https://ifuntology.com/terms-and-conditions"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"

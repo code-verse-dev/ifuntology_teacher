@@ -1,4 +1,4 @@
-export const CAREER_EXPLORER_PDF_BASE = "https://erp.ifuntology.com/pdfs";
+export const CAREER_EXPLORER_PDF_BASE = "https://ifuntology.com/pdfs";
 
 const COURSE_PDF_NAMES: Record<string, string> = {
     funtology: "Funtology",

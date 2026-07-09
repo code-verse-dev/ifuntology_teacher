@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-3 py-6 sm:px-4">
         <header className="flex items-center justify-between">
           {!isLoginPage ? (
-            <Link to="https://erp.ifuntology.com/" target="_blank" rel="noopener noreferrer" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
+            <Link to="https://ifuntology.com" target="_blank" rel="noopener noreferrer" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
               <IfuntologyMark logoOnly size="large" />
             </Link>
           ) : (

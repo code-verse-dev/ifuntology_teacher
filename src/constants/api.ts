@@ -37,8 +37,8 @@ export const UPLOADS_URL = URL ? `${URL}/Uploads/` : "/Uploads/";
 export const BASE_URL = URL ? `${URL}/api` : "/api";
 export const PUBLIC_URL = "/";
 export const WORKFORCE_EXPLORATION_FORM_PDF =
-    "https://erp.ifuntology.com/pdfs/iFuntology-Career-Exploration.pdf";
+    "https://ifuntology.com/pdfs/iFuntology-Career-Exploration.pdf";
 export const IFUNTOLOGY_GLOSSARY_PDF =
-    "https://erp.ifuntology.com/pdfs/iFuntology-Glossary.pdf";
+    "https://ifuntology.com/pdfs/iFuntology-Glossary.pdf";
 export const FUNTOLOGY_BRAIDING_PDF =
-    "https://erp.ifuntology.com/pdfs/Funtology-Braiding.pdf";
+    "https://ifuntology.com/pdfs/Funtology-Braiding.pdf";
