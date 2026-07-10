@@ -2,9 +2,9 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 
 export type InviteRowInput = {
-  email: string;
   firstName: string;
   lastName: string;
+  email?: string;
 };
 
 export type CreateInviteBatchBody = {

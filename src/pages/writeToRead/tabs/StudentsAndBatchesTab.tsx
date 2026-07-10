@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -60,6 +61,36 @@ export type InviteBatchDoc = {
 };
 
 type StudentFieldRow = InviteRowInput & { key: string };
+
+type CreatedCredential = {
+  firstName?: string;
+  lastName?: string;
+  username: string;
+  password: string;
+};
+
+function extractManualCredentials(res: any): CreatedCredential[] {
+  const data = res?.data;
+  if (!data) return [];
+
+  if (Array.isArray(data.manualCredentials)) {
+    return data.manualCredentials
+      .filter((item: any) => item?.username && item?.password)
+      .map((item: any) => ({
+        firstName: item.firstName,
+        lastName: item.lastName,
+        username: String(item.username),
+        password: String(item.password),
+      }));
+  }
+
+  return [];
+}
+
+function credentialLabel(cred: CreatedCredential) {
+  const name = [cred.firstName, cred.lastName].filter(Boolean).join(" ").trim();
+  return name || cred.username;
+}
 
 function newRowKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -123,6 +154,8 @@ export function StudentsAndBatchesTab() {
 
   const [selectedBatch, setSelectedBatch] = useState<InviteBatchDoc | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<CreatedCredential[]>([]);
   const [batchTitle, setBatchTitle] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [studentRows, setStudentRows] = useState<StudentFieldRow[]>(() => [emptyStudentRow()]);
@@ -200,6 +233,17 @@ export function StudentsAndBatchesTab() {
     setStudentRows((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
   };
 
+  const handleBatchCreateSuccess = (res: any) => {
+    const credentials = extractManualCredentials(res);
+    if (credentials.length > 0) {
+      setCreatedCredentials(credentials);
+      setCredentialsOpen(true);
+    }
+    toast.success(res?.message ?? "Batch created successfully.");
+    setCreateOpen(false);
+    setSelectedBatch(null);
+  };
+
   const handleSubmitCreate = async () => {
     if (!subscriptionId) {
       toast.error("You need an active Write to Read subscription to invite students.");
@@ -214,18 +258,18 @@ export function StudentsAndBatchesTab() {
       .map((r) => ({
         firstName: r.firstName.trim(),
         lastName: r.lastName.trim(),
-        email: r.email.trim().toLowerCase(),
+        ...(r.email.trim() ? { email: r.email.trim().toLowerCase() } : {}),
       }))
       .filter((r) => r.firstName || r.lastName || r.email);
 
     if (invites.length === 0) {
-      toast.error("Add at least one student with first name, last name, and email.");
+      toast.error("Add at least one student with first name and last name.");
       return;
     }
 
-    const incomplete = invites.find((r) => !r.firstName || !r.lastName || !r.email);
+    const incomplete = invites.find((r) => !r.firstName || !r.lastName);
     if (incomplete) {
-      toast.error("Each student needs first name, last name, and a valid email.");
+      toast.error("Each student needs a first name and last name.");
       return;
     }
 
@@ -236,9 +280,7 @@ export function StudentsAndBatchesTab() {
         invites,
       }).unwrap();
       if (res?.status) {
-        toast.success(res?.message ?? "Invitations sent.");
-        setCreateOpen(false);
-        setSelectedBatch(null);
+        handleBatchCreateSuccess(res);
       } else {
         toast.error(res?.message ?? "Could not create batch.");
       }
@@ -273,9 +315,7 @@ export function StudentsAndBatchesTab() {
         file: csvFile,
       }).unwrap();
       if (res?.status) {
-        toast.success(res?.message ?? "Batch invitations sent.");
-        setCreateOpen(false);
-        setSelectedBatch(null);
+        handleBatchCreateSuccess(res);
       } else {
         toast.error(res?.message ?? "Could not create batch from CSV.");
       }
@@ -550,7 +590,9 @@ export function StudentsAndBatchesTab() {
                           </span>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="text-sm font-medium text-slate-500">{inv.email}</span>
+                          <span className="text-sm font-medium text-slate-500">
+                            {inv.email || "—"}
+                          </span>
                         </td>
                         <td className="px-6 py-5 text-center">
                           <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{inv.booksCount ?? 0}</span>
@@ -607,7 +649,7 @@ export function StudentsAndBatchesTab() {
               Create batch & invite students
             </DialogTitle>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              At least one complete student row is required (first name, last name, email).
+              At least one student row is required (first name and last name). Email is optional.
             </p>
           </DialogHeader>
 
@@ -700,7 +742,7 @@ export function StudentsAndBatchesTab() {
                       </div>
                       <div className="space-y-2 sm:col-span-3">
                         <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                          Email
+                          Email <span className="font-normal text-slate-400">(optional)</span>
                         </Label>
                         <Input
                           type="email"
@@ -721,7 +763,8 @@ export function StudentsAndBatchesTab() {
                 Or upload CSV
               </Label>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Required headers in CSV format: <span className="font-mono">firstName,lastName,email</span>
+                Required headers: <span className="font-mono">firstName,lastName</span>. Optional:{" "}
+                <span className="font-mono">email</span>
               </p>
               <Input
                 type="file"
@@ -760,8 +803,8 @@ export function StudentsAndBatchesTab() {
                 <Info className="h-5 w-5" />
               </div>
               <p className="pt-1 text-xs font-bold leading-relaxed text-orange-600">
-                Students receive email invitations. New accounts get temporary login details from the
-                server.
+                Students with an email receive invitations automatically. Without an email, the
+                system generates a username and password for you to share manually.
               </p>
             </div>
 
@@ -786,10 +829,79 @@ export function StudentsAndBatchesTab() {
                     Sending…
                   </span>
                 ) : (
-                  "Send invitations"
+                  "Create batch"
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={credentialsOpen}
+        onOpenChange={(open) => {
+          setCredentialsOpen(open);
+          if (!open) setCreatedCredentials([]);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[2rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[520px]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="rounded-full bg-green-500/10 p-4">
+              <svg className="h-8 w-8 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M5 13l4 4L19 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <DialogHeader className="space-y-2 text-center">
+              <DialogTitle className="text-xl font-extrabold">
+                {createdCredentials.length > 1
+                  ? "Student accounts created"
+                  : "Student account created"}
+              </DialogTitle>
+              <DialogDescription>
+                Share these credentials with students who were not invited by email.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="w-full max-h-64 space-y-3 overflow-y-auto text-sm text-muted-foreground">
+              {createdCredentials.map((cred, index) => (
+                <div
+                  key={`${cred.username}-${index}`}
+                  className="rounded-lg border border-slate-200 p-3 space-y-2 dark:border-slate-700"
+                >
+                  {createdCredentials.length > 1 ? (
+                    <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                      {credentialLabel(cred)}
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
+                    <span>Username</span>
+                    <span className="font-mono text-slate-900 dark:text-white">{cred.username}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span>Password</span>
+                    <span className="font-mono text-slate-900 dark:text-white">{cred.password}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              className="w-full rounded-full"
+              onClick={() => {
+                const text = createdCredentials
+                  .map((cred) => {
+                    const label = credentialLabel(cred);
+                    return `${label}\nUsername: ${cred.username}\nPassword: ${cred.password}`;
+                  })
+                  .join("\n\n");
+                if (text && navigator.clipboard?.writeText) {
+                  navigator.clipboard.writeText(text);
+                  toast.success("Credentials copied to clipboard");
+                }
+              }}
+            >
+              Copy credentials
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
