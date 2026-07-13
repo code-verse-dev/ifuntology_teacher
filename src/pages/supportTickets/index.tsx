@@ -22,7 +22,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { useGetMyTicketsQuery } from "@/redux/services/apiSlices/ticketSlice";
+import { UPLOADS_URL } from "@/constants/api";
 
 function getStatusStyles(status: string) {
     switch (status?.toLowerCase()) {
@@ -50,9 +57,66 @@ function formatDate(dateStr?: string) {
     }
 }
 
+function formatDateTime(dateStr?: string) {
+    if (!dateStr) return "—";
+    try {
+        return new Date(dateStr).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    } catch {
+        return "—";
+    }
+}
+
+function formatComponentLabel(component?: string) {
+    switch (component?.toLowerCase()) {
+        case "lms":
+            return "LMS Platform";
+        case "enrichment_store":
+            return "Enrichment Store";
+        case "payments_billing":
+            return "Payments & Billing";
+        case "other":
+            return "Other";
+        default:
+            return component || "—";
+    }
+}
+
+function getPriorityStyles(priority: string) {
+    switch (priority?.toLowerCase()) {
+        case "urgent":
+            return "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900";
+        case "high":
+            return "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/10 dark:text-orange-400 dark:border-orange-900";
+        case "medium":
+            return "bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/10 dark:text-yellow-400 dark:border-yellow-900";
+        case "low":
+            return "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+        default:
+            return "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+    }
+}
+
+function formatLabel(value?: string) {
+    if (!value) return "—";
+    return value
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getTicketAttachment(ticket: any) {
+    return ticket?.file ?? ticket?.attachment ?? ticket?.document ?? null;
+}
+
 export default function SupportTickets() {
     const navigate = useNavigate();
     const [page, setPage] = useState(1);
+    const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
     const limit = 10;
 
     const { data, isLoading } = useGetMyTicketsQuery({ page, limit });
@@ -157,6 +221,7 @@ export default function SupportTickets() {
                                         </Badge>
                                         <Button
                                             className="rounded-xl bg-lime-600 hover:bg-lime-700 text-white h-10 px-8 transition-all font-bold min-w-[100px]"
+                                            onClick={() => setSelectedTicket(ticket)}
                                         >
                                             View
                                         </Button>
@@ -198,6 +263,109 @@ export default function SupportTickets() {
                     </div>
                 )}
             </div>
+
+            <Dialog
+                open={Boolean(selectedTicket)}
+                onOpenChange={(open) => {
+                    if (!open) setSelectedTicket(null);
+                }}
+            >
+                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[640px]">
+                    {selectedTicket && (
+                        <>
+                            <DialogHeader className="space-y-3 text-left">
+                                <DialogTitle className="text-xl font-extrabold leading-tight text-orange-500">
+                                    {selectedTicket.subject ?? "Support Ticket"}
+                                </DialogTitle>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-wider",
+                                            getStatusStyles(selectedTicket.status)
+                                        )}
+                                    >
+                                        {formatLabel(selectedTicket.status)}
+                                    </Badge>
+                                    {selectedTicket.priority && (
+                                        <Badge
+                                            variant="outline"
+                                            className={cn(
+                                                "rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-wider",
+                                                getPriorityStyles(selectedTicket.priority)
+                                            )}
+                                        >
+                                            {formatLabel(selectedTicket.priority)} Priority
+                                        </Badge>
+                                    )}
+                                </div>
+                            </DialogHeader>
+
+                            <div className="mt-6 space-y-5">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Ticket ID
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            {selectedTicket.ticketNumber ?? selectedTicket._id ?? "—"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Component
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            {formatComponentLabel(selectedTicket.component)}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Created
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            {formatDateTime(selectedTicket.createdAt)}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Last Updated
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            {formatDateTime(selectedTicket.updatedAt)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-800/50">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Description
+                                    </p>
+                                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                                        {selectedTicket.description?.trim() || "No description provided."}
+                                    </p>
+                                </div>
+
+                                {getTicketAttachment(selectedTicket) && (
+                                    <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Attachment
+                                        </p>
+                                        <a
+                                            href={UPLOADS_URL + getTicketAttachment(selectedTicket)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-2 inline-flex text-sm font-semibold text-lime-600 hover:text-lime-700 hover:underline"
+                                        >
+                                            View attachment
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </DashboardWithSidebarLayout>
     );
 }
