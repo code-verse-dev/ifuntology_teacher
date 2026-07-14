@@ -276,7 +276,7 @@ export default function StudentProfile() {
                                             {enrollment.quizProgress?.totalQuizzes ?? 0} quizzes passed
                                         </span>
                                     </div>
-                                    <div className="space-y-1.5">
+                                    {/* <div className="space-y-1.5">
                                         <div className="flex justify-between text-xs font-medium">
                                             <span>Module progress</span>
                                             <span>{enrollment.progressPercentage ?? 0}%</span>
@@ -286,7 +286,7 @@ export default function StudentProfile() {
                                             className="h-1.5"
                                             indicatorClassName="bg-lime-500"
                                         />
-                                    </div>
+                                    </div> */}
                                 </div>
                             );
                         })}
