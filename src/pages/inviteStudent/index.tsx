@@ -52,7 +52,7 @@ const makeRow = (): BulkInviteRow => ({
   firstName: "",
   lastName: "",
   email: "",
-  courseType: ["Funtology"],
+  courseType: [],
 });
 
 export default function InviteStudent() {
@@ -103,15 +103,17 @@ export default function InviteStudent() {
   const toggleRowCourse = (
     key: string,
     value: string,
-    rows: BulkInviteRow[],
     setRows: React.Dispatch<React.SetStateAction<BulkInviteRow[]>>
   ) => {
-    const row = rows.find((r) => r.key === key);
-    if (!row) return;
-    const nextCourses = row.courseType.includes(value)
-      ? row.courseType.filter((v) => v !== value)
-      : [...row.courseType, value];
-    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, courseType: nextCourses } : r)));
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.key !== key) return r;
+        const nextCourses = r.courseType.includes(value)
+          ? r.courseType.filter((v) => v !== value)
+          : [...r.courseType, value];
+        return { ...r, courseType: nextCourses };
+      })
+    );
   };
 
   const validateSeatAvailabilityByRows = (
@@ -387,7 +389,7 @@ export default function InviteStudent() {
                             <input
                               type="checkbox"
                               checked={row.courseType.includes(course)}
-                              onChange={() => toggleRowCourse(row.key, course, emailRows, setEmailRows)}
+                              onChange={() => toggleRowCourse(row.key, course, setEmailRows)}
                             />
                             {course}
                           </label>
@@ -507,7 +509,7 @@ export default function InviteStudent() {
                             <input
                               type="checkbox"
                               checked={row.courseType.includes(course)}
-                              onChange={() => toggleRowCourse(row.key, course, manualRows, setManualRows)}
+                              onChange={() => toggleRowCourse(row.key, course, setManualRows)}
                             />
                             {course}
                           </label>
