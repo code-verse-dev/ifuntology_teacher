@@ -284,13 +284,13 @@ export default function MyStudents() {
                                     </div>
 
                                     {/* Progress – dummy 0% until API provides it */}
-                                    <div className="space-y-2">
+                                    {/* <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                                             <span>Progress</span>
                                             <span>{student?.progressPercentage ?? 0}%</span>
                                         </div>
                                         <Progress value={student?.progressPercentage ?? 0} className="h-1.5" indicatorClassName="bg-lime-500" />
-                                    </div>
+                                    </div> */}
 
                                     {/* Stats */}
                                     <div className="space-y-1">
