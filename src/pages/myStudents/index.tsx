@@ -229,14 +229,21 @@ export default function MyStudents() {
                             const username = student.user?.username ? `@${student.user.username}` : student.user?.email ?? "—";
                             const initials = getInitials(firstName, lastName);
                             const color = avatarColor(index);
-                            const courseType = student.courseType ?? "—";
-                            const batchBadge = BATCH_BADGE_COLORS[courseType] ?? "border-slate-200 text-slate-600 bg-slate-50";
+                            const courseTypes: string[] =
+                                student.courseTypes?.length
+                                    ? student.courseTypes
+                                    : student.enrollments?.map((e: any) => e.courseType).filter(Boolean) ??
+                                      (student.courseType ? [student.courseType] : []);
                             const isActive = student.status === "ACTIVE";
-                            const certificates = student.subscription?.certificatesIssued ?? 0;
+                            const certificates =
+                                student.certificatesIssued ??
+                                student.subscription?.certificatesIssued ??
+                                0;
                             const totalModules = student.totalModules ?? 0;
+                            const studentKey = student.user?._id ?? student._id;
 
                             return (
-                                <Card key={student._id} className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-slate-900 flex flex-col justify-between space-y-4">
+                                <Card key={studentKey} className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-slate-900 flex flex-col justify-between space-y-4">
                                     {/* Header */}
                                     <div className="flex justify-between items-start">
                                         <div className="flex gap-3">
@@ -283,15 +290,6 @@ export default function MyStudents() {
                                         </DropdownMenu>
                                     </div>
 
-                                    {/* Progress – dummy 0% until API provides it */}
-                                    {/* <div className="space-y-2">
-                                        <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            <span>Progress</span>
-                                            <span>{student?.progressPercentage ?? 0}%</span>
-                                        </div>
-                                        <Progress value={student?.progressPercentage ?? 0} className="h-1.5" indicatorClassName="bg-lime-500" />
-                                    </div> */}
-
                                     {/* Stats */}
                                     <div className="space-y-1">
                                         <div className="flex justify-between text-[11px]">
@@ -309,11 +307,26 @@ export default function MyStudents() {
 
                                     {/* Footer Info */}
                                     <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-[11px]">
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium">Batch</span>
-                                            <Badge variant="outline" className={`rounded-md font-normal px-2 py-0 h-5 ${batchBadge}`}>
-                                                {courseType}
-                                            </Badge>
+                                        <div className="flex justify-between items-start gap-2 text-[11px]">
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 pt-0.5">Batch</span>
+                                            <div className="flex flex-wrap justify-end gap-1">
+                                                {courseTypes.length > 0 ? (
+                                                    courseTypes.map((courseType) => (
+                                                        <Badge
+                                                            key={courseType}
+                                                            variant="outline"
+                                                            className={`rounded-md font-normal px-2 py-0 h-5 ${
+                                                                BATCH_BADGE_COLORS[courseType] ??
+                                                                "border-slate-200 text-slate-600 bg-slate-50"
+                                                            }`}
+                                                        >
+                                                            {courseType}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="font-semibold text-slate-900 dark:text-white">—</span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex justify-between items-center text-[11px]">
                                             <span className="text-slate-500 dark:text-slate-400 font-medium">Status</span>
@@ -327,12 +340,6 @@ export default function MyStudents() {
                                                 {isActive ? "Active" : "Inactive"}
                                             </Badge>
                                         </div>
-                                        {/* <div className="flex justify-between items-center text-[11px]">
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium">Subscription</span>
-                                            <span className="font-semibold text-slate-900 dark:text-white capitalize">
-                                                {student.subscription?.subscriptionType?.toLowerCase() ?? "—"}
-                                            </span>
-                                        </div> */}
                                     </div>
                                 </Card>
                             );
