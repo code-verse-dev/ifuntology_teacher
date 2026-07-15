@@ -51,6 +51,7 @@ import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
 import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplorerPathway";
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
+import StudentPracticalSheetView from "./pages/myStudents/StudentPracticalSheetView";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -327,6 +328,11 @@ const App = () => {
               <Route path="/my-courses/:courseType" element={
                 <ProtectedRoute>
                   <CourseDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-students/:studentId/practical-sheet/:courseType" element={
+                <ProtectedRoute>
+                  <StudentPracticalSheetView />
                 </ProtectedRoute>
               } />
               <Route path="/my-students/:studentId" element={

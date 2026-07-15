@@ -46,7 +46,10 @@ export default function LmsKitVariantSelect({
     <div className={cn(lmsCourseFieldSelectWrap, "relative")}>
       <button
         type="button"
-        className={cn(lmsCourseFieldSelect, "text-left")}
+        className={cn(
+          lmsCourseFieldSelect,
+          "truncate whitespace-nowrap text-left"
+        )}
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -65,7 +68,7 @@ export default function LmsKitVariantSelect({
           />
           <ul
             role="listbox"
-            className="absolute left-0 right-0 top-full z-50 mt-1 overflow-visible rounded-xl border border-[#b8cfe8] bg-white py-1 shadow-lg"
+            className="absolute left-0 top-full z-50 mt-1 w-max min-w-full overflow-visible rounded-xl border border-[#b8cfe8] bg-white py-1 shadow-lg"
           >
             {LMS_KIT_VARIANTS.map((kit) =>
               kit.value === "BUNDLE_4_IN_1" ? (
@@ -77,7 +80,7 @@ export default function LmsKitVariantSelect({
                         role="option"
                         aria-selected={value === kit.value}
                         className={cn(
-                          "w-full px-4 py-2.5 text-left text-base font-medium text-slate-700 hover:bg-[#f0f7ff]",
+                          "w-full whitespace-nowrap px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-[#f0f7ff] sm:text-base",
                           value === kit.value && "bg-[#e8f2fc] text-[#1a4d8c]"
                         )}
                         onMouseEnter={() => setBundleTipOpen(true)}
@@ -105,7 +108,7 @@ export default function LmsKitVariantSelect({
                     role="option"
                     aria-selected={value === kit.value}
                     className={cn(
-                      "w-full px-4 py-2.5 text-left text-base font-medium text-slate-700 hover:bg-[#f0f7ff]",
+                      "w-full whitespace-nowrap px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-[#f0f7ff] sm:text-base",
                       value === kit.value && "bg-[#e8f2fc] text-[#1a4d8c]"
                     )}
                     onMouseEnter={() => setBundleTipOpen(false)}
