@@ -1,0 +1,134 @@
+.location-field {
+  position: relative;
+  width: 100%;
+}
+
+.location-field .location-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.location-field .stdropdown-container {
+  position: relative;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.location-field .stdropdown-input.stsearch-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.location-field .stdropdown-input.stsearch-box input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: hsl(var(--foreground));
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.location-field .stdropdown-input.stsearch-box input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.location-field .stdropdown-input.stsearch-box input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.location-field .stdropdown-tools {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.location-field .stdropdown-tool svg path {
+  fill: hsl(var(--muted-foreground));
+}
+
+.location-field .stdropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  width: 100%;
+  max-height: 14rem;
+  overflow: auto;
+  transform: none;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.8);
+  background: hsl(var(--background) / 0.98);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 28px -8px rgb(15 23 42 / 0.18);
+  z-index: 50;
+}
+
+.location-field .stdropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.location-field .stdropdown-menu::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: hsl(var(--border));
+}
+
+.location-field .stdropdown-item {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+}
+
+.location-field .stdropdown-item:hover {
+  background: hsl(var(--accent) / 0.12);
+}
+
+.location-field .stdropdown-item.selected {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.location-field--pill .stdropdown-input.stsearch-box input {
+  height: 2.75rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border) / 0.8);
+  background: hsl(var(--background) / 0.8);
+  padding: 0 2.25rem 0 2.5rem;
+}
+
+.location-field--pill .stdropdown-input.stsearch-box input:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.25);
+}
+
+.location-field--pill.location-field--with-icon .stdropdown-input.stsearch-box input {
+  padding-left: 2.5rem;
+}
+
+.location-field--shop .stdropdown-input.stsearch-box input {
+  height: 3rem;
+  border-radius: 0.75rem;
+  border: 0;
+  background: hsl(var(--muted) / 0.5);
+  padding: 0 2.25rem 0 1rem;
+  box-shadow: none;
+}
+
+.location-field--shop .stdropdown-input.stsearch-box input:focus {
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}

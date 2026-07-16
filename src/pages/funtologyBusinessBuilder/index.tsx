@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Briefcase, ZoomIn } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Briefcase, Calculator, ZoomIn } from "lucide-react";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageUrl } from "@/utils/Functions";
 import ZoomableImageDialog from "./ZoomableImageDialog";
@@ -85,6 +87,15 @@ export default function FuntologyBusinessBuilderPage() {
               </Card>
             );
           })}
+        </div>
+
+        <div className="flex justify-center pt-2">
+          <Button asChild variant="brand" size="lg" className="min-w-[240px]">
+            <Link to="/funtology-business-builder/estimate">
+              <Calculator className="h-4 w-4" />
+              Calculate Your Estimate
+            </Link>
+          </Button>
         </div>
       </section>
 

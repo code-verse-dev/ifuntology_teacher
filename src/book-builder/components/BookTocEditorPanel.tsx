@@ -20,11 +20,18 @@ type FlatRow = { entry: TocEntry; depth: number }
 const MAX_DEPTH = 2
 const DRAG_INDENT_PX = 28
 
-function flattenEntries(entries: TocEntry[], depth = 0): FlatRow[] {
+function flattenEntries(
+  entries: TocEntry[],
+  depth = 0,
+  seen: Set<string> = new Set(),
+): FlatRow[] {
+  if (depth > 64) return []
   const out: FlatRow[] = []
   for (const entry of entries) {
+    if (seen.has(entry.id)) continue
+    seen.add(entry.id)
     out.push({ entry, depth })
-    out.push(...flattenEntries(entry.children, depth + 1))
+    out.push(...flattenEntries(entry.children, depth + 1, seen))
   }
   return out
 }

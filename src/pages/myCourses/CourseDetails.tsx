@@ -153,6 +153,16 @@ export default function CourseDetails() {
                             <Button
                                 variant="brand"
                                 className="gap-2 rounded-full font-semibold"
+                                onClick={() =>
+                                    navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`)
+                                }
+                            >
+                                <Compass className="h-4 w-4" />
+                                Career Explorer Pathway
+                            </Button>
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
                                 asChild
                             >
                                 <a
@@ -178,16 +188,7 @@ export default function CourseDetails() {
                                     iFuntology Glossary
                                 </a>
                             </Button>
-                            <Button
-                                variant="brand"
-                                className="gap-2 rounded-full font-semibold"
-                                onClick={() =>
-                                    navigate(`/my-courses/${encodedCourseType}/career-explorer-pathway`)
-                                }
-                            >
-                                <Compass className="h-4 w-4" />
-                                Career Explorer Pathway
-                            </Button>
+
                         </div>
                         <h2 className="mb-5 text-xl font-bold text-slate-900 dark:text-white">Lessons</h2>
                         <Accordion

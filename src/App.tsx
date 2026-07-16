@@ -51,6 +51,7 @@ import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
 import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplorerPathway";
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
+import StudentPracticalSheetView from "./pages/myStudents/StudentPracticalSheetView";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -85,6 +86,7 @@ import BarbertologyPage from "./pages/ifuntology/courses/BarbertologyPage";
 import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
 import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
 import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
+import EstimateCalculatorPage from "./pages/funtologyBusinessBuilder/EstimateCalculatorPage";
 import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
@@ -329,6 +331,11 @@ const App = () => {
                   <CourseDetails />
                 </ProtectedRoute>
               } />
+              <Route path="/my-students/:studentId/practical-sheet/:courseType" element={
+                <ProtectedRoute>
+                  <StudentPracticalSheetView />
+                </ProtectedRoute>
+              } />
               <Route path="/my-students/:studentId" element={
                 <ProtectedRoute>
                   <StudentProfile />
@@ -546,6 +553,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <FuntologyBusinessBuilderPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder/estimate"
+                element={
+                  <ProtectedRoute>
+                    <EstimateCalculatorPage />
                   </ProtectedRoute>
                 }
               />

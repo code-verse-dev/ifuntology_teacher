@@ -1,8 +1,8 @@
 export const DAILY_WURTLE_ASSIGNMENTS_BASE =
-  "https://erp.ifuntology.com/images/assignments-wurtle";
+  "https://ifuntology.com/images/assignments-wurtle";
 
 export const DAILY_WTR_ASSIGNMENTS_BASE =
-  "https://erp.ifuntology.com/images/assignments-wtr";
+  "https://ifuntology.com/images/assignments-wtr";
 
 export const DAILY_WURTLE_ASSIGNMENTS_COUNT = 66;
 export const DAILY_WTR_ASSIGNMENTS_COUNT = 153;

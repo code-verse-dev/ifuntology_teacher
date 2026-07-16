@@ -38,7 +38,7 @@ export default function CoursePageLayout({ course }: CoursePageLayoutProps) {
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
           <a
-            href="https://erp.ifuntology.com/contact"
+            href="https://ifuntology.com/contact"
             target="_blank"
             rel="noopener noreferrer"
             className="green-button min-w-[140px]"

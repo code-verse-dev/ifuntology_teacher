@@ -12,6 +12,7 @@ import {
     Award,
     BookOpen,
     CheckCircle2,
+    ClipboardPen,
     Loader2,
     KeyRound,
     Mail,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useGetStudentByIdQuery } from "@/redux/services/apiSlices/invitationSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import { getPracticalColumns } from "@/constants/practicalSheet";
 
 const BATCH_BADGE_COLORS: Record<string, string> = {
     Funtology: "border-pink-200 text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:border-pink-800",
@@ -56,6 +58,13 @@ export default function StudentProfile() {
     const enrollments: any[] = profile?.enrollments ?? [];
     const passedCourses: string[] = profile?.passedCourses ?? [];
     const certificates: any[] = profile?.certificates ?? [];
+    const practicalSheetCourses = [
+        ...new Set(
+            enrollments
+                .map((e: any) => e.courseType as string)
+                .filter((courseType: string) => !!getPracticalColumns(courseType)),
+        ),
+    ];
 
     const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Student";
 
@@ -271,12 +280,29 @@ export default function StudentProfile() {
                                                 </Badge>
                                             )}
                                         </div>
-                                        <span className="text-xs text-muted-foreground">
-                                            {enrollment.quizProgress?.passedQuizzes ?? 0}/
-                                            {enrollment.quizProgress?.totalQuizzes ?? 0} quizzes passed
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {getPracticalColumns(enrollment.courseType) && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-full gap-1.5"
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/my-students/${studentId}/practical-sheet/${encodeURIComponent(enrollment.courseType)}`,
+                                                        )
+                                                    }
+                                                >
+                                                    <ClipboardPen className="h-3.5 w-3.5" />
+                                                    View Practical Sheet
+                                                </Button>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">
+                                                {enrollment.quizProgress?.passedQuizzes ?? 0}/
+                                                {enrollment.quizProgress?.totalQuizzes ?? 0} quizzes passed
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
+                                    {/* <div className="space-y-1.5">
                                         <div className="flex justify-between text-xs font-medium">
                                             <span>Module progress</span>
                                             <span>{enrollment.progressPercentage ?? 0}%</span>
@@ -286,11 +312,52 @@ export default function StudentProfile() {
                                             className="h-1.5"
                                             indicatorClassName="bg-lime-500"
                                         />
-                                    </div>
+                                    </div> */}
                                 </div>
                             );
                         })}
                     </div>
+                </Card>
+
+                <Card className="rounded-3xl border-none shadow-sm p-6">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <ClipboardPen className="h-5 w-5 text-lime-600" />
+                        Practical Credit Sheets
+                    </h2>
+                    {practicalSheetCourses.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            No practical sheets available for this student&apos;s enrolled courses yet.
+                        </p>
+                    ) : (
+                        <div className="space-y-3">
+                            {practicalSheetCourses.map((courseType) => (
+                                <div
+                                    key={courseType}
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-border/20 p-4"
+                                >
+                                    <div>
+                                        <p className="font-semibold">{courseType}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            View the student&apos;s daily practical log
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-full gap-1.5"
+                                        onClick={() =>
+                                            navigate(
+                                                `/my-students/${studentId}/practical-sheet/${encodeURIComponent(courseType)}`,
+                                            )
+                                        }
+                                    >
+                                        <ClipboardPen className="h-3.5 w-3.5" />
+                                        View Sheet
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Card>
 
                 <Card className="rounded-3xl border-none shadow-sm p-6">

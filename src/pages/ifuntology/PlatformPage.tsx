@@ -12,7 +12,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-const ERP_PLATFORM = "https://erp.ifuntology.com";
+const ERP_PLATFORM = "https://ifuntology.com";
 
 const platformModules: PlatformModuleItem[] = [
   {

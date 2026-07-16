@@ -118,7 +118,7 @@ export default function DashboardSidebar() {
       <SidebarHeader className="p-3">
         <div className="overflow-hidden rounded-2xl border-sidebar-border p-2 group-data-[collapsible=icon]:p-1">
           <a
-            href="https://erp.ifuntology.com/"
+            href="https://ifuntology.com"
             target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${

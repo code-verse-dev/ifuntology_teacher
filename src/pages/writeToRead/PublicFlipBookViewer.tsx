@@ -1,8 +1,9 @@
 import * as React from "react";
-import { Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { pdfjs } from "react-pdf";
 import HTMLFlipBook from "react-pageflip";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { isIOS } from "@/utils/isIOS";
 import "./public-flipbook.css";
 import { playPageFlipSound, primePageFlipSound } from "./pageFlipSound";
 
@@ -17,9 +18,12 @@ type Props = {
   pageAspect?: number;
 };
 
-/** High-res multiplier for crisp text on retina displays. */
+/** High-res multiplier for crisp text on retina displays. Capped lower on iOS. */
 function resolveRenderScale(): number {
   if (typeof window === "undefined") return 2.5;
+  if (isIOS()) {
+    return Math.min(1.75, Math.max(1.25, window.devicePixelRatio));
+  }
   return Math.min(3.5, Math.max(2, window.devicePixelRatio * 1.75));
 }
 
@@ -69,6 +73,10 @@ async function rasterizePdfPage(
 
   await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
+  if (isIOS()) {
+    return canvas.toDataURL("image/jpeg", 0.88);
+  }
+
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, "image/webp", 0.94);
   });
@@ -104,6 +112,127 @@ const PublicFlipPage = React.forwardRef<
 ));
 PublicFlipPage.displayName = "PublicFlipPage";
 
+type SimpleSpreadViewerProps = {
+  pageImages: string[];
+  pageWidth: number;
+  pageHeight: number;
+  usePortrait: boolean;
+  currentPage: number;
+  numPages: number;
+  onPageChange: (page: number) => void;
+};
+
+/** Lightweight page viewer for iOS — avoids react-pageflip stack overflows in WebKit. */
+function SimpleSpreadViewer({
+  pageImages,
+  pageWidth,
+  pageHeight,
+  usePortrait,
+  currentPage,
+  numPages,
+  onPageChange,
+}: SimpleSpreadViewerProps) {
+  const touchStartXRef = React.useRef<number | null>(null);
+  const layoutWidth = usePortrait ? pageWidth : pageWidth * 2;
+
+  const isFirst = currentPage <= 0;
+  const isLast = usePortrait
+    ? currentPage >= numPages - 1
+    : currentPage >= numPages - 2;
+
+  const goPrev = React.useCallback(() => {
+    if (isFirst) return;
+    playPageFlipSound();
+    onPageChange(Math.max(0, currentPage - (usePortrait ? 1 : 2)));
+  }, [currentPage, isFirst, onPageChange, usePortrait]);
+
+  const goNext = React.useCallback(() => {
+    if (isLast) return;
+    playPageFlipSound();
+    const step = usePortrait ? 1 : 2;
+    onPageChange(Math.min(numPages - 1, currentPage + step));
+  }, [currentPage, isLast, numPages, onPageChange, usePortrait]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (start == null) return;
+    const end = e.changedTouches[0]?.clientX ?? start;
+    const dx = end - start;
+    if (Math.abs(dx) < 36) return;
+    if (dx < 0) goNext();
+    else goPrev();
+  };
+
+  const leftUrl = pageImages[currentPage] ?? "";
+  const rightUrl = usePortrait ? null : (pageImages[currentPage + 1] ?? null);
+
+  return (
+    <div
+      className="public-flipbook__simple-spread"
+      style={{ width: layoutWidth, height: pageHeight }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {!isFirst ? (
+        <button
+          type="button"
+          className="public-flipbook__simple-nav public-flipbook__simple-nav--prev"
+          onClick={goPrev}
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      ) : null}
+      <div
+        className="public-flipbook__simple-pages"
+        style={{ width: layoutWidth, height: pageHeight }}
+      >
+        {leftUrl ? (
+          <div
+            className="public-flipbook__page"
+            style={{ width: pageWidth, height: pageHeight }}
+          >
+            <img
+              src={leftUrl}
+              alt=""
+              className="public-flipbook__page-img"
+              draggable={false}
+            />
+          </div>
+        ) : null}
+        {rightUrl ? (
+          <div
+            className="public-flipbook__page"
+            style={{ width: pageWidth, height: pageHeight }}
+          >
+            <img
+              src={rightUrl}
+              alt=""
+              className="public-flipbook__page-img"
+              draggable={false}
+            />
+          </div>
+        ) : null}
+      </div>
+      {!isLast ? (
+        <button
+          type="button"
+          className="public-flipbook__simple-nav public-flipbook__simple-nav--next"
+          onClick={goNext}
+          aria-label="Next page"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function PublicFlipBookViewer({
   fileUrl,
   title,
@@ -121,6 +250,7 @@ export default function PublicFlipBookViewer({
     () => typeof window !== "undefined" && window.innerWidth < 768,
   );
   const [zoom, setZoom] = React.useState(1);
+  const useSimpleViewer = React.useMemo(() => isIOS(), []);
   const renderScale = React.useMemo(() => resolveRenderScale(), []);
   const pdfRef = React.useRef<PDFDocumentProxy | null>(null);
 
@@ -210,6 +340,11 @@ export default function PublicFlipBookViewer({
           if (cancelled) return;
           const url = await rasterizePdfPage(pdf, i, bitmapHeight);
           urls.push(url);
+          if (useSimpleViewer) {
+            await new Promise<void>((resolve) => {
+              window.setTimeout(resolve, 0);
+            });
+          }
         }
         if (cancelled) {
           urls.forEach((url) => {
@@ -234,7 +369,7 @@ export default function PublicFlipBookViewer({
     return () => {
       cancelled = true;
     };
-  }, [fileUrl, numPages, pageWidth, pageHeight, renderScale]);
+  }, [fileUrl, numPages, pageWidth, pageHeight, renderScale, useSimpleViewer]);
 
   React.useEffect(
     () => () => {
@@ -246,12 +381,24 @@ export default function PublicFlipBookViewer({
   );
 
   const flipNext = React.useCallback(() => {
+    if (useSimpleViewer) {
+      const step = usePortrait ? 1 : 2;
+      setCurrentPage((p) => Math.min(numPages - 1, p + step));
+      playPageFlipSound();
+      return;
+    }
     bookRef.current?.pageFlip()?.flipNext();
-  }, []);
+  }, [numPages, usePortrait, useSimpleViewer]);
 
   const flipPrev = React.useCallback(() => {
+    if (useSimpleViewer) {
+      const step = usePortrait ? 1 : 2;
+      setCurrentPage((p) => Math.max(0, p - step));
+      playPageFlipSound();
+      return;
+    }
     bookRef.current?.pageFlip()?.flipPrev();
-  }, []);
+  }, [usePortrait, useSimpleViewer]);
 
   const handleFlipState = React.useCallback((state: string) => {
     if (state === "user_fold" || state === "flipping") {
@@ -270,7 +417,9 @@ export default function PublicFlipBookViewer({
   const resetZoom = React.useCallback(() => setZoom(1), []);
 
   const isFirstSpread = currentPage === 0;
-  const isLastSpread = currentPage >= numPages - 2;
+  const isLastSpread = usePortrait
+    ? currentPage >= numPages - 1
+    : currentPage >= numPages - 2;
   const totalSpreads = numPages > 0 ? Math.ceil(numPages / 2) : 0;
   const currentSpread = Math.ceil((currentPage + 1) / 2);
 
@@ -335,7 +484,9 @@ export default function PublicFlipBookViewer({
       {ready ? (
         <>
           <span className="public-flipbook__hint">
-            Drag corners to flip · +/- to zoom
+            {useSimpleViewer
+              ? "Swipe or use arrows · +/- to zoom"
+              : "Drag corners to flip · +/- to zoom"}
           </span>
           <span className="public-flipbook__pager">
             {currentSpread} / {totalSpreads}
@@ -393,6 +544,17 @@ export default function PublicFlipBookViewer({
                 transformOrigin: "top left",
               }}
             >
+            {useSimpleViewer ? (
+              <SimpleSpreadViewer
+                pageImages={pageImages}
+                pageWidth={pageWidth}
+                pageHeight={pageHeight}
+                usePortrait={usePortrait}
+                currentPage={currentPage}
+                numPages={numPages}
+                onPageChange={setCurrentPage}
+              />
+            ) : (
             <HTMLFlipBook
               key={`${pageWidth}x${pageHeight}-${usePortrait ? "p" : "l"}`}
               ref={bookRef}
@@ -429,6 +591,7 @@ export default function PublicFlipBookViewer({
                 />
               ))}
             </HTMLFlipBook>
+            )}
             </div>
           </div>
         ) : null}

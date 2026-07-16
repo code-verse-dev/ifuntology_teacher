@@ -1,6 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, Phone, User } from "lucide-react";
+import {
+  CitySelect,
+  CountrySelect,
+  StateSelect,
+} from "react-country-state-city";
+import "@/components/inputs/location-fields.css";
+import { Building2, Globe, Mail, MapPinned, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/services/apiSlices/authSlice";
 import AuthLayout from "@/components/layout/AuthLayout";
@@ -9,12 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import PasswordField from "@/components/inputs/PasswordField";
-import CountryStateCityFields from "@/components/inputs/CountryStateCityFields";
 import { Avatar } from "@/components/ui/avatar";
 import {
   getPasswordValidationError,
   PASSWORD_POLICY_HINT,
 } from "@/utils/passwordValidation";
+
+const locationDataSrc = "/country-state-city-data";
+
+const locationFieldClassName = "location-field location-field--pill location-field--with-icon";
+const locationSelectWrapperClassName = "location-select-wrapper";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -35,6 +45,9 @@ export default function SignUpPage() {
   const [stateVal, setStateVal] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [countryId, setCountryId] = useState(0);
+  const [stateId, setStateId] = useState(0);
+  const [countryHasStates, setCountryHasStates] = useState(true);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const imageUrl = image ? URL.createObjectURL(image) : null;
@@ -87,6 +100,18 @@ export default function SignUpPage() {
     }
     if (!agree) {
       toast.error("You must agree to the Privacy Policy & Terms");
+      return;
+    }
+    if (!country.trim()) {
+      toast.error("Please select a country");
+      return;
+    }
+    if (countryHasStates && !stateVal.trim()) {
+      toast.error("Please select a state");
+      return;
+    }
+    if (!city.trim()) {
+      toast.error("Please select or enter a city");
       return;
     }
     const formData = new FormData();
@@ -291,19 +316,30 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   />
                 </div>
-                <CountryStateCityFields
-                  idPrefix="signup"
-                  country={country}
-                  state={stateVal}
-                  city={city}
-                  onCountryChange={setCountry}
-                  onStateChange={setStateVal}
-                  onCityChange={setCity}
-                  disabled={isLoading}
-                  required
-                  fieldClassName="space-y-2 md:col-span-1"
-                  selectClassName="h-11 w-full rounded-full border border-border/80 bg-background/80 px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="signup-country">
+                    Country <span className="text-accent">*</span>
+                  </Label>
+                  <div className={locationFieldClassName}>
+                    <Globe className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <CountrySelect
+                      id="signup-country"
+                      placeHolder="Select country"
+                      showFlag={false}
+                      src={locationDataSrc}
+                      containerClassName={locationSelectWrapperClassName}
+                      disabled={isLoading}
+                      onChange={(selected) => {
+                        setCountry(selected.name);
+                        setCountryId(selected.id);
+                        setCountryHasStates(selected.hasStates);
+                        setStateId(0);
+                        setStateVal("");
+                        setCity("");
+                      }}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-3 md:col-span-1">
                   <Label htmlFor="phone">Phone Number (optional)</Label>
                   <div className="relative">
@@ -317,6 +353,76 @@ export default function SignUpPage() {
                       className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
                     />
                   </div>
+                </div>
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="signup-state">
+                    State{" "}
+                    {countryHasStates ? (
+                      <span className="text-accent">*</span>
+                    ) : (
+                      <span className="text-muted-foreground">(optional)</span>
+                    )}
+                  </Label>
+                  <div className={locationFieldClassName}>
+                    <MapPinned className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <StateSelect
+                      id="signup-state"
+                      placeHolder={
+                        !countryId
+                          ? "Select country first"
+                          : countryHasStates
+                            ? "Select state"
+                            : "No states available"
+                      }
+                      src={locationDataSrc}
+                      countryid={countryId}
+                      containerClassName={locationSelectWrapperClassName}
+                      disabled={isLoading || !countryId || !countryHasStates}
+                      onChange={(selected) => {
+                        setStateVal(selected.name);
+                        setStateId(selected.id);
+                        setCity("");
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3 md:col-span-1">
+                  <Label htmlFor="signup-city">
+                    City <span className="text-accent">*</span>
+                  </Label>
+                  {countryHasStates ? (
+                    <div className={locationFieldClassName}>
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <CitySelect
+                        id="signup-city"
+                        placeHolder={
+                          !countryId
+                            ? "Select country first"
+                            : !stateId
+                              ? "Select state first"
+                              : "Select city"
+                        }
+                        countryid={countryId}
+                        stateid={stateId}
+                        containerClassName={locationSelectWrapperClassName}
+                        disabled={isLoading || !countryId || !stateId}
+                        onChange={(selected) => setCity(selected.name)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signup-city"
+                        required
+                        placeholder="Enter city"
+                        className="h-11 rounded-full border-border/80 bg-background/80 pl-10"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        disabled={isLoading || !countryId}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2 md:col-span-1">
                   <Label htmlFor="streetAddress">Street Address *</Label>
@@ -354,7 +460,7 @@ export default function SignUpPage() {
               />
               I Agree to the{" "}
               <a
-                href="https://erp.ifuntology.com/privacy-policy"
+                href="https://ifuntology.com/privacy-policy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"
@@ -362,7 +468,7 @@ export default function SignUpPage() {
                 Privacy Policy
               </a>{" "}
               &amp; <a
-                href="https://erp.ifuntology.com/terms-and-conditions"
+                href="https://ifuntology.com/terms-and-conditions"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"

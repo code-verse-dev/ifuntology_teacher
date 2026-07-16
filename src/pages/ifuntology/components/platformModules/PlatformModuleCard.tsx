@@ -31,7 +31,7 @@ export default function PlatformModuleCard({
     badgeClassName,
     title,
     description,
-    href = "https://erp.ifuntology.com/platform",
+    href = "https://ifuntology.com/platform",
   } = item;
 
   const linkClass =
