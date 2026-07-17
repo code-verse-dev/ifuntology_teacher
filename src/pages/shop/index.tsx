@@ -87,8 +87,8 @@ export default function ShopPage() {
   }, []);
 
   const [includeLms, setIncludeLms] = useState(true);
-  const [includeEnrichment, setIncludeEnrichment] = useState(true);
-  const [includeWtr, setIncludeWtr] = useState(true);
+  const [includeEnrichment, setIncludeEnrichment] = useState(false);
+  const [includeWtr, setIncludeWtr] = useState(false);
 
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");

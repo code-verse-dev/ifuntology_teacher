@@ -1,3 +1,28 @@
+import {
+  Brush,
+  Droplet,
+  Droplets,
+  Eye,
+  Flame,
+  FlaskConical,
+  Gem,
+  GitBranch,
+  Grid2x2,
+  Hand,
+  Layers,
+  LayoutGrid,
+  Palette,
+  Scissors,
+  ShieldCheck,
+  Sigma,
+  Sparkles,
+  Star,
+  Wand2,
+  Waves,
+  Wind,
+  type LucideIcon,
+} from "lucide-react";
+
 export type PracticalColumn = {
   key: string;
   label: string;
@@ -104,4 +129,81 @@ export function createEmptyPracticalRows(columns: PracticalColumn[]) {
   return Array.from({ length: PRACTICAL_SHEET_ROW_COUNT }, () => ({
     cells: Object.fromEntries(columns.map((col) => [col.key, ""])),
   }));
+}
+
+export const PRACTICAL_COLUMN_ICONS: Record<string, LucideIcon> = {
+  // Shared (Funtology / Barbertology)
+  sanitationDisinfectionControl: ShieldCheck,
+  shampooRollerSettingStyling: Droplet,
+  permanentWaving: Waves,
+  permanentWaving2: Waves,
+  shampooOrConditionerDeepOnly: Droplets,
+  haircutting: Scissors,
+  facialMassages: Hand,
+  styleOnlyThermalStyling: Wind,
+  chemicalHairRelaxers: FlaskConical,
+  sectioningAndPartings: Grid2x2,
+  scalpMassagesAndTreatment: Sparkles,
+  fingerWaving: Waves,
+  coloringHighlightingSpecialty: Palette,
+  browWaxingMakeupLash: Eye,
+  braidingTwistStyling: GitBranch,
+  artificialEnhancements: Layers,
+  nails: Hand,
+  beardTrim: Scissors,
+  fadesTempsShadowFadesSpecialtyCuts: Scissors,
+  dreadlocksTwistsCornrows: GitBranch,
+  beardShaves: Wand2,
+  specialStyles: Star,
+  shaveDraping: Layers,
+  // Skintology
+  makeupRemoval: Droplet,
+  browApplications: Eye,
+  facialManipulations: Hand,
+  facialArtSpecialty: Palette,
+  deepTreatmentHotTowels: Flame,
+  drapingForMakeup: Layers,
+  lotionOilMoisturizer: Droplets,
+  mockHairRemoval: Wand2,
+  individualEyelashMannequin: Eye,
+  contourAndHighlighting: Brush,
+  fullFacialMakeup: Palette,
+  eyelashStrips: Eye,
+  eyelinerMascaraLipstick: Brush,
+  stationSetup: LayoutGrid,
+  // Nailtology
+  nailPolishRemoval: Droplet,
+  nailShaping: Scissors,
+  handArmMassages: Hand,
+  nailArtOnly10Nails: Sparkles,
+  oilTreatmentCuticlesFilePolish: Droplets,
+  nailPolish: Brush,
+  lotionMoisturizerApplication: Droplets,
+  nailPolishNailArtOn10Nails: Sparkles,
+  nailPolish3Colors: Palette,
+  nailPolish2Colors: Palette,
+  nailArtWithRhinestonesOn10Nails: Gem,
+  dailySanitationAndDisinfecting: ShieldCheck,
+  // Summary
+  total: Sigma,
+};
+
+export function getPracticalColumnIcon(key: string): LucideIcon {
+  return PRACTICAL_COLUMN_ICONS[key] ?? Sparkles;
+}
+
+export type PracticalRowStatus = "completed" | "in-progress" | "not-started";
+
+export function getPracticalRowStatus(
+  cells: Record<string, string>,
+  columns: PracticalColumn[],
+): PracticalRowStatus {
+  const dataColumns = columns.filter((col) => col.key !== "total");
+  const filled = dataColumns.filter(
+    (col) => (cells?.[col.key] ?? "").trim() !== "",
+  ).length;
+
+  if (dataColumns.length > 0 && filled === dataColumns.length) return "completed";
+  if (filled > 0) return "in-progress";
+  return "not-started";
 }

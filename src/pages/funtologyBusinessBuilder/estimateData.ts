@@ -1,7 +1,29 @@
+import {
+  AirVent,
+  AppWindow,
+  Archive,
+  Armchair,
+  Boxes,
+  Columns2,
+  ConciergeBell,
+  DoorClosed,
+  DoorOpen,
+  Droplets,
+  Frame,
+  Grid2x2,
+  Lightbulb,
+  PaintRoller,
+  PanelTop,
+  Wind,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+
 export type EstimateLineItem = {
   id: string;
   name: string;
   unitCost: number;
+  icon?: LucideIcon;
 };
 
 export type MonthlySelectableItem = {
@@ -12,37 +34,45 @@ export type MonthlySelectableItem = {
 
 /** Unit costs = image line total ÷ quantity shown on the estimate sheet. */
 export const CONSTRUCTION_ITEMS: EstimateLineItem[] = [
-  { id: "flooring", name: "Flooring", unitCost: 875 / 5 },
-  { id: "walls-paints", name: "Walls & Paints", unitCost: 2300 / 5 },
-  { id: "ceiling", name: "Ceiling", unitCost: 700 / 2 },
-  { id: "lighting", name: "Lighting", unitCost: 2500 / 3 },
-  { id: "plumbing", name: "Plumbing", unitCost: 750 / 2 },
-  { id: "electrical", name: "Electrical", unitCost: 1200 / 1 },
-  { id: "hvac", name: "HVAC", unitCost: 1000 / 2 },
-  { id: "salon-furniture", name: "Salon Furniture", unitCost: 3000 / 4 },
-  { id: "cabinets-storage", name: "Cabinets & Storage", unitCost: 2000 / 5 },
+  { id: "flooring", name: "Flooring", unitCost: 875 / 5, icon: Grid2x2 },
+  { id: "walls-paints", name: "Walls & Paints", unitCost: 2300 / 5, icon: PaintRoller },
+  { id: "ceiling", name: "Ceiling", unitCost: 700 / 2, icon: PanelTop },
+  { id: "lighting", name: "Lighting", unitCost: 2500 / 3, icon: Lightbulb },
+  { id: "plumbing", name: "Plumbing", unitCost: 750 / 2, icon: Droplets },
+  { id: "electrical", name: "Electrical", unitCost: 1200 / 1, icon: Zap },
+  { id: "hvac", name: "HVAC", unitCost: 1000 / 2, icon: AirVent },
+  { id: "salon-furniture", name: "Salon Furniture", unitCost: 3000 / 4, icon: Armchair },
+  { id: "cabinets-storage", name: "Cabinets & Storage", unitCost: 2000 / 5, icon: Archive },
 ];
 
 export const ADDITIONAL_ITEMS: EstimateLineItem[] = [
-  { id: "interior-doors", name: "Interior Doors", unitCost: 875 / 5 },
-  { id: "glass-entry-door", name: "Glass Entry Door", unitCost: 2300 / 2 },
-  { id: "window", name: "Window", unitCost: 700 / 2 },
-  { id: "custom-cabinetry", name: "Custom Cabinetry", unitCost: 2500 / 5 },
-  { id: "reception-desk", name: "Reception Desk Construction", unitCost: 750 / 1 },
+  { id: "interior-doors", name: "Interior Doors", unitCost: 875 / 5, icon: DoorClosed },
+  { id: "glass-entry-door", name: "Glass Entry Door", unitCost: 2300 / 2, icon: DoorOpen },
+  { id: "window", name: "Window", unitCost: 700 / 2, icon: AppWindow },
+  { id: "custom-cabinetry", name: "Custom Cabinetry", unitCost: 2500 / 5, icon: Boxes },
+  {
+    id: "reception-desk",
+    name: "Reception Desk Construction",
+    unitCost: 750 / 1,
+    icon: ConciergeBell,
+  },
   {
     id: "chemical-ventilation",
     name: "Chemical Ventilation System",
     unitCost: 1200 / 1,
+    icon: Wind,
   },
   {
     id: "wall-mirrors",
     name: "Wall-Mounted Salon Mirrors",
     unitCost: 1000 / 5,
+    icon: Frame,
   },
   {
     id: "glass-divider",
     name: "Glass Divider / Partition",
     unitCost: 3000 / 4,
+    icon: Columns2,
   },
 ];
 
