@@ -281,7 +281,7 @@ export default function StudentProfile() {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {getPracticalColumns(enrollment.courseType) && (
+                                            {/* {getPracticalColumns(enrollment.courseType) && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -295,7 +295,7 @@ export default function StudentProfile() {
                                                     <ClipboardPen className="h-3.5 w-3.5" />
                                                     View Practical Sheet
                                                 </Button>
-                                            )}
+                                            )} */}
                                             <span className="text-xs text-muted-foreground">
                                                 {enrollment.quizProgress?.passedQuizzes ?? 0}/
                                                 {enrollment.quizProgress?.totalQuizzes ?? 0} quizzes passed
@@ -319,7 +319,7 @@ export default function StudentProfile() {
                     </div>
                 </Card>
 
-                <Card className="rounded-3xl border-none shadow-sm p-6">
+                {/* <Card className="rounded-3xl border-none shadow-sm p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <ClipboardPen className="h-5 w-5 text-lime-600" />
                         Practical Credit Sheets
@@ -358,7 +358,7 @@ export default function StudentProfile() {
                             ))}
                         </div>
                     )}
-                </Card>
+                </Card> */}
 
                 <Card className="rounded-3xl border-none shadow-sm p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
