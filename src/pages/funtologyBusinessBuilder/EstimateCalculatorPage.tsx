@@ -1,6 +1,27 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calculator, FileDown } from "lucide-react";
+import {
+  ArrowLeft,
+  Calculator,
+  CalendarDays,
+  DollarSign,
+  FileDown,
+  HardHat,
+  LayoutGrid,
+  Package,
+  PieChart,
+  Save,
+  ShoppingCart,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -31,53 +52,154 @@ import {
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
 
+const STORAGE_KEY = "funtology-estimate-v1";
+
+function Sparkline({
+  color,
+  points,
+}: {
+  color: string;
+  points: number[];
+}) {
+  const width = 120;
+  const height = 30;
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const range = max - min || 1;
+  const step = width / (points.length - 1);
+  const path = points
+    .map(
+      (p, i) =>
+        `${i === 0 ? "M" : "L"} ${(i * step).toFixed(1)},${(
+          height -
+          ((p - min) / range) * height
+        ).toFixed(1)}`,
+    )
+    .join(" ");
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      className="h-8 w-full"
+    >
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function KpiCard({
+  label,
+  sublabel,
+  value,
+  helper,
+  icon: Icon,
+  gradient,
+  sparkline,
+}: {
+  label: string;
+  sublabel: string;
+  value: string;
+  helper?: string;
+  icon: LucideIcon;
+  gradient: string;
+  sparkline?: number[];
+}) {
+  return (
+    <Card
+      className={`relative overflow-hidden rounded-2xl border-0 p-4 text-white shadow-md ${gradient}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold leading-tight">{label}</p>
+          <p className="text-[11px] font-medium text-white/70">{sublabel}</p>
+        </div>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur">
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      <p className="mt-4 text-2xl font-extrabold tracking-tight">{value}</p>
+      {helper ? (
+        <p className="mt-0.5 text-[11px] font-medium text-white/80">{helper}</p>
+      ) : null}
+      {sparkline ? (
+        <div className="mt-2 -mb-1">
+          <Sparkline color="rgba(255,255,255,0.75)" points={sparkline} />
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
 function QuantityTable({
   title,
+  subtitle,
   items,
   qtyById,
   onQtyChange,
   sectionTotal,
   totalLabel,
+  headerGradient,
+  headerIcon: HeaderIcon,
 }: {
   title: string;
+  subtitle: string;
   items: EstimateLineItem[];
   qtyById: Record<string, string>;
   onQtyChange: (id: string, value: string) => void;
   sectionTotal: number;
   totalLabel: string;
+  headerGradient: string;
+  headerIcon: LucideIcon;
 }) {
   return (
     <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-      <div className="border-b border-border/40 bg-muted/30 px-3 py-2.5">
-        <h2 className="text-sm font-bold leading-snug text-foreground">{title}</h2>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
-          Qty × unit cost = line total
-        </p>
+      <div
+        className={`flex items-center gap-3 px-4 py-3 text-white ${headerGradient}`}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+          <HeaderIcon className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold leading-snug">{title}</h2>
+          <p className="mt-0.5 text-[11px] text-white/75">{subtitle}</p>
+        </div>
       </div>
 
       <div className="flex-1 overflow-x-auto">
         <table className="w-full text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-border/50 bg-card text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
-              <th className="px-2 py-2 sm:px-3">Item</th>
+            <tr className="border-b border-border/50 bg-muted/40 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
+              <th className="px-3 py-2">Item</th>
               <th className="w-16 px-1 py-2 text-center sm:w-20">Qty</th>
               <th className="w-[4.5rem] px-1 py-2 text-right sm:w-24">Unit</th>
-              <th className="w-[4.75rem] px-2 py-2 text-right sm:w-28 sm:px-3">
-                Total
-              </th>
+              <th className="w-[4.75rem] px-3 py-2 text-right sm:w-28">Total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => {
               const qty = parseQty(qtyById[item.id] ?? "");
               const lineTotal = qty * item.unitCost;
+              const ItemIcon = item.icon;
               return (
                 <tr
                   key={item.id}
-                  className="border-b border-border/40 last:border-0"
+                  className="border-b border-border/40 last:border-0 transition hover:bg-muted/20"
                 >
-                  <td className="px-2 py-1.5 font-medium leading-snug text-foreground sm:px-3">
-                    {item.name}
+                  <td className="px-3 py-1.5 font-medium leading-snug text-foreground">
+                    <span className="flex items-center gap-2">
+                      {ItemIcon ? (
+                        <ItemIcon className="h-4 w-4 shrink-0 text-primary" />
+                      ) : null}
+                      {item.name}
+                    </span>
                   </td>
                   <td className="px-1 py-1">
                     <Input
@@ -94,7 +216,7 @@ function QuantityTable({
                   <td className="px-1 py-1.5 text-right text-muted-foreground">
                     {formatCurrency(item.unitCost)}
                   </td>
-                  <td className="px-2 py-1.5 text-right font-semibold text-foreground sm:px-3">
+                  <td className="px-3 py-1.5 text-right font-semibold text-foreground">
                     {formatCurrency(lineTotal)}
                   </td>
                 </tr>
@@ -104,11 +226,9 @@ function QuantityTable({
         </table>
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 bg-[#e8f2fc]/60 px-3 py-2.5 dark:bg-primary/10">
-        <span className="text-xs font-semibold text-[#1a4d8c] dark:text-primary">
-          {totalLabel}
-        </span>
-        <span className="shrink-0 text-sm font-bold text-[#1a4d8c] dark:text-primary">
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 bg-muted/40 px-4 py-3">
+        <span className="text-xs font-semibold text-foreground">{totalLabel}</span>
+        <span className="shrink-0 text-sm font-bold text-primary">
           {formatCurrency(sectionTotal)}
         </span>
       </div>
@@ -135,7 +255,7 @@ function CheckboxCostList({
 }) {
   return (
     <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-      <div className="border-b border-border/40 bg-muted/30 px-3 py-2.5">
+      <div className="border-b border-border/40 bg-muted/30 px-4 py-2.5">
         <h2 className="text-sm font-bold text-foreground">{title}</h2>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
       </div>
@@ -147,7 +267,7 @@ function CheckboxCostList({
             <label
               key={item.id}
               htmlFor={`${title}-${item.id}`}
-              className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 transition hover:bg-muted/20"
+              className="flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 transition hover:bg-muted/20"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Checkbox
@@ -168,11 +288,9 @@ function CheckboxCostList({
         })}
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 bg-[#e8f2fc]/60 px-3 py-2.5 dark:bg-primary/10">
-        <span className="text-xs font-semibold text-[#1a4d8c] dark:text-primary">
-          {totalLabel}
-        </span>
-        <span className="shrink-0 text-sm font-bold text-[#1a4d8c] dark:text-primary">
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 bg-muted/40 px-4 py-3">
+        <span className="text-xs font-semibold text-foreground">{totalLabel}</span>
+        <span className="shrink-0 text-sm font-bold text-primary">
           {formatCurrency(sectionTotal)}
         </span>
       </div>
@@ -180,21 +298,69 @@ function CheckboxCostList({
   );
 }
 
+function SummaryStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="text-sm font-extrabold text-white">{value}</p>
+      <p className="text-[10px] font-medium text-white/60">{label}</p>
+    </div>
+  );
+}
+
+type SavedEstimate = {
+  constructionQty: Record<string, string>;
+  additionalQty: Record<string, string>;
+  selectedUtilities: string[];
+  selectedExpenses: string[];
+  makeupSalon: typeof MAKEUP_SALON_DEFAULTS;
+  receptionist: typeof RECEPTIONIST_DEFAULTS;
+};
+
+function loadSavedEstimate(): SavedEstimate | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedEstimate;
+  } catch {
+    return null;
+  }
+}
+
 export default function EstimateCalculatorPage() {
-  const [constructionQty, setConstructionQty] = useState(() =>
-    emptyQtyMap(CONSTRUCTION_ITEMS)
-  );
-  const [additionalQty, setAdditionalQty] = useState(() =>
-    emptyQtyMap(ADDITIONAL_ITEMS)
-  );
+  const saved = useMemo(loadSavedEstimate, []);
+
+  const [constructionQty, setConstructionQty] = useState(() => ({
+    ...emptyQtyMap(CONSTRUCTION_ITEMS),
+    ...(saved?.constructionQty ?? {}),
+  }));
+  const [additionalQty, setAdditionalQty] = useState(() => ({
+    ...emptyQtyMap(ADDITIONAL_ITEMS),
+    ...(saved?.additionalQty ?? {}),
+  }));
   const [selectedUtilities, setSelectedUtilities] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(saved?.selectedUtilities ?? []),
   );
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(saved?.selectedExpenses ?? []),
   );
-  const [makeupSalon, setMakeupSalon] = useState(MAKEUP_SALON_DEFAULTS);
-  const [receptionist, setReceptionist] = useState(RECEPTIONIST_DEFAULTS);
+  const [makeupSalon, setMakeupSalon] = useState(
+    saved?.makeupSalon ?? MAKEUP_SALON_DEFAULTS,
+  );
+  const [receptionist, setReceptionist] = useState(
+    saved?.receptionist ?? RECEPTIONIST_DEFAULTS,
+  );
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     document.title = "Calculate Your Estimate • iFuntology Teacher";
@@ -202,45 +368,67 @@ export default function EstimateCalculatorPage() {
 
   const constructionTotal = useMemo(
     () => sumLineItems(CONSTRUCTION_ITEMS, constructionQty),
-    [constructionQty]
+    [constructionQty],
   );
   const additionalTotal = useMemo(
     () => sumLineItems(ADDITIONAL_ITEMS, additionalQty),
-    [additionalQty]
+    [additionalQty],
   );
   const utilitiesTotal = useMemo(
     () => sumSelectedMonthlyItems(UTILITY_ITEMS, selectedUtilities),
-    [selectedUtilities]
+    [selectedUtilities],
   );
   const expensesTotal = useMemo(
     () => sumSelectedMonthlyItems(EXPENSE_ITEMS, selectedExpenses),
-    [selectedExpenses]
+    [selectedExpenses],
   );
   const makeupSalonMonthly = useMemo(
     () => calcMakeupSalonMonthly(makeupSalon),
-    [makeupSalon]
+    [makeupSalon],
   );
   const receptionistMonthly = useMemo(
     () => calcReceptionistMonthly(receptionist),
-    [receptionist]
+    [receptionist],
   );
   const receptionistWeeklyGross =
     parseAmount(receptionist.payRate) * parseAmount(receptionist.hoursPerWeek);
   const makeupSalonWeekly =
     parseQty(makeupSalon.stations) * parseAmount(makeupSalon.boothRentalRate);
 
-  const grandTotal =
-    constructionTotal +
-    additionalTotal +
-    utilitiesTotal +
-    expensesTotal +
-    makeupSalonMonthly +
-    receptionistMonthly;
+  const setupTotal = constructionTotal + additionalTotal;
+  const monthlyExpenses =
+    utilitiesTotal + expensesTotal + makeupSalonMonthly + receptionistMonthly;
+  const grandTotal = setupTotal + monthlyExpenses;
+
+  useEffect(() => {
+    setLastUpdated(new Date());
+  }, [grandTotal]);
+
+  const filledLineItems =
+    CONSTRUCTION_ITEMS.filter((i) => parseQty(constructionQty[i.id] ?? "") > 0)
+      .length +
+    ADDITIONAL_ITEMS.filter((i) => parseQty(additionalQty[i.id] ?? "") > 0)
+      .length;
+  const totalItems =
+    filledLineItems +
+    selectedUtilities.size +
+    selectedExpenses.size +
+    (makeupSalonMonthly > 0 ? 1 : 0) +
+    (receptionistMonthly > 0 ? 1 : 0);
+  const categories = [
+    constructionTotal,
+    additionalTotal,
+    utilitiesTotal,
+    expensesTotal,
+    makeupSalonMonthly,
+    receptionistMonthly,
+  ].filter((v) => v > 0).length;
+  const setupShare = grandTotal > 0 ? (setupTotal / grandTotal) * 100 : 0;
 
   const toggleInSet = (
     setter: Dispatch<SetStateAction<Set<string>>>,
     id: string,
-    checked: boolean
+    checked: boolean,
   ) => {
     setter((prev) => {
       const next = new Set(prev);
@@ -250,9 +438,27 @@ export default function EstimateCalculatorPage() {
     });
   };
 
+  const handleSaveEstimate = () => {
+    try {
+      const payload: SavedEstimate = {
+        constructionQty,
+        additionalQty,
+        selectedUtilities: Array.from(selectedUtilities),
+        selectedExpenses: Array.from(selectedExpenses),
+        makeupSalon,
+        receptionist,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      setLastUpdated(new Date());
+      toast.success("Estimate saved.");
+    } catch {
+      toast.error("Failed to save estimate.");
+    }
+  };
+
   const handleGeneratePdf = () => {
     if (grandTotal <= 0) {
-      toast.error("Add at least one cost before generating a PDF.");
+      toast.error("Add at least one cost before exporting a report.");
       return;
     }
     try {
@@ -279,11 +485,21 @@ export default function EstimateCalculatorPage() {
         receptionistTotal: receptionistMonthly,
         grandTotal,
       });
-      toast.success("PDF estimate downloaded.");
+      toast.success("Report exported.");
     } catch {
-      toast.error("Failed to generate PDF. Please try again.");
+      toast.error("Failed to export report. Please try again.");
     }
   };
+
+  const lastUpdatedDate = lastUpdated.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const lastUpdatedTime = lastUpdated.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   return (
     <DashboardWithSidebarLayout>
@@ -297,14 +513,17 @@ export default function EstimateCalculatorPage() {
             Back to Business Builder
           </Link>
 
-          <div className="mb-2 flex items-center gap-2 text-primary">
-            <Calculator className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">
+          <div className="mb-2 flex items-center gap-2 text-lime-500">
+            <Calculator className="h-4 w-4" />
+            <span className="text-xs font-bold uppercase tracking-widest">
               Estimate
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Calculate Your Estimate
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Calculate Your{" "}
+            <span className="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+              Estimate
+            </span>
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Enter quantities, staff costs, and select utilities and expenses.
@@ -313,11 +532,49 @@ export default function EstimateCalculatorPage() {
           </p>
         </div>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Estimated Total"
+            sublabel="All Categories"
+            value={formatCurrency(grandTotal)}
+            icon={DollarSign}
+            gradient="bg-gradient-to-br from-violet-600 to-indigo-700"
+            sparkline={[4, 8, 6, 12, 9, 15, 13, 18]}
+          />
+          <KpiCard
+            label="Setup Investment"
+            sublabel="Construction & Equipment"
+            value={formatCurrency(setupTotal)}
+            helper={
+              grandTotal > 0 ? `${setupShare.toFixed(1)}% of Total` : undefined
+            }
+            icon={TrendingUp}
+            gradient="bg-gradient-to-br from-emerald-500 to-green-700"
+            sparkline={[3, 5, 4, 7, 6, 9, 8, 11]}
+          />
+          <KpiCard
+            label="Monthly Expenses"
+            sublabel="Utilities, Staff & Ongoing"
+            value={formatCurrency(monthlyExpenses)}
+            icon={PieChart}
+            gradient="bg-gradient-to-br from-sky-500 to-blue-700"
+            sparkline={[6, 5, 8, 7, 10, 9, 12, 11]}
+          />
+          <KpiCard
+            label="Last Updated"
+            sublabel={lastUpdatedTime}
+            value={lastUpdatedDate}
+            icon={CalendarDays}
+            gradient="bg-gradient-to-br from-orange-500 to-rose-600"
+          />
+        </div>
+
         <ProfitBreakdownCharts />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
           <QuantityTable
             title="Estimated Construction Material Cost"
+            subtitle="Qty × unit cost = line total"
             items={CONSTRUCTION_ITEMS}
             qtyById={constructionQty}
             onQtyChange={(id, value) =>
@@ -325,9 +582,12 @@ export default function EstimateCalculatorPage() {
             }
             sectionTotal={constructionTotal}
             totalLabel="Construction Total"
+            headerGradient="bg-gradient-to-r from-violet-600 to-fuchsia-600"
+            headerIcon={HardHat}
           />
           <QuantityTable
             title="Additional Material & Equipment"
+            subtitle="Qty × unit cost = line total"
             items={ADDITIONAL_ITEMS}
             qtyById={additionalQty}
             onQtyChange={(id, value) =>
@@ -335,6 +595,8 @@ export default function EstimateCalculatorPage() {
             }
             sectionTotal={additionalTotal}
             totalLabel="Additional Total"
+            headerGradient="bg-gradient-to-r from-sky-500 to-blue-600"
+            headerIcon={ShoppingCart}
           />
         </div>
 
@@ -365,7 +627,7 @@ export default function EstimateCalculatorPage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
           <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-            <div className="border-b border-border/40 bg-emerald-50/80 px-3 py-2.5 dark:bg-emerald-950/30">
+            <div className="border-b border-border/40 bg-emerald-50/80 px-4 py-2.5 dark:bg-emerald-950/30">
               <h2 className="text-sm font-bold text-foreground">
                 Make Up Salon Cost
               </h2>
@@ -373,7 +635,7 @@ export default function EstimateCalculatorPage() {
                 Stations × booth rental × {WEEKS_PER_MONTH} weeks = monthly
               </p>
             </div>
-            <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-3">
+            <div className="grid flex-1 grid-cols-1 gap-3 p-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Number of Staff</Label>
                 <Input
@@ -423,7 +685,7 @@ export default function EstimateCalculatorPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1 border-t border-border/50 bg-emerald-50/50 px-3 py-2.5 dark:bg-emerald-950/20">
+            <div className="space-y-1 border-t border-border/50 bg-emerald-50/50 px-4 py-2.5 dark:bg-emerald-950/20">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Weekly booth rental</span>
                 <span className="font-medium text-foreground">
@@ -438,13 +700,13 @@ export default function EstimateCalculatorPage() {
           </Card>
 
           <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-            <div className="border-b border-border/40 bg-sky-50/80 px-3 py-2.5 dark:bg-sky-950/30">
+            <div className="border-b border-border/40 bg-sky-50/80 px-4 py-2.5 dark:bg-sky-950/30">
               <h2 className="text-sm font-bold text-foreground">Receptionist</h2>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 Pay rate × hours/week × {WEEKS_PER_MONTH} weeks = monthly gross
               </p>
             </div>
-            <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2">
+            <div className="grid flex-1 grid-cols-1 gap-3 p-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Pay Rate ($/hr)</Label>
                 <Input
@@ -479,7 +741,7 @@ export default function EstimateCalculatorPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1 border-t border-border/50 bg-sky-50/50 px-3 py-2.5 dark:bg-sky-950/20">
+            <div className="space-y-1 border-t border-border/50 bg-sky-50/50 px-4 py-2.5 dark:bg-sky-950/20">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Weekly gross pay</span>
                 <span className="font-medium text-foreground">
@@ -494,64 +756,62 @@ export default function EstimateCalculatorPage() {
           </Card>
         </div>
 
-        <Card className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Construction Total</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(constructionTotal)}
-              </span>
+        <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 shadow-lg">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md">
+                <Calculator className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-fuchsia-300">
+                  Grand Total
+                </p>
+                <p className="text-3xl font-extrabold text-white">
+                  {formatCurrency(grandTotal)}
+                </p>
+                <p className="text-[11px] font-medium text-white/60">
+                  All costs included
+                </p>
+              </div>
             </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Additional Total</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(additionalTotal)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Utilities Total</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(utilitiesTotal)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Expenses Total</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(expensesTotal)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Make Up Salon (Monthly)</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(makeupSalonMonthly)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Receptionist (Monthly)</span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(receptionistMonthly)}
-              </span>
-            </div>
-          </div>
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <Label className="text-base font-bold text-foreground">
-                Final Total Estimate
-              </Label>
-              <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                {formatCurrency(grandTotal)}
-              </p>
+            <div className="flex items-center gap-6">
+              <SummaryStat
+                icon={TrendingUp}
+                label="Setup Share"
+                value={`${setupShare.toFixed(1)}%`}
+              />
+              <SummaryStat
+                icon={Package}
+                label="Total Items"
+                value={String(totalItems)}
+              />
+              <SummaryStat
+                icon={LayoutGrid}
+                label="Categories"
+                value={String(categories)}
+              />
             </div>
-            <Button
-              type="button"
-              variant="brand"
-              className="w-full sm:w-auto"
-              onClick={handleGeneratePdf}
-            >
-              <FileDown className="h-4 w-4" />
-              Generate PDF Estimate
-            </Button>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                className="gap-2 rounded-xl border-0 bg-gradient-to-r from-fuchsia-500 to-pink-500 font-semibold text-white hover:from-fuchsia-600 hover:to-pink-600"
+                onClick={handleSaveEstimate}
+              >
+                <Save className="h-4 w-4" />
+                Save Estimate
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 rounded-xl border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                onClick={handleGeneratePdf}
+              >
+                <FileDown className="h-4 w-4" />
+                Export Report
+              </Button>
+            </div>
           </div>
         </Card>
       </section>

@@ -9,6 +9,7 @@ export type PracticalSheet = {
   _id?: string;
   courseType: string;
   name: string;
+  batchClass: string;
   startDate: string;
   dueDate: string;
   grade: string;
