@@ -79,7 +79,14 @@ function SummaryRow({
   );
 }
 
-export default function StudentBudgetPage() {
+type StudentBudgetPageProps = {
+  /** When true, render step content only (no page chrome). */
+  embedded?: boolean;
+};
+
+export default function StudentBudgetPage({
+  embedded = false,
+}: StudentBudgetPageProps) {
   const [annualSalary, setAnnualSalary] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("single");
   const [children, setChildren] = useState("0");
@@ -106,8 +113,10 @@ export default function StudentBudgetPage() {
   );
 
   useEffect(() => {
-    document.title = "Calculate Student Budget • iFuntology Teacher";
-  }, []);
+    if (!embedded) {
+      document.title = "Calculate Student Budget • iFuntology Teacher";
+    }
+  }, [embedded]);
 
   const input = useMemo(
     () => ({
@@ -155,40 +164,47 @@ export default function StudentBudgetPage() {
     });
   };
 
-  const handleGeneratePdf = () => {
+  const handleGeneratePdf = async () => {
     if (r.totalAnnualIncome <= 0) {
       toast.error("Enter an annual salary before generating a PDF.");
       return;
     }
     try {
-      generateStudentBudgetPdf(input);
+      await generateStudentBudgetPdf(input);
       toast.success("Student budget PDF downloaded.");
     } catch {
       toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
-  return (
-    <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-5 pb-10">
+  const content = (
+      <>
         <div>
-          <Link
-            to="/funtology-business-builder"
-            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Business Builder
-          </Link>
+          {!embedded && (
+            <Link
+              to="/funtology-business-builder"
+              className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Business Builder
+            </Link>
+          )}
 
           <div className="mb-2 flex items-center gap-2 text-primary">
             <Wallet className="h-5 w-5" />
             <span className="text-sm font-semibold uppercase tracking-wide">
-              Student Budget
+              {embedded ? "Step 3 · Student Budget" : "Student Budget"}
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Calculate Student Budget
-          </h1>
+          {embedded ? (
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Calculate Student Budget
+            </h2>
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Calculate Student Budget
+            </h1>
+          )}
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Enter income and household details, choose bills, and select
             expenses. Totals, taxes, savings, and what's left for the year
@@ -712,6 +728,17 @@ export default function StudentBudgetPage() {
             </Button>
           </div>
         </Card>
+      </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-5">{content}</div>;
+  }
+
+  return (
+    <DashboardWithSidebarLayout>
+      <section className="mx-auto w-full max-w-7xl space-y-5 pb-10">
+        {content}
       </section>
     </DashboardWithSidebarLayout>
   );

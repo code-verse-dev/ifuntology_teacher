@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/context/cart";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useSelector } from "react-redux";
@@ -86,8 +86,7 @@ import BarbertologyPage from "./pages/ifuntology/courses/BarbertologyPage";
 import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
 import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
 import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
-import EstimateCalculatorPage from "./pages/funtologyBusinessBuilder/EstimateCalculatorPage";
-import StudentBudgetPage from "./pages/funtologyBusinessBuilder/StudentBudgetPage";
+import BusinessBuilderWizard from "./pages/funtologyBusinessBuilder/BusinessBuilderWizard";
 import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
@@ -561,7 +560,7 @@ const App = () => {
                 path="/funtology-business-builder/estimate"
                 element={
                   <ProtectedRoute>
-                    <EstimateCalculatorPage />
+                    <BusinessBuilderWizard />
                   </ProtectedRoute>
                 }
               />
@@ -569,7 +568,7 @@ const App = () => {
                 path="/funtology-business-builder/student-budget"
                 element={
                   <ProtectedRoute>
-                    <StudentBudgetPage />
+                    <Navigate to="/funtology-business-builder/estimate" replace />
                   </ProtectedRoute>
                 }
               />
