@@ -3,8 +3,6 @@ import {
   useMemo,
   useState,
   type ComponentType,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -13,12 +11,10 @@ import {
   CalendarDays,
   DollarSign,
   FileDown,
-  HardHat,
   LayoutGrid,
   Package,
   PieChart,
   Save,
-  ShoppingCart,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -27,32 +23,22 @@ import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  ADDITIONAL_ITEMS,
-  CONSTRUCTION_ITEMS,
-  EXPENSE_ITEMS,
-  MAKEUP_SALON_DEFAULTS,
-  RECEPTIONIST_DEFAULTS,
-  UTILITY_ITEMS,
-  WEEKS_PER_MONTH,
-  calcMakeupSalonMonthly,
-  calcReceptionistMonthly,
+  ALL_ESTIMATE_ITEMS,
+  ESTIMATE_CATEGORIES,
+  FURNITURE_CATEGORY,
+  MATERIAL_CATEGORIES,
   emptyQtyMap,
   formatCurrency,
-  parseAmount,
   parseQty,
   sumLineItems,
-  sumSelectedMonthlyItems,
   type EstimateLineItem,
-  type MonthlySelectableItem,
 } from "./estimateData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
 
-const STORAGE_KEY = "funtology-estimate-v1";
+const STORAGE_KEY = "funtology-estimate-v3";
 
 function Sparkline({
   color,
@@ -198,7 +184,14 @@ function QuantityTable({
                       {ItemIcon ? (
                         <ItemIcon className="h-4 w-4 shrink-0 text-primary" />
                       ) : null}
-                      {item.name}
+                      <span>
+                        {item.name}
+                        {item.unitHint ? (
+                          <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">
+                            {item.unitHint}
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
                   </td>
                   <td className="px-1 py-1">
@@ -236,68 +229,6 @@ function QuantityTable({
   );
 }
 
-function CheckboxCostList({
-  title,
-  description,
-  items,
-  selectedIds,
-  onToggle,
-  sectionTotal,
-  totalLabel,
-}: {
-  title: string;
-  description: string;
-  items: MonthlySelectableItem[];
-  selectedIds: Set<string>;
-  onToggle: (id: string, checked: boolean) => void;
-  sectionTotal: number;
-  totalLabel: string;
-}) {
-  return (
-    <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-      <div className="border-b border-border/40 bg-muted/30 px-4 py-2.5">
-        <h2 className="text-sm font-bold text-foreground">{title}</h2>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
-      </div>
-
-      <div className="flex-1 divide-y divide-border/40">
-        {items.map((item) => {
-          const checked = selectedIds.has(item.id);
-          return (
-            <label
-              key={item.id}
-              htmlFor={`${title}-${item.id}`}
-              className="flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 transition hover:bg-muted/20"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <Checkbox
-                  id={`${title}-${item.id}`}
-                  checked={checked}
-                  onCheckedChange={(value) => onToggle(item.id, value === true)}
-                />
-                <span className="text-xs font-medium leading-snug text-foreground sm:text-sm">
-                  {item.name}
-                </span>
-              </div>
-              <span className="shrink-0 text-xs font-semibold text-muted-foreground sm:text-sm">
-                {formatCurrency(item.monthlyCost)}
-                <span className="ml-0.5 text-[10px] font-normal">/mo</span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 bg-muted/40 px-4 py-3">
-        <span className="text-xs font-semibold text-foreground">{totalLabel}</span>
-        <span className="shrink-0 text-sm font-bold text-primary">
-          {formatCurrency(sectionTotal)}
-        </span>
-      </div>
-    </Card>
-  );
-}
-
 function SummaryStat({
   icon: Icon,
   label,
@@ -319,12 +250,7 @@ function SummaryStat({
 }
 
 type SavedEstimate = {
-  constructionQty: Record<string, string>;
-  additionalQty: Record<string, string>;
-  selectedUtilities: string[];
-  selectedExpenses: string[];
-  makeupSalon: typeof MAKEUP_SALON_DEFAULTS;
-  receptionist: typeof RECEPTIONIST_DEFAULTS;
+  itemQty: Record<string, string>;
 };
 
 function loadSavedEstimate(): SavedEstimate | null {
@@ -337,117 +263,60 @@ function loadSavedEstimate(): SavedEstimate | null {
   }
 }
 
-export default function EstimateCalculatorPage() {
+type EstimateCalculatorPageProps = {
+  /** When true, render step content only (no page chrome). */
+  embedded?: boolean;
+};
+
+export default function EstimateCalculatorPage({
+  embedded = false,
+}: EstimateCalculatorPageProps) {
   const saved = useMemo(loadSavedEstimate, []);
 
-  const [constructionQty, setConstructionQty] = useState(() => ({
-    ...emptyQtyMap(CONSTRUCTION_ITEMS),
-    ...(saved?.constructionQty ?? {}),
+  const [itemQty, setItemQty] = useState(() => ({
+    ...emptyQtyMap(ALL_ESTIMATE_ITEMS),
+    ...(saved?.itemQty ?? {}),
   }));
-  const [additionalQty, setAdditionalQty] = useState(() => ({
-    ...emptyQtyMap(ADDITIONAL_ITEMS),
-    ...(saved?.additionalQty ?? {}),
-  }));
-  const [selectedUtilities, setSelectedUtilities] = useState<Set<string>>(
-    () => new Set(saved?.selectedUtilities ?? []),
-  );
-  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(
-    () => new Set(saved?.selectedExpenses ?? []),
-  );
-  const [makeupSalon, setMakeupSalon] = useState(
-    saved?.makeupSalon ?? MAKEUP_SALON_DEFAULTS,
-  );
-  const [receptionist, setReceptionist] = useState(
-    saved?.receptionist ?? RECEPTIONIST_DEFAULTS,
-  );
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
-    document.title = "Calculate Your Estimate • iFuntology Teacher";
-  }, []);
+    if (!embedded) {
+      document.title = "Calculate Your Estimate • iFuntology Teacher";
+    }
+  }, [embedded]);
 
-  const constructionTotal = useMemo(
-    () => sumLineItems(CONSTRUCTION_ITEMS, constructionQty),
-    [constructionQty],
+  const materialsTotal = useMemo(
+    () =>
+      sumLineItems(
+        MATERIAL_CATEGORIES.flatMap((c) => c.items),
+        itemQty
+      ),
+    [itemQty]
   );
-  const additionalTotal = useMemo(
-    () => sumLineItems(ADDITIONAL_ITEMS, additionalQty),
-    [additionalQty],
+  const furnitureTotal = useMemo(
+    () => sumLineItems(FURNITURE_CATEGORY.items, itemQty),
+    [itemQty]
   );
-  const utilitiesTotal = useMemo(
-    () => sumSelectedMonthlyItems(UTILITY_ITEMS, selectedUtilities),
-    [selectedUtilities],
-  );
-  const expensesTotal = useMemo(
-    () => sumSelectedMonthlyItems(EXPENSE_ITEMS, selectedExpenses),
-    [selectedExpenses],
-  );
-  const makeupSalonMonthly = useMemo(
-    () => calcMakeupSalonMonthly(makeupSalon),
-    [makeupSalon],
-  );
-  const receptionistMonthly = useMemo(
-    () => calcReceptionistMonthly(receptionist),
-    [receptionist],
-  );
-  const receptionistWeeklyGross =
-    parseAmount(receptionist.payRate) * parseAmount(receptionist.hoursPerWeek);
-  const makeupSalonWeekly =
-    parseQty(makeupSalon.stations) * parseAmount(makeupSalon.boothRentalRate);
 
-  const setupTotal = constructionTotal + additionalTotal;
-  const monthlyExpenses =
-    utilitiesTotal + expensesTotal + makeupSalonMonthly + receptionistMonthly;
-  const grandTotal = setupTotal + monthlyExpenses;
+  const setupTotal = materialsTotal + furnitureTotal;
+  const grandTotal = setupTotal;
 
   useEffect(() => {
     setLastUpdated(new Date());
   }, [grandTotal]);
 
-  const filledLineItems =
-    CONSTRUCTION_ITEMS.filter((i) => parseQty(constructionQty[i.id] ?? "") > 0)
-      .length +
-    ADDITIONAL_ITEMS.filter((i) => parseQty(additionalQty[i.id] ?? "") > 0)
-      .length;
-  const totalItems =
-    filledLineItems +
-    selectedUtilities.size +
-    selectedExpenses.size +
-    (makeupSalonMonthly > 0 ? 1 : 0) +
-    (receptionistMonthly > 0 ? 1 : 0);
-  const categories = [
-    constructionTotal,
-    additionalTotal,
-    utilitiesTotal,
-    expensesTotal,
-    makeupSalonMonthly,
-    receptionistMonthly,
-  ].filter((v) => v > 0).length;
-  const setupShare = grandTotal > 0 ? (setupTotal / grandTotal) * 100 : 0;
-
-  const toggleInSet = (
-    setter: Dispatch<SetStateAction<Set<string>>>,
-    id: string,
-    checked: boolean,
-  ) => {
-    setter((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
+  const filledLineItems = ALL_ESTIMATE_ITEMS.filter(
+    (i) => parseQty(itemQty[i.id] ?? "") > 0
+  ).length;
+  const totalItems = filledLineItems;
+  const categories = ESTIMATE_CATEGORIES.filter(
+    (c) => sumLineItems(c.items, itemQty) > 0
+  ).length;
+  const materialsShare = grandTotal > 0 ? (materialsTotal / grandTotal) * 100 : 0;
 
   const handleSaveEstimate = () => {
     try {
-      const payload: SavedEstimate = {
-        constructionQty,
-        additionalQty,
-        selectedUtilities: Array.from(selectedUtilities),
-        selectedExpenses: Array.from(selectedExpenses),
-        makeupSalon,
-        receptionist,
-      };
+      const payload: SavedEstimate = { itemQty };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       setLastUpdated(new Date());
       toast.success("Estimate saved.");
@@ -456,33 +325,16 @@ export default function EstimateCalculatorPage() {
     }
   };
 
-  const handleGeneratePdf = () => {
+  const handleGeneratePdf = async () => {
     if (grandTotal <= 0) {
       toast.error("Add at least one cost before exporting a report.");
       return;
     }
     try {
-      generateEstimatePdf({
-        constructionQty,
-        additionalQty,
-        selectedUtilityIds: Array.from(selectedUtilities),
-        selectedExpenseIds: Array.from(selectedExpenses),
-        makeupSalon: {
-          ...makeupSalon,
-          weeklyTotal: makeupSalonWeekly,
-          monthlyTotal: makeupSalonMonthly,
-        },
-        receptionist: {
-          ...receptionist,
-          weeklyGross: receptionistWeeklyGross,
-          monthlyTotal: receptionistMonthly,
-        },
-        constructionTotal,
-        additionalTotal,
-        utilitiesTotal,
-        expensesTotal,
-        makeupSalonTotal: makeupSalonMonthly,
-        receptionistTotal: receptionistMonthly,
+      await generateEstimatePdf({
+        itemQty,
+        materialsTotal,
+        furnitureTotal,
         grandTotal,
       });
       toast.success("Report exported.");
@@ -501,34 +353,43 @@ export default function EstimateCalculatorPage() {
     minute: "2-digit",
   });
 
-  return (
-    <DashboardWithSidebarLayout>
-      <section className="mx-auto w-full max-w-7xl space-y-5 pb-10">
+  const content = (
+      <>
         <div>
-          <Link
-            to="/funtology-business-builder"
-            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Business Builder
-          </Link>
+          {!embedded && (
+            <Link
+              to="/funtology-business-builder"
+              className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Business Builder
+            </Link>
+          )}
 
           <div className="mb-2 flex items-center gap-2 text-lime-500">
             <Calculator className="h-4 w-4" />
             <span className="text-xs font-bold uppercase tracking-widest">
-              Estimate
+              {embedded ? "Step 2 · Salon Estimate" : "Estimate"}
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-            Calculate Your{" "}
-            <span className="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
-              Estimate
-            </span>
-          </h1>
+          {embedded ? (
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              Calculate Your{" "}
+              <span className="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+                Estimate
+              </span>
+            </h2>
+          ) : (
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+              Calculate Your{" "}
+              <span className="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+                Estimate
+              </span>
+            </h1>
+          )}
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Enter quantities, staff costs, and select utilities and expenses.
-            Final total includes construction, additional materials, utilities,
-            expenses, make up salon, and receptionist costs.
+            Enter quantities for raw materials and salon furniture &amp;
+            equipment. Final total is the sum of all selected line items.
           </p>
         </div>
 
@@ -542,20 +403,22 @@ export default function EstimateCalculatorPage() {
             sparkline={[4, 8, 6, 12, 9, 15, 13, 18]}
           />
           <KpiCard
-            label="Setup Investment"
-            sublabel="Construction & Equipment"
-            value={formatCurrency(setupTotal)}
+            label="Raw Materials"
+            sublabel="Construction Materials"
+            value={formatCurrency(materialsTotal)}
             helper={
-              grandTotal > 0 ? `${setupShare.toFixed(1)}% of Total` : undefined
+              grandTotal > 0
+                ? `${materialsShare.toFixed(1)}% of Total`
+                : undefined
             }
             icon={TrendingUp}
             gradient="bg-gradient-to-br from-emerald-500 to-green-700"
             sparkline={[3, 5, 4, 7, 6, 9, 8, 11]}
           />
           <KpiCard
-            label="Monthly Expenses"
-            sublabel="Utilities, Staff & Ongoing"
-            value={formatCurrency(monthlyExpenses)}
+            label="Furniture & Equipment"
+            sublabel="Salon Retail Items"
+            value={formatCurrency(furnitureTotal)}
             icon={PieChart}
             gradient="bg-gradient-to-br from-sky-500 to-blue-700"
             sparkline={[6, 5, 8, 7, 10, 9, 12, 11]}
@@ -572,188 +435,25 @@ export default function EstimateCalculatorPage() {
         <ProfitBreakdownCharts />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          <QuantityTable
-            title="Estimated Construction Material Cost"
-            subtitle="Qty × unit cost = line total"
-            items={CONSTRUCTION_ITEMS}
-            qtyById={constructionQty}
-            onQtyChange={(id, value) =>
-              setConstructionQty((prev) => ({ ...prev, [id]: value }))
-            }
-            sectionTotal={constructionTotal}
-            totalLabel="Construction Total"
-            headerGradient="bg-gradient-to-r from-violet-600 to-fuchsia-600"
-            headerIcon={HardHat}
-          />
-          <QuantityTable
-            title="Additional Material & Equipment"
-            subtitle="Qty × unit cost = line total"
-            items={ADDITIONAL_ITEMS}
-            qtyById={additionalQty}
-            onQtyChange={(id, value) =>
-              setAdditionalQty((prev) => ({ ...prev, [id]: value }))
-            }
-            sectionTotal={additionalTotal}
-            totalLabel="Additional Total"
-            headerGradient="bg-gradient-to-r from-sky-500 to-blue-600"
-            headerIcon={ShoppingCart}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          <CheckboxCostList
-            title="Utilities"
-            description="Select utilities to include monthly cost."
-            items={UTILITY_ITEMS}
-            selectedIds={selectedUtilities}
-            onToggle={(id, checked) =>
-              toggleInSet(setSelectedUtilities, id, checked)
-            }
-            sectionTotal={utilitiesTotal}
-            totalLabel="Utilities Total / mo"
-          />
-          <CheckboxCostList
-            title="Expenses (Monthly)"
-            description="Select expenses to include monthly cost."
-            items={EXPENSE_ITEMS}
-            selectedIds={selectedExpenses}
-            onToggle={(id, checked) =>
-              toggleInSet(setSelectedExpenses, id, checked)
-            }
-            sectionTotal={expensesTotal}
-            totalLabel="Expenses Total / mo"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-            <div className="border-b border-border/40 bg-emerald-50/80 px-4 py-2.5 dark:bg-emerald-950/30">
-              <h2 className="text-sm font-bold text-foreground">
-                Make Up Salon Cost
-              </h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Stations × booth rental × {WEEKS_PER_MONTH} weeks = monthly
-              </p>
-            </div>
-            <div className="grid flex-1 grid-cols-1 gap-3 p-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Number of Staff</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  className="h-9"
-                  value={makeupSalon.staff}
-                  placeholder="0"
-                  onChange={(e) =>
-                    setMakeupSalon((prev) => ({
-                      ...prev,
-                      staff: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Number of Stations</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  className="h-9"
-                  value={makeupSalon.stations}
-                  placeholder="0"
-                  onChange={(e) =>
-                    setMakeupSalon((prev) => ({
-                      ...prev,
-                      stations: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Booth Rental Rate</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className="h-9"
-                  value={makeupSalon.boothRentalRate}
-                  onChange={(e) =>
-                    setMakeupSalon((prev) => ({
-                      ...prev,
-                      boothRentalRate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-1 border-t border-border/50 bg-emerald-50/50 px-4 py-2.5 dark:bg-emerald-950/20">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Weekly booth rental</span>
-                <span className="font-medium text-foreground">
-                  {formatCurrency(makeupSalonWeekly)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                <span>Monthly total</span>
-                <span>{formatCurrency(makeupSalonMonthly)}</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
-            <div className="border-b border-border/40 bg-sky-50/80 px-4 py-2.5 dark:bg-sky-950/30">
-              <h2 className="text-sm font-bold text-foreground">Receptionist</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Pay rate × hours/week × {WEEKS_PER_MONTH} weeks = monthly gross
-              </p>
-            </div>
-            <div className="grid flex-1 grid-cols-1 gap-3 p-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Pay Rate ($/hr)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className="h-9"
-                  value={receptionist.payRate}
-                  onChange={(e) =>
-                    setReceptionist((prev) => ({
-                      ...prev,
-                      payRate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Hours per Week</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.5"
-                  className="h-9"
-                  value={receptionist.hoursPerWeek}
-                  placeholder="0"
-                  onChange={(e) =>
-                    setReceptionist((prev) => ({
-                      ...prev,
-                      hoursPerWeek: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-1 border-t border-border/50 bg-sky-50/50 px-4 py-2.5 dark:bg-sky-950/20">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Weekly gross pay</span>
-                <span className="font-medium text-foreground">
-                  {formatCurrency(receptionistWeeklyGross)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs font-semibold text-sky-700 dark:text-sky-400">
-                <span>Monthly total</span>
-                <span>{formatCurrency(receptionistMonthly)}</span>
-              </div>
-            </div>
-          </Card>
+          {ESTIMATE_CATEGORIES.map((category) => {
+            const sectionTotal = sumLineItems(category.items, itemQty);
+            return (
+              <QuantityTable
+                key={category.id}
+                title={category.title}
+                subtitle={category.subtitle}
+                items={category.items}
+                qtyById={itemQty}
+                onQtyChange={(id, value) =>
+                  setItemQty((prev) => ({ ...prev, [id]: value }))
+                }
+                sectionTotal={sectionTotal}
+                totalLabel="Section Total"
+                headerGradient={category.headerGradient}
+                headerIcon={category.headerIcon}
+              />
+            );
+          })}
         </div>
 
         <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 shadow-lg">
@@ -778,8 +478,8 @@ export default function EstimateCalculatorPage() {
             <div className="flex items-center gap-6">
               <SummaryStat
                 icon={TrendingUp}
-                label="Setup Share"
-                value={`${setupShare.toFixed(1)}%`}
+                label="Materials Share"
+                value={`${materialsShare.toFixed(1)}%`}
               />
               <SummaryStat
                 icon={Package}
@@ -814,6 +514,17 @@ export default function EstimateCalculatorPage() {
             </div>
           </div>
         </Card>
+      </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-5">{content}</div>;
+  }
+
+  return (
+    <DashboardWithSidebarLayout>
+      <section className="mx-auto w-full max-w-7xl space-y-5 pb-10">
+        {content}
       </section>
     </DashboardWithSidebarLayout>
   );

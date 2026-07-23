@@ -27,11 +27,14 @@ import {
   Users,
 } from "lucide-react";
 import {
+  computeRowCreditTotal,
   createEmptyPracticalRows,
   getPracticalColumnIcon,
   getPracticalColumns,
   getPracticalRowStatus,
-  PRACTICAL_SHEET_ROW_COUNT,
+  PRACTICAL_SHEET_DATA_ROW_COUNT,
+  PRACTICAL_SHEET_INTRO,
+  PRACTICAL_SHEET_LOG_TITLE,
   type PracticalColumn,
   type PracticalRowStatus,
 } from "@/constants/practicalSheet";
@@ -93,13 +96,17 @@ function buildViewState(
     grade: data?.grade ?? "",
     exists: data?.exists ?? false,
     rows: emptyRows.map((fallback, index) => {
+      if (index === 0) return fallback;
       const incoming = incomingRows[index];
       if (!incoming?.cells) return fallback;
-      return {
-        cells: Object.fromEntries(
-          columns.map((col) => [col.key, incoming.cells?.[col.key] ?? ""]),
-        ),
-      };
+      const cells = Object.fromEntries(
+        columns.map((col) => [
+          col.key,
+          col.key === "total" ? "" : (incoming.cells?.[col.key] ?? ""),
+        ]),
+      );
+      cells.total = computeRowCreditTotal(cells, columns);
+      return { cells };
     }),
   };
 }
@@ -235,14 +242,15 @@ export default function StudentPracticalSheetView() {
   }, [columns, data, isLoading]);
 
   const stats = useMemo(() => {
-    const total = PRACTICAL_SHEET_ROW_COUNT;
+    const total = PRACTICAL_SHEET_DATA_ROW_COUNT;
     if (!sheet || !columns) {
       return { completed: 0, inProgress: 0, notStarted: total, remaining: total, percent: 0 };
     }
     let completed = 0;
     let inProgress = 0;
     let notStarted = 0;
-    sheet.rows.forEach((row) => {
+    sheet.rows.forEach((row, index) => {
+      if (index === 0) return;
       const status = getPracticalRowStatus(row.cells, columns);
       if (status === "completed") completed += 1;
       else if (status === "in-progress") inProgress += 1;
@@ -260,11 +268,16 @@ export default function StudentPracticalSheetView() {
         row,
         index,
         status: getPracticalRowStatus(row.cells, columns),
+        isWeightRow: index === 0,
       }))
-      .filter(({ status }) => statusFilter === "all" || status === statusFilter)
+      .filter(({ index, status }) => {
+        if (index === 0) return statusFilter === "all";
+        return statusFilter === "all" || status === statusFilter;
+      })
       .filter(({ index, row }) => {
         if (!query) return true;
-        if (String(index + 1).includes(query)) return true;
+        if (index === 0) return "credits".includes(query) || "0".includes(query);
+        if (String(index).includes(query)) return true;
         return columns!.some((col) =>
           (row.cells[col.key] ?? "").toLowerCase().includes(query),
         );
@@ -295,8 +308,12 @@ export default function StudentPracticalSheetView() {
     const escape = (value: string) => `"${(value ?? "").replace(/"/g, '""')}"`;
     const header = ["Day", ...columns.map((col) => col.label)];
     const lines = sheet.rows.map((row, index) => [
-      String(index + 1),
-      ...columns.map((col) => row.cells[col.key] ?? ""),
+      index === 0 ? "Credits" : String(index),
+      ...columns.map((col) =>
+        col.key === "total" && index > 0
+          ? computeRowCreditTotal(row.cells, columns)
+          : (row.cells[col.key] ?? ""),
+      ),
     ]);
     const csv = [header, ...lines]
       .map((line) => line.map(escape).join(","))
@@ -353,7 +370,11 @@ export default function StudentPracticalSheetView() {
               {decodedCourseType} – Practical Sheet
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Read-only view of the student&apos;s daily practical log.
+              {PRACTICAL_SHEET_INTRO}
+            </p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              {PRACTICAL_SHEET_LOG_TITLE} · Read-only · Row 0 = credit times · TOTAL =
+              count × credit time
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -422,7 +443,7 @@ export default function StudentPracticalSheetView() {
                   <div>
                     <p className="text-sm font-bold">Overall Progress</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {stats.completed} of {PRACTICAL_SHEET_ROW_COUNT} days completed
+                      {stats.completed} of {PRACTICAL_SHEET_DATA_ROW_COUNT} days completed
                     </p>
                     <div className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
                       <div
@@ -534,23 +555,39 @@ export default function StudentPracticalSheetView() {
                         </td>
                       </tr>
                     ) : (
-                      pagedRows.map(({ row, index, status }) => {
+                      pagedRows.map(({ row, index, status, isWeightRow }) => {
                         const meta = STATUS_META[status];
+                        const displayTotal = isWeightRow
+                          ? ""
+                          : computeRowCreditTotal(row.cells, columns);
                         return (
-                          <tr key={index} className="bg-white dark:bg-slate-950">
+                          <tr
+                            key={index}
+                            className={
+                              isWeightRow
+                                ? "bg-amber-50 dark:bg-amber-950/20"
+                                : "bg-white dark:bg-slate-950"
+                            }
+                          >
                             <td className="sticky left-0 z-10 border border-slate-200 bg-slate-50 px-2 py-1.5 text-center dark:border-slate-800 dark:bg-slate-900">
                               <span
-                                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${meta.badge}`}
+                                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${
+                                  isWeightRow
+                                    ? "bg-amber-500/20 text-amber-700 ring-1 ring-amber-500/40 dark:text-amber-300"
+                                    : meta.badge
+                                }`}
                               >
-                                {index + 1}
+                                {isWeightRow ? "0" : index}
                               </span>
                             </td>
                             {columns.map((col) => (
                               <td
                                 key={col.key}
-                                className="border border-slate-200 px-1 py-1.5 text-center text-slate-900 dark:border-slate-800 dark:text-slate-100"
+                                className="border border-slate-200 px-1 py-1.5 text-center font-medium text-slate-900 dark:border-slate-800 dark:text-slate-100"
                               >
-                                {row.cells[col.key] || ""}
+                                {col.key === "total"
+                                  ? displayTotal
+                                  : row.cells[col.key] || ""}
                               </td>
                             ))}
                           </tr>
