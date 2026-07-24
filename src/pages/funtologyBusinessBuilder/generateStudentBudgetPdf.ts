@@ -1,4 +1,3 @@
-import { jsPDF } from "jspdf";
 import {
   BILL_FIELDS,
   CLOTHING_OPTIONS,
@@ -54,32 +53,30 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
       : "Business profile, income, bills & expenses",
   });
 
-  y = drawMetricCards(
-    pdf,
-    [
-      {
-        label: "Left for the Year",
-        value: formatCurrency(r.remainingAnnualTotal),
-        tone: "emerald",
-      },
-      {
-        label: "Per Month",
-        value: formatCurrency(r.remainingMonthlyAverage),
-        tone: "violet",
-      },
-      {
-        label: "With Savings",
-        value: formatCurrency(r.remainingTotalWithSavings),
-        tone: "brand",
-      },
-      {
-        label: "Annual Income",
-        value: formatCurrency(r.totalAnnualIncome),
-        tone: "sky",
-      },
-    ],
-    y
-  );
+  const summaryCards = [
+    {
+      label: "Left for the Year",
+      value: formatCurrency(r.remainingAnnualTotal),
+      tone: "emerald" as const,
+    },
+    {
+      label: "Per Month",
+      value: formatCurrency(r.remainingMonthlyAverage),
+      tone: "teal" as const,
+    },
+    {
+      label: "With Savings",
+      value: formatCurrency(r.remainingTotalWithSavings),
+      tone: "brand" as const,
+    },
+    {
+      label: "Annual Income",
+      value: formatCurrency(r.totalAnnualIncome),
+      tone: "gold" as const,
+    },
+  ];
+
+  y = drawMetricCards(pdf, summaryCards, y);
   y += 2;
 
   if (input.intro && hasIntroForPdf(input.intro)) {
@@ -87,7 +84,7 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
   }
 
   y = drawSectionHeader(pdf, "Income & Household", y, {
-    accent: PDF.colors.violet,
+    icon: "user",
   });
   let alt = false;
   y = drawKeyValueRow(pdf, "Annual Salary", formatCurrency(r.totalAnnualIncome), y, { alt: (alt = !alt) });
@@ -103,7 +100,8 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
   y += 4;
 
   y = drawSectionHeader(pdf, "Savings & Taxes", y, {
-    accent: PDF.colors.brand,
+    gold: true,
+    icon: "wallet",
   });
   alt = false;
   y = drawKeyValueRow(pdf, "Total Annual Income", formatCurrency(r.totalAnnualIncome), y, { alt: (alt = !alt) });
@@ -127,7 +125,7 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
     "Total in Savings Account",
     formatCurrency(r.savingsAnnual),
     y,
-    { alt: (alt = !alt), valueColor: PDF.colors.accent }
+    { alt: (alt = !alt), valueColor: PDF.colors.green }
   );
   y = drawKeyValueRow(
     pdf,
@@ -139,7 +137,8 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
   y += 4;
 
   y = drawSectionHeader(pdf, "Bills (Annual)", y, {
-    accent: PDF.colors.fuchsia,
+    accent: PDF.colors.teal,
+    icon: "list",
   });
   alt = false;
   let billsListed = false;
@@ -170,11 +169,15 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
   if (!billsListed) {
     y = drawEmptyState(pdf, "No bills selected.", y);
   }
-  y = drawSubtotalRow(pdf, "Total Bills (Annual)", formatCurrency(r.billsAnnual), y + 1);
+  y = drawSubtotalRow(pdf, "Total Bills (Annual)", formatCurrency(r.billsAnnual), y + 1, {
+    color: PDF.colors.teal,
+    soft: PDF.colors.tealSoft,
+  });
   y += 4;
 
   y = drawSectionHeader(pdf, "Expenses (Annual)", y, {
-    accent: PDF.colors.pink,
+    accent: PDF.colors.orange,
+    icon: "cart",
   });
   alt = false;
   let expensesListed = false;
@@ -232,12 +235,13 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
     pdf,
     "Total Expenses (Annual)",
     formatCurrency(r.expensesAnnual),
-    y + 1
+    y + 1,
+    { color: PDF.colors.orange, soft: PDF.colors.orangeSoft }
   );
   y += 4;
 
   y = drawSectionHeader(pdf, "Annual Net Pay", y, {
-    accent: PDF.colors.accent,
+    icon: "calc",
   });
   alt = false;
   y = drawKeyValueRow(
@@ -274,9 +278,16 @@ export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
     "Remaining Total with Savings",
     formatCurrency(r.remainingTotalWithSavings),
     y,
-    { alt: (alt = !alt), valueColor: PDF.colors.accent, bold: true }
+    { alt: (alt = !alt), valueColor: PDF.colors.green, bold: true }
   );
-  y += 5;
+  y += 4;
+
+  // Budget summary KPI repeat
+  y = drawSectionHeader(pdf, "Budget Summary", y, {
+    icon: "calc",
+  });
+  y = drawMetricCards(pdf, summaryCards, y);
+  y += 2;
 
   y = drawTotalBanner(
     pdf,
