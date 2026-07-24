@@ -10,6 +10,7 @@ import {
   parseQty,
   type StudentBudgetInput,
 } from "./studentBudgetData";
+import { jsPDF } from "jspdf";
 import type { IntroFormData } from "./introFormData";
 import type { LoanApplicationData } from "./loanApplicationData";
 import {

@@ -163,7 +163,8 @@ export function drawLoanApplicationSection(
   ];
 
   for (const block of blocks) {
-    y = ensureSpace(pdf, y, 16);
+    // Keep block title with at least the first key/value row on the same page
+    y = ensureSpace(pdf, y, 28);
     y = drawBlockTitle(pdf, block.title, y);
     for (const [label, value] of block.rows) {
       y = drawKeyValueRow(pdf, label, value, y, { alt: (alt = !alt) });

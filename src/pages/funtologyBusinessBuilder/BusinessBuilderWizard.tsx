@@ -161,7 +161,7 @@ export default function BusinessBuilderWizard() {
         toast.success("Student budget PDF with loan application downloaded.");
       }
       clearPendingPdf();
-    } catch {
+    } catch(error:any) {
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setGeneratingPdf(false);
