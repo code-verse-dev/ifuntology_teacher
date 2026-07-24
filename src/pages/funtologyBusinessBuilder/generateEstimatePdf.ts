@@ -40,17 +40,9 @@ export type PdfEstimateInput = {
 
 type Rgb = [number, number, number];
 
-function addLineItemRows(
-  pdf: jsPDF,
-  items: EstimateLineItem[],
-  qtyById: Record<string, string>,
-  yStart: number,
-  accent?: Rgb
-) {
-  let y = yStart + 3;
-
-  // Compact table header
-  y = ensureSpace(pdf, y, 10);
+/** Column header row for estimate line tables. */
+function drawColumnHeaderRow(pdf: jsPDF, y: number) {
+  y = ensureSpace(pdf, y, 12);
   pdf.setFillColor(...PDF.colors.navySoft);
   pdf.roundedRect(PDF.marginX, y - 3.5, PDF.contentWidth, 6.5, 1, 1, "F");
   pdf.setFont("helvetica", "bold");
@@ -60,7 +52,22 @@ function addLineItemRows(
   pdf.text("QTY", 118, y, { align: "right" });
   pdf.text("UNIT COST", 148, y, { align: "right" });
   pdf.text("LINE TOTAL", PDF.contentRight - 3, y, { align: "right" });
-  y += 7;
+  return y + 7;
+}
+
+function addLineItemRows(
+  pdf: jsPDF,
+  items: EstimateLineItem[],
+  qtyById: Record<string, string>,
+  yStart: number,
+  accent?: Rgb,
+  continuation?: {
+    title: string;
+    palette: { accent: Rgb; soft: Rgb; header: Rgb };
+  }
+) {
+  // Gap above column headers (kept with category title via parent ensureSpace)
+  let y = drawColumnHeaderRow(pdf, yStart + 3);
 
   let rowIndex = 0;
   pdf.setFont("helvetica", "normal");
@@ -70,7 +77,23 @@ function addLineItemRows(
     const qty = parseQty(qtyById[item.id] ?? "");
     if (qty <= 0) continue;
 
-    y = ensureSpace(pdf, y, 10);
+    const before = y;
+    y = ensureSpace(pdf, y, 12);
+    // Mid-section page break: keep heading + column headers with content
+    if (y < before) {
+      if (continuation) {
+        y = drawCategoryCardHeader(
+          pdf,
+          `${continuation.title} (continued)`,
+          y,
+          continuation.palette
+        );
+        y = drawColumnHeaderRow(pdf, y + 2);
+      } else {
+        y = drawColumnHeaderRow(pdf, y + 2);
+      }
+    }
+
     if (rowIndex % 2 === 1) {
       pdf.setFillColor(...PDF.colors.rowAlt);
       pdf.roundedRect(PDF.marginX, y - 3.2, PDF.contentWidth, 6.8, 1, 1, "F");
@@ -116,8 +139,15 @@ function drawCategoryBlock(
       header: PDF.colors.navy,
     };
 
+  // Keep category title + column headers + first data row (+ subtotal) together
+  // (~12 header + 3 gap + 10 col header + 12 first row + 12 subtotal)
+  y = ensureSpace(pdf, y, 52);
+
   y = drawCategoryCardHeader(pdf, title, y, palette);
-  y = addLineItemRows(pdf, items, qtyById, y, palette.accent);
+  y = addLineItemRows(pdf, items, qtyById, y, palette.accent, {
+    title,
+    palette,
+  });
   const sectionTotal = sumLineItems(items, qtyById);
   y = drawSubtotalRow(pdf, "Subtotal", formatCurrency(sectionTotal), y + 1, {
     color: palette.accent,
