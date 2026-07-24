@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,27 +17,33 @@ import {
   Award,
   Calendar,
   CalendarClock,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   Download,
   Filter,
   Loader2,
+  Save,
   Search,
   User,
   Users,
 } from "lucide-react";
 import {
+  computeRowCreditTotal,
   createEmptyPracticalRows,
   getPracticalColumnIcon,
   getPracticalColumns,
   getPracticalRowStatus,
-  PRACTICAL_SHEET_ROW_COUNT,
+  PRACTICAL_SHEET_DATA_ROW_COUNT,
+  PRACTICAL_SHEET_INTRO,
+  PRACTICAL_SHEET_LOG_TITLE,
   type PracticalColumn,
   type PracticalRowStatus,
 } from "@/constants/practicalSheet";
 import {
   useGetStudentPracticalSheetQuery,
+  useTeacherUpdatePracticalRowMutation,
   type PracticalSheetRow,
 } from "@/redux/services/apiSlices/practicalSheetSlice";
 
@@ -93,12 +100,21 @@ function buildViewState(
     grade: data?.grade ?? "",
     exists: data?.exists ?? false,
     rows: emptyRows.map((fallback, index) => {
+      if (index === 0) return fallback;
       const incoming = incomingRows[index];
       if (!incoming?.cells) return fallback;
+      const cells = Object.fromEntries(
+        columns.map((col) => [
+          col.key,
+          col.key === "total" ? "" : (incoming.cells?.[col.key] ?? ""),
+        ]),
+      );
+      cells.total = computeRowCreditTotal(cells, columns);
       return {
-        cells: Object.fromEntries(
-          columns.map((col) => [col.key, incoming.cells?.[col.key] ?? ""]),
-        ),
+        cells,
+        approved: Boolean(incoming.approved),
+        approvedAt: incoming.approvedAt ?? null,
+        approvedBy: incoming.approvedBy ?? null,
       };
     }),
   };
@@ -221,28 +237,84 @@ export default function StudentPracticalSheetView() {
     },
     { skip: !studentId || !decodedCourseType || !columns },
   );
+  const [updateRow, { isLoading: isUpdatingRow }] =
+    useTeacherUpdatePracticalRowMutation();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
+  const [sheet, setSheet] = useState<SheetViewState | null>(null);
+  const [savingRowIndex, setSavingRowIndex] = useState<number | null>(null);
 
-  const sheet = useMemo(() => {
-    if (!columns) return null;
-    if (data?.data) return buildViewState(columns, data.data);
-    if (!isLoading) return buildViewState(columns);
-    return null;
+  useEffect(() => {
+    if (!columns) return;
+    if (data?.data) {
+      setSheet(buildViewState(columns, data.data));
+      return;
+    }
+    if (!isLoading) {
+      setSheet((prev) => prev ?? buildViewState(columns));
+    }
   }, [columns, data, isLoading]);
 
+  const updateCell = (rowIndex: number, columnKey: string, value: string) => {
+    if (!columns || rowIndex === 0 || columnKey === "total") return;
+    setSheet((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        rows: prev.rows.map((row, index) => {
+          if (index !== rowIndex) return row;
+          const cells = { ...row.cells, [columnKey]: value };
+          cells.total = computeRowCreditTotal(cells, columns);
+          return { ...row, cells };
+        }),
+      };
+    });
+  };
+
+  const persistRow = async (rowIndex: number, approve: boolean) => {
+    if (!sheet || !studentId || !columns || rowIndex < 1) return;
+    setSavingRowIndex(rowIndex);
+    try {
+      const res = await updateRow({
+        studentId,
+        courseType: decodedCourseType,
+        rowIndex,
+        cells: sheet.rows[rowIndex]?.cells ?? {},
+        approve,
+      }).unwrap();
+      if (res?.status === false) {
+        throw new Error(res?.message ?? "Failed to update row");
+      }
+      if (res?.data) {
+        setSheet(buildViewState(columns, { ...res.data, exists: true }));
+      }
+      toast.success(
+        approve
+          ? `Day ${rowIndex} saved and approved`
+          : `Day ${rowIndex} saved`,
+      );
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message ?? error?.message ?? "Failed to update row",
+      );
+    } finally {
+      setSavingRowIndex(null);
+    }
+  };
+
   const stats = useMemo(() => {
-    const total = PRACTICAL_SHEET_ROW_COUNT;
+    const total = PRACTICAL_SHEET_DATA_ROW_COUNT;
     if (!sheet || !columns) {
       return { completed: 0, inProgress: 0, notStarted: total, remaining: total, percent: 0 };
     }
     let completed = 0;
     let inProgress = 0;
     let notStarted = 0;
-    sheet.rows.forEach((row) => {
+    sheet.rows.forEach((row, index) => {
+      if (index === 0) return;
       const status = getPracticalRowStatus(row.cells, columns);
       if (status === "completed") completed += 1;
       else if (status === "in-progress") inProgress += 1;
@@ -260,11 +332,16 @@ export default function StudentPracticalSheetView() {
         row,
         index,
         status: getPracticalRowStatus(row.cells, columns),
+        isWeightRow: index === 0,
       }))
-      .filter(({ status }) => statusFilter === "all" || status === statusFilter)
+      .filter(({ index, status }) => {
+        if (index === 0) return statusFilter === "all";
+        return statusFilter === "all" || status === statusFilter;
+      })
       .filter(({ index, row }) => {
         if (!query) return true;
-        if (String(index + 1).includes(query)) return true;
+        if (index === 0) return "credits".includes(query) || "0".includes(query);
+        if (String(index).includes(query)) return true;
         return columns!.some((col) =>
           (row.cells[col.key] ?? "").toLowerCase().includes(query),
         );
@@ -295,8 +372,12 @@ export default function StudentPracticalSheetView() {
     const escape = (value: string) => `"${(value ?? "").replace(/"/g, '""')}"`;
     const header = ["Day", ...columns.map((col) => col.label)];
     const lines = sheet.rows.map((row, index) => [
-      String(index + 1),
-      ...columns.map((col) => row.cells[col.key] ?? ""),
+      index === 0 ? "Credits" : String(index),
+      ...columns.map((col) =>
+        col.key === "total" && index > 0
+          ? computeRowCreditTotal(row.cells, columns)
+          : (row.cells[col.key] ?? ""),
+      ),
     ]);
     const csv = [header, ...lines]
       .map((line) => line.map(escape).join(","))
@@ -353,7 +434,11 @@ export default function StudentPracticalSheetView() {
               {decodedCourseType} – Practical Sheet
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Read-only view of the student&apos;s daily practical log.
+              {PRACTICAL_SHEET_INTRO}
+            </p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              {PRACTICAL_SHEET_LOG_TITLE} · Edit a day, then Save or Approve · Approved
+              days are locked for the student
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -422,7 +507,7 @@ export default function StudentPracticalSheetView() {
                   <div>
                     <p className="text-sm font-bold">Overall Progress</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {stats.completed} of {PRACTICAL_SHEET_ROW_COUNT} days completed
+                      {stats.completed} of {PRACTICAL_SHEET_DATA_ROW_COUNT} days completed
                     </p>
                     <div className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
                       <div
@@ -497,7 +582,7 @@ export default function StudentPracticalSheetView() {
               </div>
 
               <div className="overflow-auto">
-                <table className="min-w-[1400px] w-full border-collapse text-[11px]">
+                <table className="min-w-[1500px] w-full border-collapse text-[11px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900/60">
                       <th className="sticky left-0 z-10 w-12 border border-slate-200 bg-slate-100 px-2 py-3 text-center font-bold dark:border-slate-800 dark:bg-slate-900">
@@ -521,38 +606,128 @@ export default function StudentPracticalSheetView() {
                           </th>
                         );
                       })}
+                      <th className="sticky right-0 z-10 w-[11rem] border border-slate-200 bg-slate-100 px-2 py-3 text-center font-bold dark:border-slate-800 dark:bg-slate-900">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {pagedRows.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={columns.length + 1}
+                          colSpan={columns.length + 2}
                           className="border border-slate-200 px-4 py-10 text-center text-sm text-muted-foreground dark:border-slate-800"
                         >
                           No days match your filters.
                         </td>
                       </tr>
                     ) : (
-                      pagedRows.map(({ row, index, status }) => {
+                      pagedRows.map(({ row, index, status, isWeightRow }) => {
                         const meta = STATUS_META[status];
+                        const isApproved = Boolean(row.approved);
+                        const displayTotal = isWeightRow
+                          ? ""
+                          : computeRowCreditTotal(row.cells, columns);
+                        const rowBusy =
+                          isUpdatingRow && savingRowIndex === index;
                         return (
-                          <tr key={index} className="bg-white dark:bg-slate-950">
+                          <tr
+                            key={index}
+                            className={
+                              isWeightRow
+                                ? "bg-amber-50 dark:bg-amber-950/20"
+                                : isApproved
+                                  ? "bg-emerald-50/70 dark:bg-emerald-950/20"
+                                  : "bg-white dark:bg-slate-950"
+                            }
+                          >
                             <td className="sticky left-0 z-10 border border-slate-200 bg-slate-50 px-2 py-1.5 text-center dark:border-slate-800 dark:bg-slate-900">
                               <span
-                                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${meta.badge}`}
+                                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${
+                                  isWeightRow
+                                    ? "bg-amber-500/20 text-amber-700 ring-1 ring-amber-500/40 dark:text-amber-300"
+                                    : isApproved
+                                      ? "bg-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/40 dark:text-emerald-300"
+                                      : meta.badge
+                                }`}
                               >
-                                {index + 1}
+                                {isWeightRow ? "0" : index}
                               </span>
                             </td>
-                            {columns.map((col) => (
-                              <td
-                                key={col.key}
-                                className="border border-slate-200 px-1 py-1.5 text-center text-slate-900 dark:border-slate-800 dark:text-slate-100"
-                              >
-                                {row.cells[col.key] || ""}
-                              </td>
-                            ))}
+                            {columns.map((col) => {
+                              const isTotal = col.key === "total";
+                              const readOnly = isWeightRow || isTotal;
+                              const value = isTotal
+                                ? displayTotal
+                                : (row.cells[col.key] ?? "");
+                              return (
+                                <td
+                                  key={col.key}
+                                  className="border border-slate-200 p-0 dark:border-slate-800"
+                                >
+                                  {readOnly ? (
+                                    <div className="flex h-9 w-full items-center justify-center px-1 text-center text-[11px] font-semibold text-slate-800 dark:text-slate-100">
+                                      {value}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      className="h-9 w-full bg-transparent px-1 text-center text-[11px] text-slate-900 outline-none placeholder:text-slate-400 focus:bg-lime-50 dark:text-slate-100 dark:focus:bg-lime-950/30"
+                                      value={value}
+                                      onChange={(e) =>
+                                        updateCell(index, col.key, e.target.value)
+                                      }
+                                      placeholder="0"
+                                      inputMode="decimal"
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="sticky right-0 z-10 border border-slate-200 bg-white px-1 py-1 text-center dark:border-slate-800 dark:bg-slate-950">
+                              {isWeightRow ? (
+                                <span className="text-[10px] font-medium text-muted-foreground">
+                                  Credits
+                                </span>
+                              ) : (
+                                <div className="flex flex-col items-center gap-1 py-0.5">
+                                  {isApproved && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      Approved
+                                    </span>
+                                  )}
+                                  <div className="flex flex-wrap items-center justify-center gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 gap-1 rounded-full px-2 text-[10px]"
+                                      onClick={() => persistRow(index, false)}
+                                      disabled={isUpdatingRow}
+                                    >
+                                      {rowBusy && savingRowIndex === index ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Save className="h-3 w-3" />
+                                      )}
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="h-7 gap-1 rounded-full bg-lime-600 px-2 text-[10px] text-white hover:bg-lime-700"
+                                      onClick={() => persistRow(index, true)}
+                                      disabled={isUpdatingRow}
+                                    >
+                                      {rowBusy ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <CheckCircle2 className="h-3 w-3" />
+                                      )}
+                                      {isApproved ? "Re-approve" : "Approve"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         );
                       })

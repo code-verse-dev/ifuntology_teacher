@@ -28,86 +28,158 @@ export type PracticalColumn = {
   label: string;
   bg: string;
   text?: string;
+  /** Credit multiplier shown on row 0; default 1 when omitted from source list */
+  creditWeight: number;
 };
 
-export const PRACTICAL_SHEET_ROW_COUNT = 30;
+/** Editable day rows (after weight row 0) */
+export const PRACTICAL_SHEET_DATA_ROW_COUNT = 30;
+
+/** Total rows including weight row at index 0 */
+export const PRACTICAL_SHEET_ROW_COUNT = PRACTICAL_SHEET_DATA_ROW_COUNT + 1;
+
+export const PRACTICAL_SHEET_INTRO =
+  "Record your completed hands-on services each day. Enter only the services you performed, then click SAVE for Teacher approval. Daily entries are required to earn practical credit.";
+
+export const PRACTICAL_SHEET_LOG_TITLE = "Practical Services Log";
+
+const C = {
+  pink: { bg: "#e11d8f", text: "#fff" },
+  yellow: { bg: "#eab308", text: "#111" },
+  gray: { bg: "#9ca3af", text: "#111" },
+  red: { bg: "#dc2626", text: "#fff" },
+  navy: { bg: "#1e3a8a", text: "#fff" },
+  tan: { bg: "#d6b98c", text: "#111" },
+  teal: { bg: "#0d9488", text: "#fff" },
+  greenSoft: { bg: "#86efac", text: "#111" },
+  sky: { bg: "#38bdf8", text: "#111" },
+  rose: { bg: "#fb7185", text: "#111" },
+  green: { bg: "#22c55e", text: "#111" },
+  purple: { bg: "#a855f7", text: "#fff" },
+  forest: { bg: "#166534", text: "#fff" },
+  violet: { bg: "#7c3aed", text: "#fff" },
+  orange: { bg: "#f97316", text: "#111" },
+  cyan: { bg: "#22d3ee", text: "#111" },
+  brown: { bg: "#a16207", text: "#fff" },
+  cream: { bg: "#e7d5b8", text: "#111" },
+  blue: { bg: "#60a5fa", text: "#111" },
+  indigo: { bg: "#3730a3", text: "#fff" },
+  fuchsia: { bg: "#ec4899", text: "#fff" },
+  slate: { bg: "#64748b", text: "#fff" },
+  amberSoft: { bg: "#fde68a", text: "#111" },
+  blueSoft: { bg: "#3b82f6", text: "#fff" },
+  pinkSoft: { bg: "#f9a8d4", text: "#111" },
+  slateDark: { bg: "#475569", text: "#fff" },
+  total: { bg: "#facc15", text: "#111" },
+};
+
+function col(
+  key: string,
+  label: string,
+  creditWeight: number,
+  color: { bg: string; text: string },
+): PracticalColumn {
+  return { key, label, creditWeight, bg: color.bg, text: color.text };
+}
 
 export const SKINTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
-  { key: "makeupRemoval", label: "Make up Removal", bg: "#e11d8f", text: "#fff" },
-  { key: "browApplications", label: "Brow Applications", bg: "#eab308", text: "#111" },
-  { key: "facialManipulations", label: "Facial Manipulations", bg: "#9ca3af", text: "#111" },
-  { key: "facialArtSpecialty", label: "Facial Art/Specialty", bg: "#dc2626", text: "#fff" },
-  { key: "deepTreatmentHotTowels", label: "Deep Treatment Hot Towels", bg: "#1e3a8a", text: "#fff" },
-  { key: "drapingForMakeup", label: "Draping for Make up", bg: "#d6b98c", text: "#111" },
-  { key: "lotionOilMoisturizer", label: "Lotion/Oil Moisturizer Application", bg: "#0d9488", text: "#fff" },
-  { key: "mockHairRemoval", label: "Mock Hair Removal for Face", bg: "#86efac", text: "#111" },
-  { key: "individualEyelashMannequin", label: "Individual Eyelash Application on Mannequin", bg: "#38bdf8", text: "#111" },
-  { key: "contourAndHighlighting", label: "Contour and Highlighting", bg: "#fb7185", text: "#111" },
-  { key: "fullFacialMakeup", label: "Full Facial Make up Application", bg: "#22c55e", text: "#111" },
-  { key: "eyelashStrips", label: "Eyelash Strips", bg: "#a855f7", text: "#fff" },
-  { key: "eyelinerMascaraLipstick", label: "Eyeliner, Mascara, Lipstick, Lipgloss", bg: "#166534", text: "#fff" },
-  { key: "stationSetup", label: "Station Set-up", bg: "#7c3aed", text: "#fff" },
-  { key: "total", label: "TOTAL", bg: "#facc15", text: "#111" },
+  col("sanitationDisinfection", "Sanitation & Disinfection", 0.5, C.gray),
+  col("stationSetUp", "Station Set Up", 0.5, C.violet),
+  col("makeUpRemoval", "Make Up Removal", 1, C.pink),
+  col("browApplications", "Brow Applications", 1, C.yellow),
+  col("facialManipulations", "Facial Manipulations", 1.5, C.cream),
+  col("specialtyFacialArt", "Specialty Facial Art", 1, C.red),
+  col("deepFacialTreatment", "Deep Facial Treatment", 1, C.navy),
+  col("draping", "Draping", 0.5, C.tan),
+  col("fiveStepCleansing", "Five Step Cleansing", 1.5, C.teal),
+  col("mockHairRemoval", "Mock Hair Removal", 1, C.greenSoft),
+  col("eyelashApplication", "Eyelash Application", 1, C.sky),
+  col("facialGems", "Facial Gems", 0.75, C.purple),
+  col("facialContourHighlighting", "Facial Contour/Highlighting", 1.75, C.rose),
+  col("fullFacialMakeUpApplication", "Full Facial Make Up Application", 2.5, C.green),
+  col("eyelashReplacement", "Eyelash Replacement", 0.75, C.indigo),
+  col("eyes", "Eyes", 1, C.blue),
+  col("lips", "Lips", 1, C.fuchsia),
+  col("theatricalMakeUp", "Theatrical Make-Up", 3, C.orange),
+  col("specialtyHolidayFacial", "Specialty/Holiday Facial", 2, C.forest),
+  col("weddingPromsHomecomingLooks", "Wedding, Proms & Homecoming Looks", 3, C.pink),
+  col("total", "TOTAL", 0, C.total),
 ];
 
 export const FUNTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
-  { key: "sanitationDisinfectionControl", label: "(S)anitation & (D)isinfection Control", bg: "#9ca3af", text: "#111" },
-  { key: "shampooRollerSettingStyling", label: "Shampoo Roller Setting/ Styling", bg: "#f97316", text: "#111" },
-  { key: "permanentWaving", label: "Permanent Waving", bg: "#22d3ee", text: "#111" },
-  { key: "shampooOrConditionerDeepOnly", label: "(S)hampoo or (C)onditioner (D)eep Conditioner Only", bg: "#e11d8f", text: "#fff" },
-  { key: "haircutting", label: "Haircutting (0, 45, 90, 180)", bg: "#a16207", text: "#fff" },
-  { key: "facialMassages", label: "Facial Massages (E)ffleurage, (T)apotement, (P)etrissage, (V)ibration, (F)riction", bg: "#e7d5b8", text: "#111" },
-  { key: "styleOnlyThermalStyling", label: "Style Only, Thermal Styling", bg: "#dc2626", text: "#fff" },
-  { key: "chemicalHairRelaxers", label: "Chemical Hair Relaxers", bg: "#60a5fa", text: "#111" },
-  { key: "sectioningAndPartings", label: "(S)ectioning & (P)artings", bg: "#d6b98c", text: "#111" },
-  { key: "scalpMassagesAndTreatment", label: "Scalp (M)assages & (T)reatment", bg: "#0d9488", text: "#fff" },
-  { key: "fingerWaving", label: "Finger Waving", bg: "#86efac", text: "#111" },
-  { key: "coloringHighlightingSpecialty", label: "(S)emi, (D)emi, (P)ermanent Coloring, (H)ighlighting, (Sp)ecialty Applications", bg: "#38bdf8", text: "#111" },
-  { key: "browWaxingMakeupLash", label: "(B)row Arching, (W)axing, (M)ake Up & (L)ash Applications", bg: "#fb7185", text: "#111" },
-  { key: "permanentWaving2", label: "Permanent Waving", bg: "#22c55e", text: "#111" },
-  { key: "braidingTwistStyling", label: "(B)raiding, (T)wist Styling", bg: "#3730a3", text: "#fff" },
-  { key: "artificialEnhancements", label: "Artificial Enhancements (Br)aids, (S)ew-ins, (W)igs, (B)onding", bg: "#166534", text: "#fff" },
-  { key: "nails", label: "Nails (M)anicuring, (P)edicuring, (Po)lish Only, (Na)il Art", bg: "#ec4899", text: "#fff" },
-  { key: "total", label: "TOTAL", bg: "#facc15", text: "#111" },
+  col("sanitationDisinfection", "Sanitation & Disinfection", 0.5, C.gray),
+  col("stationSetUp", "Station Set Up", 1, C.violet),
+  col("wetHairstyling", "Wet Hairstyling", 1.5, C.cyan),
+  col("dryHairstyling", "Dry Hairstyling", 1, C.orange),
+  col("mockPermanentWaveServices", "Mock Permanent Wave Services", 3, C.sky),
+  col("mockShampooServices", "Mock Shampoo Services", 0.5, C.pink),
+  col("mockConditionerServices", "Mock Conditioner Services", 0.5, C.teal),
+  col("haircutting", "Haircutting", 0.75, C.brown),
+  col("facialMassages", "Facial Massages", 1, C.cream),
+  col("mockChemicalServices", "Mock Chemical Services", 2, C.blue),
+  col("hairSectioningParting", "Hair Sectioning/Parting", 1, C.tan),
+  col("scalpTreatments", "Scalp Treatments", 1, C.greenSoft),
+  col("hairSculptingFingerwaving", "Hair Sculpting/Fingerwaving", 2, C.green),
+  col("mockHaircolorServices", "Mock Haircolor Services", 1.75, C.rose),
+  col("mockRetouchApplications", "Mock Retouch Applications", 1.75, C.purple),
+  col("braidsTwistsCornrows", "Braids, Twists & Cornrows", 3, C.indigo),
+  col("artificialEnhancements", "Artificial Enhancements", 2, C.forest),
+  col("lashBrowServices", "Lash & Brow Services", 1, C.fuchsia),
+  col("nailcareServices", "Nailcare Services", 1.5, C.pink),
+  col("total", "TOTAL", 0, C.total),
 ];
 
 export const NAILTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
-  { key: "nailPolishRemoval", label: "Nail Polish Removal", bg: "#e11d8f", text: "#fff" },
-  { key: "nailShaping", label: "Nail Shaping", bg: "#a16207", text: "#fff" },
-  { key: "handArmMassages", label: "Hand/Arm Massages (E)ffleurage, (T)apotement, (P)etrissage, (V)ibration, (F)riction", bg: "#d1d5db", text: "#111" },
-  { key: "nailArtOnly10Nails", label: "Nail Art Only 10 Nails", bg: "#dc2626", text: "#fff" },
-  { key: "oilTreatmentCuticlesFilePolish", label: "Oil Treatment for Cuticles, File, Nail Polish Removal and Polish", bg: "#64748b", text: "#fff" },
-  { key: "nailPolish", label: "Nail Polish", bg: "#fde68a", text: "#111" },
-  { key: "lotionMoisturizerApplication", label: "Lotion Moisturizer Application", bg: "#0d9488", text: "#fff" },
-  { key: "nailPolishNailArtOn10Nails", label: "Nail Polish Nail Art on 10 Nails", bg: "#86efac", text: "#111" },
-  { key: "nailPolish3Colors", label: "Nail Polish: 3 Colors", bg: "#3b82f6", text: "#fff" },
-  { key: "nailPolish2Colors", label: "Nail Polish: 2 Colors", bg: "#f9a8d4", text: "#111" },
-  { key: "nailArtWithRhinestonesOn10Nails", label: "Nail Art with Rhinestones on 10 Nails", bg: "#22c55e", text: "#111" },
-  { key: "dailySanitationAndDisinfecting", label: "Daily Sanitation and Disinfecting", bg: "#6b7280", text: "#fff" },
-  { key: "specialStyles", label: "Special Styles", bg: "#166534", text: "#fff" },
-  { key: "stationSetup", label: "Station Set-up", bg: "#a78bfa", text: "#111" },
-  { key: "total", label: "TOTAL", bg: "#facc15", text: "#111" },
+  col("sanitationDisinfection", "Sanitation & Disinfection", 0.5, C.gray),
+  col("stationSetUp", "Station Set Up", 1, C.violet),
+  col("nailPolishing", "Nail Polishing", 1, C.amberSoft),
+  col("nailPolishRemoval", "Nail Polish Removal", 0.5, C.pink),
+  col("nailShapingServices", "Nail Shaping Services", 0.5, C.brown),
+  col("handArmMassages", "Hand/Arm Massages", 1, C.cream),
+  col("nailArtServices", "Nail Art Services", 1.5, C.red),
+  col("manicures", "Manicures", 1, C.blueSoft),
+  col("facialMassages", "Facial Massages", 1, C.tan),
+  col("pedicures", "Pedicures", 1, C.teal),
+  col("nailPolishing5Nails", "Nail Polishing: 5 Nails", 0.75, C.sky),
+  col("nailPolishing10Nails", "Nail Polishing: 10 Nails", 1.5, C.green),
+  col("extraLongNails", "Extra Long Nails", 2.25, C.purple),
+  col("mockOilTreatmentServices", "Mock Oil Treatment Services", 1, C.slate),
+  col("nailRepair", "Nail Repair", 1, C.orange),
+  col("alternatingNailPatterns", "Alternating Nail Patterns", 1, C.rose),
+  col("primaryColorNailDesigns", "Primary Color Nail Designs", 1, C.blue),
+  col("secondaryColorNailDesigns", "Secondary Color Nail Designs", 1, C.pinkSoft),
+  col("nailcareServices", "Nailcare Services", 1.5, C.fuchsia),
+  col("themeNails", "Theme Nails", 2, C.forest),
+  col("total", "TOTAL", 0, C.total),
 ];
 
 export const BARBERTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
-  { key: "sanitationDisinfectionControl", label: "(S)anitation & (D)isinfection Control", bg: "#9ca3af", text: "#111" },
-  { key: "shampooRollerSettingStyling", label: "Shampoo Roller Setting/ Styling", bg: "#f97316", text: "#111" },
-  { key: "permanentWaving", label: "Permanent Waving", bg: "#22d3ee", text: "#111" },
-  { key: "shampooOrConditionerDeepOnly", label: "(S)hampoo or (C)onditioner (D)eep Conditioner Only", bg: "#e11d8f", text: "#fff" },
-  { key: "haircutting", label: "Haircutting (0, 45, 90, 180)", bg: "#a16207", text: "#fff" },
-  { key: "facialMassages", label: "Facial Massages (E)ffleurage, (T)apotement, (P)etrissage, (V)ibration, (F)riction", bg: "#f3f4f6", text: "#111" },
-  { key: "styleOnlyThermalStyling", label: "Style Only, Thermal Styling", bg: "#dc2626", text: "#fff" },
-  { key: "chemicalHairRelaxers", label: "Chemical Hair Relaxers", bg: "#93c5fd", text: "#111" },
-  { key: "sectioningAndPartings", label: "(S)ectioning & (P)artings", bg: "#d6b98c", text: "#111" },
-  { key: "scalpMassagesAndTreatment", label: "Scalp (M)assages & (T)reatment", bg: "#0d9488", text: "#fff" },
-  { key: "beardTrim", label: "Beard Trim", bg: "#86efac", text: "#111" },
-  { key: "coloringHighlightingSpecialty", label: "(S)emi, (D)emi, (P)ermanent Coloring, (H)ighlighting, (Sp)ecialty Applications", bg: "#38bdf8", text: "#111" },
-  { key: "fadesTempsShadowFadesSpecialtyCuts", label: "Fades, Temps, Shadow Fades and Specialty Cuts", bg: "#fb7185", text: "#111" },
-  { key: "dreadlocksTwistsCornrows", label: "Dreadlocks, Twists, Cornrows", bg: "#22c55e", text: "#111" },
-  { key: "beardShaves", label: "Beard Shaves", bg: "#475569", text: "#fff" },
-  { key: "specialStyles", label: "Special Styles", bg: "#166534", text: "#fff" },
-  { key: "shaveDraping", label: "Shave Draping", bg: "#ec4899", text: "#fff" },
-  { key: "total", label: "TOTAL", bg: "#facc15", text: "#111" },
+  col("sanitationDisinfection", "Sanitation & Disinfection", 0.5, C.gray),
+  col("stationSetUp", "Station Set Up", 0.5, C.violet),
+  col("haircuttingBeard", "Haircutting (Beard)", 0.5, C.brown),
+  col("haircuttingMustaches", "Haircutting Mustaches", 0.5, C.slateDark),
+  col("haircuttingShears", "Haircutting/Shears", 0.75, C.orange),
+  col("haircuttingClippers", "Haircutting/Clippers", 0.75, C.blue),
+  col("haircuttingWith3PlusGuards", "Haircutting with 3+ Guards", 1, C.navy),
+  col("haircuttingOverComb", "Haircutting/Over Comb", 0.75, C.cyan),
+  col("drapings", "Drapings", 1, C.tan),
+  col("wetHairstyling", "Wet Hairstyling", 1.5, C.sky),
+  col("dryHairstyling", "Dry Hairstyling", 1, C.amberSoft),
+  col("mockPermanentWaveServices", "Mock Permanent Wave Services", 3, C.green),
+  col("mockShampooServices", "Mock Shampoo Services", 0.5, C.pink),
+  col("mockConditionerServices", "Mock Conditioner Services", 0.5, C.teal),
+  col("facialMassages", "Facial Massages", 1, C.cream),
+  col("mockChemicalServices", "Mock Chemical Services", 2, C.blueSoft),
+  col("hairSectioningParting", "Hair Sectioning/Parting", 1, C.gray),
+  col("scalpTreatmentsDetangling", "Scalp Treatments & Detangling", 1, C.greenSoft),
+  col("hairSculpting", "Hair Sculpting", 1, C.indigo),
+  col("mockHaircolorServices", "Mock Haircolor Services", 1.75, C.rose),
+  col("mockRetouchApplications", "Mock Retouch Applications", 1.75, C.purple),
+  col("braidsTwistsCornrows", "Braids, Twists & Cornrows", 3, C.forest),
+  col("artificialEnhancements", "Artificial Enhancements", 2, C.slate),
+  col("browServices", "Brow Services", 1, C.yellow),
+  col("nailcareServices", "Nailcare Services", 1, C.fuchsia),
+  col("total", "TOTAL", 0, C.total),
 ];
 
 export function getPracticalColumns(courseType?: string): PracticalColumn[] | null {
@@ -125,66 +197,113 @@ export function getPracticalColumns(courseType?: string): PracticalColumn[] | nu
   }
 }
 
+export function formatCreditWeight(weight: number): string {
+  if (!Number.isFinite(weight) || weight <= 0) return "";
+  const fixed = weight.toFixed(2);
+  if (weight < 1) return fixed.replace(/^0/, "");
+  return fixed;
+}
+
 export function createEmptyPracticalRows(columns: PracticalColumn[]) {
-  return Array.from({ length: PRACTICAL_SHEET_ROW_COUNT }, () => ({
+  const weightRow = {
+    cells: Object.fromEntries(
+      columns.map((col) => [
+        col.key,
+        col.key === "total" ? "" : formatCreditWeight(col.creditWeight),
+      ]),
+    ),
+    approved: false,
+  };
+  const dataRows = Array.from({ length: PRACTICAL_SHEET_DATA_ROW_COUNT }, () => ({
     cells: Object.fromEntries(columns.map((col) => [col.key, ""])),
+    approved: false,
   }));
+  return [weightRow, ...dataRows];
+}
+
+export function computeRowCreditTotal(
+  cells: Record<string, string>,
+  columns: PracticalColumn[],
+): string {
+  let sum = 0;
+  for (const col of columns) {
+    if (col.key === "total") continue;
+    const raw = String(cells?.[col.key] ?? "").trim();
+    if (!raw) continue;
+    const entered = Number(raw);
+    if (!Number.isFinite(entered)) continue;
+    const weight = col.creditWeight > 0 ? col.creditWeight : 1;
+    sum += entered * weight;
+  }
+  if (sum === 0) return "";
+  const rounded = Math.round(sum * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
 }
 
 export const PRACTICAL_COLUMN_ICONS: Record<string, LucideIcon> = {
-  // Shared (Funtology / Barbertology)
-  sanitationDisinfectionControl: ShieldCheck,
-  shampooRollerSettingStyling: Droplet,
-  permanentWaving: Waves,
-  permanentWaving2: Waves,
-  shampooOrConditionerDeepOnly: Droplets,
+  sanitationDisinfection: ShieldCheck,
+  stationSetUp: LayoutGrid,
+  wetHairstyling: Droplet,
+  dryHairstyling: Wind,
+  mockPermanentWaveServices: Waves,
+  mockShampooServices: Droplets,
+  mockConditionerServices: Droplets,
   haircutting: Scissors,
   facialMassages: Hand,
-  styleOnlyThermalStyling: Wind,
-  chemicalHairRelaxers: FlaskConical,
-  sectioningAndPartings: Grid2x2,
-  scalpMassagesAndTreatment: Sparkles,
-  fingerWaving: Waves,
-  coloringHighlightingSpecialty: Palette,
-  browWaxingMakeupLash: Eye,
-  braidingTwistStyling: GitBranch,
+  mockChemicalServices: FlaskConical,
+  hairSectioningParting: Grid2x2,
+  scalpTreatments: Sparkles,
+  scalpTreatmentsDetangling: Sparkles,
+  hairSculptingFingerwaving: Waves,
+  hairSculpting: Wand2,
+  mockHaircolorServices: Palette,
+  mockRetouchApplications: Brush,
+  braidsTwistsCornrows: GitBranch,
   artificialEnhancements: Layers,
-  nails: Hand,
-  beardTrim: Scissors,
-  fadesTempsShadowFadesSpecialtyCuts: Scissors,
-  dreadlocksTwistsCornrows: GitBranch,
-  beardShaves: Wand2,
-  specialStyles: Star,
-  shaveDraping: Layers,
-  // Skintology
-  makeupRemoval: Droplet,
+  lashBrowServices: Eye,
+  browServices: Eye,
+  nailcareServices: Hand,
+  haircuttingBeard: Scissors,
+  haircuttingMustaches: Scissors,
+  haircuttingShears: Scissors,
+  haircuttingClippers: Scissors,
+  haircuttingWith3PlusGuards: Scissors,
+  haircuttingOverComb: Scissors,
+  drapings: Layers,
+  draping: Layers,
+  makeUpRemoval: Droplet,
   browApplications: Eye,
   facialManipulations: Hand,
-  facialArtSpecialty: Palette,
-  deepTreatmentHotTowels: Flame,
-  drapingForMakeup: Layers,
-  lotionOilMoisturizer: Droplets,
+  specialtyFacialArt: Palette,
+  deepFacialTreatment: Flame,
+  fiveStepCleansing: Droplets,
   mockHairRemoval: Wand2,
-  individualEyelashMannequin: Eye,
-  contourAndHighlighting: Brush,
-  fullFacialMakeup: Palette,
-  eyelashStrips: Eye,
-  eyelinerMascaraLipstick: Brush,
-  stationSetup: LayoutGrid,
-  // Nailtology
+  eyelashApplication: Eye,
+  facialGems: Gem,
+  facialContourHighlighting: Brush,
+  fullFacialMakeUpApplication: Palette,
+  eyelashReplacement: Eye,
+  eyes: Eye,
+  lips: Brush,
+  theatricalMakeUp: Star,
+  specialtyHolidayFacial: Sparkles,
+  weddingPromsHomecomingLooks: Star,
+  nailPolishing: Brush,
   nailPolishRemoval: Droplet,
-  nailShaping: Scissors,
+  nailShapingServices: Scissors,
   handArmMassages: Hand,
-  nailArtOnly10Nails: Sparkles,
-  oilTreatmentCuticlesFilePolish: Droplets,
-  nailPolish: Brush,
-  lotionMoisturizerApplication: Droplets,
-  nailPolishNailArtOn10Nails: Sparkles,
-  nailPolish3Colors: Palette,
-  nailPolish2Colors: Palette,
-  nailArtWithRhinestonesOn10Nails: Gem,
-  dailySanitationAndDisinfecting: ShieldCheck,
-  // Summary
+  nailArtServices: Sparkles,
+  manicures: Hand,
+  pedicures: Hand,
+  nailPolishing5Nails: Brush,
+  nailPolishing10Nails: Brush,
+  extraLongNails: Layers,
+  mockOilTreatmentServices: Droplets,
+  nailRepair: Wand2,
+  alternatingNailPatterns: Grid2x2,
+  primaryColorNailDesigns: Palette,
+  secondaryColorNailDesigns: Palette,
+  themeNails: Star,
   total: Sigma,
 };
 

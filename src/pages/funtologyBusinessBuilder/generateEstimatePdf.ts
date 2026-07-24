@@ -1,59 +1,42 @@
 import { jsPDF } from "jspdf";
 import {
-  ADDITIONAL_ITEMS,
-  CONSTRUCTION_ITEMS,
-  EXPENSE_ITEMS,
-  UTILITY_ITEMS,
+  FURNITURE_CATEGORY,
+  MATERIAL_CATEGORIES,
   formatCurrency,
   parseQty,
+  sumLineItems,
   type EstimateLineItem,
-  type MonthlySelectableItem,
 } from "./estimateData";
+import type { IntroFormData } from "./introFormData";
+import type { LoanApplicationData } from "./loanApplicationData";
+import {
+  PDF,
+  addPageFooters,
+  drawBrandedHeader,
+  drawEmptyState,
+  drawMetricCards,
+  drawSectionHeader,
+  drawSubHeader,
+  drawSubtotalRow,
+  drawTableHeader,
+  drawTotalBanner,
+  ensureSpace,
+  loadLogoAsset,
+} from "./pdfBrand";
+import {
+  drawBusinessProfileSection,
+  drawLoanApplicationSection,
+  hasIntroForPdf,
+} from "./pdfSharedSections";
 
-type PdfEstimateInput = {
-  constructionQty: Record<string, string>;
-  additionalQty: Record<string, string>;
-  selectedUtilityIds: string[];
-  selectedExpenseIds: string[];
-  makeupSalon: {
-    staff: string;
-    stations: string;
-    boothRentalRate: string;
-    weeklyTotal: number;
-    monthlyTotal: number;
-  };
-  receptionist: {
-    payRate: string;
-    hoursPerWeek: string;
-    weeklyGross: number;
-    monthlyTotal: number;
-  };
-  constructionTotal: number;
-  additionalTotal: number;
-  utilitiesTotal: number;
-  expensesTotal: number;
-  makeupSalonTotal: number;
-  receptionistTotal: number;
+export type PdfEstimateInput = {
+  itemQty: Record<string, string>;
+  materialsTotal: number;
+  furnitureTotal: number;
   grandTotal: number;
+  intro?: IntroFormData | null;
+  loan?: LoanApplicationData | null;
 };
-
-function addSectionHeader(pdf: jsPDF, title: string, y: number) {
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(title, 14, y);
-  pdf.setDrawColor(184, 207, 232);
-  pdf.line(14, y + 2, 196, y + 2);
-  return y + 10;
-}
-
-function ensureSpace(pdf: jsPDF, y: number, needed = 30) {
-  if (y + needed > 280) {
-    pdf.addPage();
-    return 20;
-  }
-  return y;
-}
 
 function addLineItemRows(
   pdf: jsPDF,
@@ -61,236 +44,182 @@ function addLineItemRows(
   qtyById: Record<string, string>,
   yStart: number
 ) {
-  let y = yStart;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(40, 40, 40);
-  pdf.text("Item", 14, y);
-  pdf.text("Qty", 110, y);
-  pdf.text("Unit Cost", 130, y);
-  pdf.text("Line Total", 165, y);
-  y += 6;
+  let y = drawTableHeader(
+    pdf,
+    [
+      { label: "ITEM", x: PDF.marginX + 3 },
+      { label: "QTY", x: 118, align: "right" },
+      { label: "UNIT COST", x: 148, align: "right" },
+      { label: "LINE TOTAL", x: PDF.contentRight - 3, align: "right" },
+    ],
+    yStart
+  );
+
+  let rowIndex = 0;
   pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
 
   for (const item of items) {
     const qty = parseQty(qtyById[item.id] ?? "");
     if (qty <= 0) continue;
-    y = ensureSpace(pdf, y, 12);
+
+    y = ensureSpace(pdf, y, 10);
+    if (rowIndex % 2 === 1) {
+      pdf.setFillColor(...PDF.colors.rowAlt);
+      pdf.roundedRect(PDF.marginX, y - 3.2, PDF.contentWidth, 6.8, 1, 1, "F");
+    }
+
     const lineTotal = qty * item.unitCost;
-    pdf.text(item.name, 14, y, { maxWidth: 90 });
-    pdf.text(String(qty), 110, y);
-    pdf.text(formatCurrency(item.unitCost), 130, y);
-    pdf.text(formatCurrency(lineTotal), 165, y);
+    const label = item.unitHint ? `${item.name} (${item.unitHint})` : item.name;
+
+    pdf.setTextColor(...PDF.colors.text);
+    pdf.text(label, PDF.marginX + 3, y, { maxWidth: 92 });
+    pdf.setTextColor(...PDF.colors.violet);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(String(qty), 118, y, { align: "right" });
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(...PDF.colors.muted);
+    pdf.text(formatCurrency(item.unitCost), 148, y, { align: "right" });
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(...PDF.colors.slate900);
+    pdf.text(formatCurrency(lineTotal), PDF.contentRight - 3, y, {
+      align: "right",
+    });
+    pdf.setFont("helvetica", "normal");
+
     y += 7;
+    rowIndex += 1;
   }
 
   return y;
 }
 
-function addSelectableRows(
-  pdf: jsPDF,
-  label: string,
-  items: MonthlySelectableItem[],
-  selectedIds: Set<string>,
-  yStart: number
-) {
-  let y = yStart;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(40, 40, 40);
-  pdf.text(label, 14, y);
-  pdf.text("Monthly Cost", 165, y);
-  y += 6;
-  pdf.setFont("helvetica", "normal");
-
-  for (const item of items) {
-    if (!selectedIds.has(item.id)) continue;
-    y = ensureSpace(pdf, y, 12);
-    pdf.text(item.name, 14, y, { maxWidth: 140 });
-    pdf.text(formatCurrency(item.monthlyCost), 165, y);
-    y += 7;
-  }
-
-  return y;
-}
-
-export function generateEstimatePdf(input: PdfEstimateInput) {
+export async function generateEstimatePdf(input: PdfEstimateInput) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const selectedUtilities = new Set(input.selectedUtilityIds);
-  const selectedExpenses = new Set(input.selectedExpenseIds);
+  const logo = await loadLogoAsset();
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text("Funtology Business Builder", 14, 18);
-  pdf.setFontSize(12);
-  pdf.text("Estimate Summary", 14, 26);
+  let y = drawBrandedHeader(pdf, {
+    logo,
+    title: "Salon Estimate Summary",
+    subtitle: input.loan
+      ? "Business profile, estimate & loan application"
+      : "Business profile & construction estimate report",
+  });
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(100, 100, 100);
-  pdf.text(`Generated ${new Date().toLocaleString()}`, 14, 32);
+  const filledItems = Object.values(input.itemQty).filter(
+    (q) => parseQty(q) > 0
+  ).length;
+  const materialsShare =
+    input.grandTotal > 0
+      ? ((input.materialsTotal / input.grandTotal) * 100).toFixed(1)
+      : "0.0";
 
-  let y = 42;
+  y = drawMetricCards(
+    pdf,
+    [
+      {
+        label: "Grand Total",
+        value: formatCurrency(input.grandTotal),
+        tone: "fuchsia",
+      },
+      {
+        label: "Materials",
+        value: formatCurrency(input.materialsTotal),
+        tone: "violet",
+      },
+      {
+        label: "Furniture",
+        value: formatCurrency(input.furnitureTotal),
+        tone: "sky",
+      },
+      {
+        label: "Line Items",
+        value: String(filledItems),
+        tone: "brand",
+      },
+    ],
+    y
+  );
+  y += 2;
 
-  y = addSectionHeader(pdf, "Estimated Construction Material Cost", y);
+  if (input.intro && hasIntroForPdf(input.intro)) {
+    y = drawBusinessProfileSection(pdf, input.intro, y);
+  }
+
+  y = drawSectionHeader(pdf, "Raw Materials to Build a Salon", y, {
+    accent: PDF.colors.violet,
+  });
+
+  let materialsHadItems = false;
+  for (const category of MATERIAL_CATEGORIES) {
+    const hasItems = category.items.some(
+      (item) => parseQty(input.itemQty[item.id] ?? "") > 0
+    );
+    if (!hasItems) continue;
+    materialsHadItems = true;
+    y = drawSubHeader(pdf, category.title, y);
+    y = addLineItemRows(pdf, category.items, input.itemQty, y);
+    const sectionTotal = sumLineItems(category.items, input.itemQty);
+    y = drawSubtotalRow(
+      pdf,
+      "Subtotal",
+      formatCurrency(sectionTotal),
+      y + 1
+    );
+  }
+
+  if (!materialsHadItems) {
+    y = drawEmptyState(pdf, "No raw material items selected.", y);
+  }
+
+  y = drawSubtotalRow(
+    pdf,
+    "Materials Total",
+    formatCurrency(input.materialsTotal),
+    y + 2
+  );
+  y += 3;
+
+  y = drawSectionHeader(pdf, FURNITURE_CATEGORY.title, y, {
+    accent: PDF.colors.fuchsia,
+  });
   if (
-    !CONSTRUCTION_ITEMS.some(
-      (item) => parseQty(input.constructionQty[item.id] ?? "") > 0
+    !FURNITURE_CATEGORY.items.some(
+      (item) => parseQty(input.itemQty[item.id] ?? "") > 0
     )
   ) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(10);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text("No construction items selected.", 14, y);
-    y += 8;
+    y = drawEmptyState(pdf, "No furniture or equipment items selected.", y);
   } else {
-    y = addLineItemRows(pdf, CONSTRUCTION_ITEMS, input.constructionQty, y);
+    y = addLineItemRows(pdf, FURNITURE_CATEGORY.items, input.itemQty, y);
   }
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Construction Total: ${formatCurrency(input.constructionTotal)}`,
-    14,
+
+  y = drawSubtotalRow(
+    pdf,
+    "Furniture & Equipment Total",
+    formatCurrency(input.furnitureTotal),
     y + 2
   );
-  y = ensureSpace(pdf, y + 14);
+  y += 5;
 
-  y = addSectionHeader(pdf, "Additional Material & Equipment", y);
-  if (
-    !ADDITIONAL_ITEMS.some(
-      (item) => parseQty(input.additionalQty[item.id] ?? "") > 0
-    )
-  ) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(10);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text("No additional items selected.", 14, y);
-    y += 8;
-  } else {
-    y = addLineItemRows(pdf, ADDITIONAL_ITEMS, input.additionalQty, y);
+  y = drawTotalBanner(
+    pdf,
+    "Final Total Estimate",
+    formatCurrency(input.grandTotal),
+    y,
+    {
+      hint: `Materials share ${materialsShare}%  ·  All costs included`,
+    }
+  );
+
+  if (input.loan) {
+    y += 4;
+    drawLoanApplicationSection(pdf, input.loan, y);
   }
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Additional Total: ${formatCurrency(input.additionalTotal)}`,
-    14,
-    y + 2
-  );
-  y = ensureSpace(pdf, y + 14);
 
-  y = addSectionHeader(pdf, "Utilities (Per Month)", y);
-  if (selectedUtilities.size === 0) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(10);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text("No utilities selected.", 14, y);
-    y += 8;
-  } else {
-    y = addSelectableRows(pdf, "Utility", UTILITY_ITEMS, selectedUtilities, y);
-  }
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Utilities Total: ${formatCurrency(input.utilitiesTotal)}`,
-    14,
-    y + 2
+  addPageFooters(pdf);
+  pdf.save(
+    input.loan
+      ? "funtology-estimate-with-loan.pdf"
+      : "funtology-business-estimate.pdf"
   );
-  y = ensureSpace(pdf, y + 14);
-
-  y = addSectionHeader(pdf, "Expenses (Monthly)", y);
-  if (selectedExpenses.size === 0) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(10);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text("No expenses selected.", 14, y);
-    y += 8;
-  } else {
-    y = addSelectableRows(pdf, "Expense", EXPENSE_ITEMS, selectedExpenses, y);
-  }
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Expenses Total: ${formatCurrency(input.expensesTotal)}`,
-    14,
-    y + 2
-  );
-  y = ensureSpace(pdf, y + 14);
-
-  y = addSectionHeader(pdf, "Make Up Salon Cost", y);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.setTextColor(40, 40, 40);
-  pdf.text(`Staff: ${input.makeupSalon.staff || "0"}`, 14, y);
-  y += 6;
-  pdf.text(`Stations: ${input.makeupSalon.stations || "0"}`, 14, y);
-  y += 6;
-  pdf.text(
-    `Booth Rental Rate: ${formatCurrency(Number(input.makeupSalon.boothRentalRate) || 0)}`,
-    14,
-    y
-  );
-  y += 6;
-  pdf.text(
-    `Weekly Total: ${formatCurrency(input.makeupSalon.weeklyTotal)}`,
-    14,
-    y
-  );
-  y += 6;
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Monthly Total: ${formatCurrency(input.makeupSalonTotal)}`,
-    14,
-    y
-  );
-  y = ensureSpace(pdf, y + 14);
-
-  y = addSectionHeader(pdf, "Receptionist", y);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.setTextColor(40, 40, 40);
-  pdf.text(
-    `Pay Rate: ${formatCurrency(Number(input.receptionist.payRate) || 0)} / hr`,
-    14,
-    y
-  );
-  y += 6;
-  pdf.text(
-    `Hours per Week: ${input.receptionist.hoursPerWeek || "0"}`,
-    14,
-    y
-  );
-  y += 6;
-  pdf.text(
-    `Weekly Gross: ${formatCurrency(input.receptionist.weeklyGross)}`,
-    14,
-    y
-  );
-  y += 6;
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(26, 77, 140);
-  pdf.text(
-    `Monthly Total: ${formatCurrency(input.receptionistTotal)}`,
-    14,
-    y
-  );
-  y = ensureSpace(pdf, y + 16, 30);
-
-  pdf.setFillColor(232, 242, 252);
-  pdf.roundedRect(14, y - 4, 182, 18, 2, 2, "F");
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(13);
-  pdf.setTextColor(22, 101, 52);
-  pdf.text(
-    `Final Total Estimate: ${formatCurrency(input.grandTotal)}`,
-    20,
-    y + 8
-  );
-
-  pdf.save("funtology-business-estimate.pdf");
 }
