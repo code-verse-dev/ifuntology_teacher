@@ -35,6 +35,7 @@ import {
   sumLineItems,
   type EstimateLineItem,
 } from "./estimateData";
+import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
 
@@ -266,10 +267,24 @@ function loadSavedEstimate(): SavedEstimate | null {
 type EstimateCalculatorPageProps = {
   /** When true, render step content only (no page chrome). */
   embedded?: boolean;
+  /** Business profile from Step 1 — included in exported PDFs. */
+  intro?: IntroFormData | null;
+  /**
+   * When provided (wizard mode), shows an extra action that navigates to the
+   * loan form before generating a PDF that includes the loan application.
+   */
+  onGenerateWithLoan?: (payload: {
+    itemQty: Record<string, string>;
+    materialsTotal: number;
+    furnitureTotal: number;
+    grandTotal: number;
+  }) => void;
 };
 
 export default function EstimateCalculatorPage({
   embedded = false,
+  intro = null,
+  onGenerateWithLoan,
 }: EstimateCalculatorPageProps) {
   const saved = useMemo(loadSavedEstimate, []);
 
@@ -325,6 +340,13 @@ export default function EstimateCalculatorPage({
     }
   };
 
+  const buildEstimatePayload = () => ({
+    itemQty,
+    materialsTotal,
+    furnitureTotal,
+    grandTotal,
+  });
+
   const handleGeneratePdf = async () => {
     if (grandTotal <= 0) {
       toast.error("Add at least one cost before exporting a report.");
@@ -332,15 +354,21 @@ export default function EstimateCalculatorPage({
     }
     try {
       await generateEstimatePdf({
-        itemQty,
-        materialsTotal,
-        furnitureTotal,
-        grandTotal,
+        ...buildEstimatePayload(),
+        intro,
       });
       toast.success("Report exported.");
     } catch {
       toast.error("Failed to export report. Please try again.");
     }
+  };
+
+  const handleGenerateWithLoan = () => {
+    if (grandTotal <= 0) {
+      toast.error("Add at least one cost before exporting a report.");
+      return;
+    }
+    onGenerateWithLoan?.(buildEstimatePayload());
   };
 
   const lastUpdatedDate = lastUpdated.toLocaleDateString("en-US", {
@@ -493,7 +521,7 @@ export default function EstimateCalculatorPage({
               />
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 className="gap-2 rounded-xl border-0 bg-gradient-to-r from-fuchsia-500 to-pink-500 font-semibold text-white hover:from-fuchsia-600 hover:to-pink-600"
@@ -511,6 +539,17 @@ export default function EstimateCalculatorPage({
                 <FileDown className="h-4 w-4" />
                 Export Report
               </Button>
+              {embedded && onGenerateWithLoan ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2 rounded-xl border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                  onClick={handleGenerateWithLoan}
+                >
+                  <FileDown className="h-4 w-4" />
+                  Export with Loan Application
+                </Button>
+              ) : null}
             </div>
           </div>
         </Card>

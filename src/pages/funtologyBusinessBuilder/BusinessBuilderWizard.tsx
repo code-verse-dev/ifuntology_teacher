@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Building2, Calculator, Check, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  Calculator,
+  Check,
+  ClipboardList,
+  FileDown,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -10,11 +19,23 @@ import { cn } from "@/lib/utils";
 import IntroFormStep from "./IntroFormStep";
 import EstimateCalculatorPage from "./EstimateCalculatorPage";
 import StudentBudgetPage from "./StudentBudgetPage";
+import LoanApplicationFormStep from "./LoanApplicationFormStep";
 import {
   createEmptyIntroForm,
   validateIntroForm,
   type IntroFormData,
 } from "./introFormData";
+import {
+  createEmptyLoanApplication,
+  validateLoanApplication,
+  type LoanApplicationData,
+} from "./loanApplicationData";
+import {
+  generateEstimatePdf,
+  type PdfEstimateInput,
+} from "./generateEstimatePdf";
+import { generateStudentBudgetPdf } from "./generateStudentBudgetPdf";
+import type { StudentBudgetInput } from "./studentBudgetData";
 
 const STEPS = [
   {
@@ -38,13 +59,39 @@ const STEPS = [
     description: "Income, bills & expenses",
     icon: Wallet,
   },
+  {
+    id: 4,
+    title: "Loan Application",
+    short: "Loan",
+    description: "Optional practice form",
+    icon: ClipboardList,
+    optional: true,
+  },
 ] as const;
+
+const TOTAL_STEPS = STEPS.length;
+
+type PendingPdfIntent =
+  | {
+      kind: "estimate";
+      payload: Omit<PdfEstimateInput, "intro" | "loan">;
+    }
+  | {
+      kind: "budget";
+      payload: StudentBudgetInput;
+    };
 
 export default function BusinessBuilderWizard() {
   const [step, setStep] = useState(1);
   const [intro, setIntro] = useState<IntroFormData>(() => createEmptyIntroForm());
+  const [loan, setLoan] = useState<LoanApplicationData>(() =>
+    createEmptyLoanApplication()
+  );
   const [visitedEstimate, setVisitedEstimate] = useState(false);
   const [visitedBudget, setVisitedBudget] = useState(false);
+  const [visitedLoan, setVisitedLoan] = useState(false);
+  const [pendingPdf, setPendingPdf] = useState<PendingPdfIntent | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
     document.title = "Calculate Your Estimate • iFuntology Teacher";
@@ -54,6 +101,7 @@ export default function BusinessBuilderWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (step === 2) setVisitedEstimate(true);
     if (step === 3) setVisitedBudget(true);
+    if (step === 4) setVisitedLoan(true);
   }, [step]);
 
   const goNext = () => {
@@ -64,10 +112,61 @@ export default function BusinessBuilderWizard() {
         return;
       }
     }
-    setStep((s) => Math.min(3, s + 1));
+    setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
-  const goBack = () => setStep((s) => Math.max(1, s - 1));
+  const goBack = () => {
+    if (step === 4 && pendingPdf?.kind === "estimate") {
+      setStep(2);
+      return;
+    }
+    if (step === 4 && pendingPdf?.kind === "budget") {
+      setStep(3);
+      return;
+    }
+    setStep((s) => Math.max(1, s - 1));
+  };
+
+  const goToLoanForPdf = (intent: PendingPdfIntent) => {
+    setPendingPdf(intent);
+    setVisitedLoan(true);
+    setStep(4);
+    toast.message("Complete the loan application to generate your PDF.");
+  };
+
+  const clearPendingPdf = () => setPendingPdf(null);
+
+  const handleGeneratePdfWithLoan = async () => {
+    if (!pendingPdf) return;
+    const error = validateLoanApplication(loan);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setGeneratingPdf(true);
+    try {
+      if (pendingPdf.kind === "estimate") {
+        await generateEstimatePdf({
+          ...pendingPdf.payload,
+          intro,
+          loan,
+        });
+        toast.success("Estimate report with loan application exported.");
+      } else {
+        await generateStudentBudgetPdf({
+          ...pendingPdf.payload,
+          intro,
+          loan,
+        });
+        toast.success("Student budget PDF with loan application downloaded.");
+      }
+      clearPendingPdf();
+    } catch {
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   return (
     <DashboardWithSidebarLayout>
@@ -85,18 +184,20 @@ export default function BusinessBuilderWizard() {
             Calculate Your Estimate
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Complete all three steps — business profile, salon cost estimate,
-            and student budget — in one flow.
+            Complete your business profile, salon cost estimate, and student
+            budget. A loan application practice form is available as an optional
+            fourth step.
           </p>
         </div>
 
         {/* Step indicator */}
         <Card className="rounded-2xl border border-border/60 p-4 shadow-sm sm:p-5">
-          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {STEPS.map((item, index) => {
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((item) => {
               const Icon = item.icon;
               const active = step === item.id;
               const done = step > item.id;
+              const optional = "optional" in item && item.optional;
               return (
                 <li key={item.id}>
                   <button
@@ -138,7 +239,7 @@ export default function BusinessBuilderWizard() {
                     <span className="min-w-0">
                       <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Step {item.id}
-                        {index < STEPS.length - 1 ? "" : ""}
+                        {optional ? " · Optional" : ""}
                       </span>
                       <span className="block truncate text-sm font-semibold text-foreground">
                         {item.title}
@@ -197,12 +298,37 @@ export default function BusinessBuilderWizard() {
           </div>
           {visitedEstimate && (
             <div className={step === 2 ? "block" : "hidden"}>
-              <EstimateCalculatorPage embedded />
+              <EstimateCalculatorPage
+                embedded
+                intro={intro}
+                onGenerateWithLoan={(payload) =>
+                  goToLoanForPdf({ kind: "estimate", payload })
+                }
+              />
             </div>
           )}
           {visitedBudget && (
             <div className={step === 3 ? "block" : "hidden"}>
-              <StudentBudgetPage embedded />
+              <StudentBudgetPage
+                embedded
+                intro={intro}
+                onGenerateWithLoan={(payload) =>
+                  goToLoanForPdf({ kind: "budget", payload })
+                }
+              />
+            </div>
+          )}
+          {visitedLoan && (
+            <div className={step === 4 ? "block" : "hidden"}>
+              <LoanApplicationFormStep
+                value={loan}
+                onChange={setLoan}
+                pendingPdfKind={pendingPdf?.kind ?? null}
+                onGeneratePdf={
+                  pendingPdf ? handleGeneratePdfWithLoan : undefined
+                }
+                generatingPdf={generatingPdf}
+              />
             </div>
           )}
         </div>
@@ -211,9 +337,10 @@ export default function BusinessBuilderWizard() {
         <Card className="sticky bottom-4 z-10 rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/90">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              Step {step} of {STEPS.length}
+              Step {step} of {TOTAL_STEPS}
               {" · "}
               {STEPS[step - 1].title}
+              {step === 4 ? " (optional)" : ""}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               {step > 1 && (
@@ -227,7 +354,33 @@ export default function BusinessBuilderWizard() {
                   Back
                 </Button>
               )}
-              {step < 3 ? (
+              {step === 3 && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <Link
+                      to="/funtology-business-builder"
+                      onClick={clearPendingPdf}
+                    >
+                      Skip & Finish
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="brand"
+                    className="w-full sm:w-auto"
+                    onClick={goNext}
+                  >
+                    Continue to Loan Form
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              {step < 3 && (
                 <Button
                   type="button"
                   variant="brand"
@@ -239,14 +392,34 @@ export default function BusinessBuilderWizard() {
                     : "Continue to Student Budget"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-              ) : (
+              )}
+              {step === 4 && pendingPdf && (
                 <Button
                   type="button"
                   variant="brand"
                   className="w-full sm:w-auto"
+                  disabled={generatingPdf}
+                  onClick={handleGeneratePdfWithLoan}
+                >
+                  <FileDown className="h-4 w-4" />
+                  {generatingPdf
+                    ? "Generating…"
+                    : pendingPdf.kind === "estimate"
+                      ? "Generate Estimate PDF"
+                      : "Generate Budget PDF"}
+                </Button>
+              )}
+              {step === 4 && (
+                <Button
+                  type="button"
+                  variant={pendingPdf ? "outline" : "brand"}
+                  className="w-full sm:w-auto"
                   asChild
                 >
-                  <Link to="/funtology-business-builder">
+                  <Link
+                    to="/funtology-business-builder"
+                    onClick={clearPendingPdf}
+                  >
                     <Check className="h-4 w-4" />
                     Done
                   </Link>

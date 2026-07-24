@@ -212,9 +212,11 @@ export function createEmptyPracticalRows(columns: PracticalColumn[]) {
         col.key === "total" ? "" : formatCreditWeight(col.creditWeight),
       ]),
     ),
+    approved: false,
   };
   const dataRows = Array.from({ length: PRACTICAL_SHEET_DATA_ROW_COUNT }, () => ({
     cells: Object.fromEntries(columns.map((col) => [col.key, ""])),
+    approved: false,
   }));
   return [weightRow, ...dataRows];
 }

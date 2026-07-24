@@ -11,24 +11,37 @@ import {
   parseQty,
   type StudentBudgetInput,
 } from "./studentBudgetData";
+import type { IntroFormData } from "./introFormData";
+import type { LoanApplicationData } from "./loanApplicationData";
 import {
   PDF,
   addPageFooters,
   drawBrandedHeader,
+  drawEmptyState,
   drawKeyValueRow,
+  drawMetricCards,
   drawSectionHeader,
   drawSubtotalRow,
   drawTotalBanner,
-  ensureSpace,
   loadLogoAsset,
 } from "./pdfBrand";
+import {
+  drawBusinessProfileSection,
+  drawLoanApplicationSection,
+  hasIntroForPdf,
+} from "./pdfSharedSections";
+
+export type PdfStudentBudgetInput = StudentBudgetInput & {
+  intro?: IntroFormData | null;
+  loan?: LoanApplicationData | null;
+};
 
 function optionLabel(fieldId: string, value: string) {
   const field = BILL_FIELDS.find((f) => f.id === fieldId);
   return field?.options.find((o) => o.value === value)?.label ?? "—";
 }
 
-export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
+export async function generateStudentBudgetPdf(input: PdfStudentBudgetInput) {
   const r = computeStudentBudget(input);
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const logo = await loadLogoAsset();
@@ -36,40 +49,46 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
   let y = drawBrandedHeader(pdf, {
     logo,
     title: "Student Budget Summary",
-    subtitle: "Income, bills, expenses & annual net overview",
+    subtitle: input.loan
+      ? "Business profile, budget & loan application"
+      : "Business profile, income, bills & expenses",
   });
 
-  // Snapshot cards
-  y = ensureSpace(pdf, y, 28);
-  const cardW = (PDF.contentWidth - 6) / 2;
-  const cardH = 18;
-  const cards = [
-    {
-      label: "Left for the Year",
-      value: formatCurrency(r.remainingAnnualTotal),
-      x: PDF.marginX,
-    },
-    {
-      label: "Per Month",
-      value: formatCurrency(r.remainingMonthlyAverage),
-      x: PDF.marginX + cardW + 6,
-    },
-  ];
-  for (const card of cards) {
-    pdf.setFillColor(...PDF.colors.primaryLight);
-    pdf.roundedRect(card.x, y - 4, cardW, cardH, 2.5, 2.5, "F");
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
-    pdf.setTextColor(...PDF.colors.muted);
-    pdf.text(card.label, card.x + 4, y + 2);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.setTextColor(...PDF.colors.primary);
-    pdf.text(card.value, card.x + 4, y + 10);
-  }
-  y += cardH + 6;
+  y = drawMetricCards(
+    pdf,
+    [
+      {
+        label: "Left for the Year",
+        value: formatCurrency(r.remainingAnnualTotal),
+        tone: "emerald",
+      },
+      {
+        label: "Per Month",
+        value: formatCurrency(r.remainingMonthlyAverage),
+        tone: "violet",
+      },
+      {
+        label: "With Savings",
+        value: formatCurrency(r.remainingTotalWithSavings),
+        tone: "brand",
+      },
+      {
+        label: "Annual Income",
+        value: formatCurrency(r.totalAnnualIncome),
+        tone: "sky",
+      },
+    ],
+    y
+  );
+  y += 2;
 
-  y = drawSectionHeader(pdf, "Income & Household", y);
+  if (input.intro && hasIntroForPdf(input.intro)) {
+    y = drawBusinessProfileSection(pdf, input.intro, y);
+  }
+
+  y = drawSectionHeader(pdf, "Income & Household", y, {
+    accent: PDF.colors.violet,
+  });
   let alt = false;
   y = drawKeyValueRow(pdf, "Annual Salary", formatCurrency(r.totalAnnualIncome), y, { alt: (alt = !alt) });
   y = drawKeyValueRow(
@@ -83,7 +102,9 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
   y = drawKeyValueRow(pdf, "Family Size", String(r.familySize), y, { alt: (alt = !alt) });
   y += 4;
 
-  y = drawSectionHeader(pdf, "Savings & Taxes", y);
+  y = drawSectionHeader(pdf, "Savings & Taxes", y, {
+    accent: PDF.colors.brand,
+  });
   alt = false;
   y = drawKeyValueRow(pdf, "Total Annual Income", formatCurrency(r.totalAnnualIncome), y, { alt: (alt = !alt) });
   y = drawKeyValueRow(
@@ -117,7 +138,9 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
   );
   y += 4;
 
-  y = drawSectionHeader(pdf, "Bills (Annual)", y);
+  y = drawSectionHeader(pdf, "Bills (Annual)", y, {
+    accent: PDF.colors.fuchsia,
+  });
   alt = false;
   let billsListed = false;
   for (const field of BILL_FIELDS) {
@@ -145,16 +168,14 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
     );
   }
   if (!billsListed) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(9);
-    pdf.setTextColor(...PDF.colors.muted);
-    pdf.text("No bills selected.", PDF.marginX + 2, y);
-    y += 8;
+    y = drawEmptyState(pdf, "No bills selected.", y);
   }
   y = drawSubtotalRow(pdf, "Total Bills (Annual)", formatCurrency(r.billsAnnual), y + 1);
   y += 4;
 
-  y = drawSectionHeader(pdf, "Expenses (Annual)", y);
+  y = drawSectionHeader(pdf, "Expenses (Annual)", y, {
+    accent: PDF.colors.pink,
+  });
   alt = false;
   let expensesListed = false;
   const clothingMonthly = optionCost(CLOTHING_OPTIONS, input.clothing);
@@ -205,11 +226,7 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
     );
   }
   if (!expensesListed) {
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(9);
-    pdf.setTextColor(...PDF.colors.muted);
-    pdf.text("No expenses selected.", PDF.marginX + 2, y);
-    y += 8;
+    y = drawEmptyState(pdf, "No expenses selected.", y);
   }
   y = drawSubtotalRow(
     pdf,
@@ -219,7 +236,9 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
   );
   y += 4;
 
-  y = drawSectionHeader(pdf, "Annual Net Pay", y);
+  y = drawSectionHeader(pdf, "Annual Net Pay", y, {
+    accent: PDF.colors.accent,
+  });
   alt = false;
   y = drawKeyValueRow(
     pdf,
@@ -257,15 +276,25 @@ export async function generateStudentBudgetPdf(input: StudentBudgetInput) {
     y,
     { alt: (alt = !alt), valueColor: PDF.colors.accent, bold: true }
   );
-  y += 6;
+  y += 5;
 
-  drawTotalBanner(
+  y = drawTotalBanner(
     pdf,
     "Left for the Year",
     formatCurrency(r.remainingAnnualTotal),
-    y
+    y,
+    {
+      hint: `${formatCurrency(r.remainingMonthlyAverage)} average per month`,
+    }
   );
 
+  if (input.loan) {
+    y += 4;
+    drawLoanApplicationSection(pdf, input.loan, y);
+  }
+
   addPageFooters(pdf);
-  pdf.save("student-budget.pdf");
+  pdf.save(
+    input.loan ? "student-budget-with-loan.pdf" : "student-budget.pdf"
+  );
 }

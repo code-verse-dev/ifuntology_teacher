@@ -7,11 +7,14 @@ import {
   sumLineItems,
   type EstimateLineItem,
 } from "./estimateData";
+import type { IntroFormData } from "./introFormData";
+import type { LoanApplicationData } from "./loanApplicationData";
 import {
   PDF,
   addPageFooters,
   drawBrandedHeader,
   drawEmptyState,
+  drawMetricCards,
   drawSectionHeader,
   drawSubHeader,
   drawSubtotalRow,
@@ -20,12 +23,19 @@ import {
   ensureSpace,
   loadLogoAsset,
 } from "./pdfBrand";
+import {
+  drawBusinessProfileSection,
+  drawLoanApplicationSection,
+  hasIntroForPdf,
+} from "./pdfSharedSections";
 
-type PdfEstimateInput = {
+export type PdfEstimateInput = {
   itemQty: Record<string, string>;
   materialsTotal: number;
   furnitureTotal: number;
   grandTotal: number;
+  intro?: IntroFormData | null;
+  loan?: LoanApplicationData | null;
 };
 
 function addLineItemRows(
@@ -37,10 +47,10 @@ function addLineItemRows(
   let y = drawTableHeader(
     pdf,
     [
-      { label: "ITEM", x: PDF.marginX + 2 },
+      { label: "ITEM", x: PDF.marginX + 3 },
       { label: "QTY", x: 118, align: "right" },
       { label: "UNIT COST", x: 148, align: "right" },
-      { label: "LINE TOTAL", x: PDF.contentRight - 2, align: "right" },
+      { label: "LINE TOTAL", x: PDF.contentRight - 3, align: "right" },
     ],
     yStart
   );
@@ -56,25 +66,28 @@ function addLineItemRows(
     y = ensureSpace(pdf, y, 10);
     if (rowIndex % 2 === 1) {
       pdf.setFillColor(...PDF.colors.rowAlt);
-      pdf.rect(PDF.marginX, y - 3.5, PDF.contentWidth, 6.5, "F");
+      pdf.roundedRect(PDF.marginX, y - 3.2, PDF.contentWidth, 6.8, 1, 1, "F");
     }
 
     const lineTotal = qty * item.unitCost;
     const label = item.unitHint ? `${item.name} (${item.unitHint})` : item.name;
 
     pdf.setTextColor(...PDF.colors.text);
-    pdf.text(label, PDF.marginX + 2, y, { maxWidth: 95 });
+    pdf.text(label, PDF.marginX + 3, y, { maxWidth: 92 });
+    pdf.setTextColor(...PDF.colors.violet);
+    pdf.setFont("helvetica", "bold");
     pdf.text(String(qty), 118, y, { align: "right" });
+    pdf.setFont("helvetica", "normal");
     pdf.setTextColor(...PDF.colors.muted);
     pdf.text(formatCurrency(item.unitCost), 148, y, { align: "right" });
     pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(...PDF.colors.text);
-    pdf.text(formatCurrency(lineTotal), PDF.contentRight - 2, y, {
+    pdf.setTextColor(...PDF.colors.slate900);
+    pdf.text(formatCurrency(lineTotal), PDF.contentRight - 3, y, {
       align: "right",
     });
     pdf.setFont("helvetica", "normal");
 
-    y += 6.5;
+    y += 7;
     rowIndex += 1;
   }
 
@@ -88,10 +101,54 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
   let y = drawBrandedHeader(pdf, {
     logo,
     title: "Salon Estimate Summary",
-    subtitle: "Construction materials & salon equipment report",
+    subtitle: input.loan
+      ? "Business profile, estimate & loan application"
+      : "Business profile & construction estimate report",
   });
 
-  y = drawSectionHeader(pdf, "Raw Materials to Build a Salon", y);
+  const filledItems = Object.values(input.itemQty).filter(
+    (q) => parseQty(q) > 0
+  ).length;
+  const materialsShare =
+    input.grandTotal > 0
+      ? ((input.materialsTotal / input.grandTotal) * 100).toFixed(1)
+      : "0.0";
+
+  y = drawMetricCards(
+    pdf,
+    [
+      {
+        label: "Grand Total",
+        value: formatCurrency(input.grandTotal),
+        tone: "fuchsia",
+      },
+      {
+        label: "Materials",
+        value: formatCurrency(input.materialsTotal),
+        tone: "violet",
+      },
+      {
+        label: "Furniture",
+        value: formatCurrency(input.furnitureTotal),
+        tone: "sky",
+      },
+      {
+        label: "Line Items",
+        value: String(filledItems),
+        tone: "brand",
+      },
+    ],
+    y
+  );
+  y += 2;
+
+  if (input.intro && hasIntroForPdf(input.intro)) {
+    y = drawBusinessProfileSection(pdf, input.intro, y);
+  }
+
+  y = drawSectionHeader(pdf, "Raw Materials to Build a Salon", y, {
+    accent: PDF.colors.violet,
+  });
 
   let materialsHadItems = false;
   for (const category of MATERIAL_CATEGORIES) {
@@ -121,9 +178,11 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     formatCurrency(input.materialsTotal),
     y + 2
   );
-  y += 4;
+  y += 3;
 
-  y = drawSectionHeader(pdf, FURNITURE_CATEGORY.title, y);
+  y = drawSectionHeader(pdf, FURNITURE_CATEGORY.title, y, {
+    accent: PDF.colors.fuchsia,
+  });
   if (
     !FURNITURE_CATEGORY.items.some(
       (item) => parseQty(input.itemQty[item.id] ?? "") > 0
@@ -140,15 +199,27 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     formatCurrency(input.furnitureTotal),
     y + 2
   );
-  y += 6;
+  y += 5;
 
-  drawTotalBanner(
+  y = drawTotalBanner(
     pdf,
     "Final Total Estimate",
     formatCurrency(input.grandTotal),
-    y
+    y,
+    {
+      hint: `Materials share ${materialsShare}%  ·  All costs included`,
+    }
   );
 
+  if (input.loan) {
+    y += 4;
+    drawLoanApplicationSection(pdf, input.loan, y);
+  }
+
   addPageFooters(pdf);
-  pdf.save("funtology-business-estimate.pdf");
+  pdf.save(
+    input.loan
+      ? "funtology-estimate-with-loan.pdf"
+      : "funtology-business-estimate.pdf"
+  );
 }
