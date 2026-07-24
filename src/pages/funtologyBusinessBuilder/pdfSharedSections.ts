@@ -12,6 +12,7 @@ import {
   PDF,
   drawBlockTitle,
   drawKeyValueRow,
+  drawProfileGrid,
   drawSectionHeader,
   ensureSpace,
 } from "./pdfBrand";
@@ -46,26 +47,23 @@ export function drawBusinessProfileSection(
   yStart: number
 ) {
   let y = drawSectionHeader(pdf, "Business Profile", yStart, {
-    accent: PDF.colors.brand,
+    icon: "user",
   });
-  let alt = false;
   const rows: Array<[string, string]> = [
     ["Date", intro.date || "—"],
-    ["Owner / Applicant", intro.name || "—"],
-    ["Business Name", intro.businessName || "—"],
-    ["Business Type", getBusinessTypeLabel(intro.businessType) || "—"],
     ["Budget Amount", moneyOrDash(intro.budgetAmount)],
+    ["Owner / Applicant", intro.name || "—"],
     [
       "Square Footage",
       intro.squareFootage.trim()
         ? `${intro.squareFootage.trim()} sq ft`
         : "—",
     ],
+    ["Business Name", intro.businessName || "—"],
+    ["Business Type", getBusinessTypeLabel(intro.businessType) || "—"],
   ];
-  for (const [label, value] of rows) {
-    y = drawKeyValueRow(pdf, label, value, y, { alt: (alt = !alt) });
-  }
-  return y + 4;
+  y = drawProfileGrid(pdf, rows, y);
+  return y + 2;
 }
 
 export function drawLoanApplicationSection(
@@ -74,7 +72,8 @@ export function drawLoanApplicationSection(
   yStart: number
 ) {
   let y = drawSectionHeader(pdf, "Loan Application", yStart, {
-    accent: PDF.colors.fuchsia,
+    accent: PDF.colors.navy,
+    icon: "check",
   });
   let alt = false;
 
