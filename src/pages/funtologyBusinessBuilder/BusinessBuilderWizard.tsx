@@ -63,7 +63,7 @@ const STEPS = [
     id: 4,
     title: "Loan Application",
     short: "Loan",
-    description: "Optional practice form",
+    description: "Via Export with Loan",
     icon: ClipboardList,
     optional: true,
   },
@@ -93,6 +93,8 @@ export default function BusinessBuilderWizard() {
   const [pendingPdf, setPendingPdf] = useState<PendingPdfIntent | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
+  const canAccessLoanStep = pendingPdf !== null;
+
   useEffect(() => {
     document.title = "Calculate Your Estimate • iFuntology Teacher";
   }, []);
@@ -112,7 +114,9 @@ export default function BusinessBuilderWizard() {
         return;
       }
     }
-    setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+    // Step 4 is only reachable via Export with Loan Application
+    if (step >= 3) return;
+    setStep((s) => Math.min(3, s + 1));
   };
 
   const goBack = () => {
@@ -125,6 +129,25 @@ export default function BusinessBuilderWizard() {
       return;
     }
     setStep((s) => Math.max(1, s - 1));
+  };
+
+  const tryGoToStep = (target: number) => {
+    if (target === step) return;
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+    if (target === 4) {
+      if (!canAccessLoanStep) {
+        toast.error(
+          "Use “Export with Loan Application” on the Estimate or Budget step to open the loan form."
+        );
+        return;
+      }
+      setStep(4);
+      return;
+    }
+    if (target === step + 1) goNext();
   };
 
   const goToLoanForPdf = (intent: PendingPdfIntent) => {
@@ -185,8 +208,11 @@ export default function BusinessBuilderWizard() {
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Complete your business profile, salon cost estimate, and student
-            budget. A loan application practice form is available as an optional
-            fourth step.
+            budget. To include a loan application in your PDF, use{" "}
+            <span className="font-medium text-foreground">
+              Export with Loan Application
+            </span>{" "}
+            on the Estimate or Budget step.
           </p>
         </div>
 
@@ -198,14 +224,12 @@ export default function BusinessBuilderWizard() {
               const active = step === item.id;
               const done = step > item.id;
               const optional = "optional" in item && item.optional;
+              const locked = item.id === 4 && !canAccessLoanStep && step !== 4;
               return (
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (item.id < step) setStep(item.id);
-                      else if (item.id === step + 1) goNext();
-                    }}
+                    onClick={() => tryGoToStep(item.id)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
                       active &&
@@ -215,7 +239,8 @@ export default function BusinessBuilderWizard() {
                         "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20",
                       !active &&
                         !done &&
-                        "border-border/50 bg-muted/20 opacity-80"
+                        "border-border/50 bg-muted/20 opacity-80",
+                      locked && "opacity-50"
                     )}
                   >
                     <span
@@ -337,10 +362,10 @@ export default function BusinessBuilderWizard() {
         <Card className="sticky bottom-4 z-10 rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/90">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              Step {step} of {TOTAL_STEPS}
+              Step {step} of {canAccessLoanStep || step === 4 ? TOTAL_STEPS : 3}
               {" · "}
               {STEPS[step - 1].title}
-              {step === 4 ? " (optional)" : ""}
+              {step === 4 ? " · via Export with Loan" : ""}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               {step > 1 && (
@@ -355,30 +380,20 @@ export default function BusinessBuilderWizard() {
                 </Button>
               )}
               {step === 3 && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    asChild
+                <Button
+                  type="button"
+                  variant="brand"
+                  className="w-full sm:w-auto"
+                  asChild
+                >
+                  <Link
+                    to="/funtology-business-builder"
+                    onClick={clearPendingPdf}
                   >
-                    <Link
-                      to="/funtology-business-builder"
-                      onClick={clearPendingPdf}
-                    >
-                      Skip & Finish
-                    </Link>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="brand"
-                    className="w-full sm:w-auto"
-                    onClick={goNext}
-                  >
-                    Continue to Loan Form
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </>
+                    <Check className="h-4 w-4" />
+                    Done
+                  </Link>
+                </Button>
               )}
               {step < 3 && (
                 <Button
