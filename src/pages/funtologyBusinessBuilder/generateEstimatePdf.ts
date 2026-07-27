@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import {
-  FURNITURE_CATEGORY,
+  FURNITURE_CATEGORIES,
   MATERIAL_CATEGORIES,
   formatCurrency,
   parseQty,
@@ -184,12 +184,12 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
       tone: "gold" as const,
     },
     {
-      label: "Materials",
+      label: "Build & Setup",
       value: formatCurrency(input.materialsTotal),
       tone: "teal" as const,
     },
     {
-      label: "Furniture",
+      label: "Furniture & Ops",
       value: formatCurrency(input.furnitureTotal),
       tone: "orange" as const,
     },
@@ -207,19 +207,19 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     y = drawBusinessProfileSection(pdf, input.intro, y);
   }
 
-  y = drawSectionHeader(pdf, "Raw Materials to Build a Salon", y, {
+  y = drawSectionHeader(pdf, "Build & Setup Costs", y, {
     gold: true,
     icon: "briefcase",
   });
   y += 1;
 
-  let materialsHadItems = false;
+  let buildHadItems = false;
   for (const category of MATERIAL_CATEGORIES) {
     const hasItems = category.items.some(
       (item) => parseQty(input.itemQty[item.id] ?? "") > 0
     );
     if (!hasItems) continue;
-    materialsHadItems = true;
+    buildHadItems = true;
     y = drawCategoryBlock(
       pdf,
       category.title,
@@ -229,42 +229,52 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     );
   }
 
-  if (!materialsHadItems) {
-    y = drawEmptyState(pdf, "No raw material items selected.", y);
+  if (!buildHadItems) {
+    y = drawEmptyState(pdf, "No build & setup items selected.", y);
   }
 
   y = drawSubtotalRow(
     pdf,
-    "Materials Total",
+    "Build & Setup Total",
     formatCurrency(input.materialsTotal),
     y + 1,
     { color: PDF.colors.teal, soft: PDF.colors.tealSoft }
   );
   y += 4;
 
-  if (
-    !FURNITURE_CATEGORY.items.some(
+  y = drawSectionHeader(pdf, "Furniture, Equipment & Operations", y, {
+    accent: PDF.colors.orange,
+    icon: "chair",
+  });
+  y += 1;
+
+  let opsHadItems = false;
+  for (const category of FURNITURE_CATEGORIES) {
+    const hasItems = category.items.some(
       (item) => parseQty(input.itemQty[item.id] ?? "") > 0
-    )
-  ) {
-    y = drawSectionHeader(pdf, FURNITURE_CATEGORY.title, y, {
-      accent: PDF.colors.orange,
-      icon: "chair",
-    });
-    y = drawEmptyState(pdf, "No furniture or equipment items selected.", y);
-  } else {
+    );
+    if (!hasItems) continue;
+    opsHadItems = true;
     y = drawCategoryBlock(
       pdf,
-      FURNITURE_CATEGORY.title,
-      FURNITURE_CATEGORY.items,
+      category.title,
+      category.items,
       input.itemQty,
+      y
+    );
+  }
+
+  if (!opsHadItems) {
+    y = drawEmptyState(
+      pdf,
+      "No furniture, equipment, or operations items selected.",
       y
     );
   }
 
   y = drawSubtotalRow(
     pdf,
-    "Furniture & Equipment Total",
+    "Furniture & Ops Total",
     formatCurrency(input.furnitureTotal),
     y + 1,
     { color: PDF.colors.orange, soft: PDF.colors.orangeSoft }
@@ -284,7 +294,7 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     formatCurrency(input.grandTotal),
     y,
     {
-      hint: `Materials share ${materialsShare}%  ·  All costs included`,
+      hint: `Build & setup share ${materialsShare}%  ·  All costs included`,
     }
   );
 

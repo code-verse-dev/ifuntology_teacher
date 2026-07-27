@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import {
   ALL_ESTIMATE_ITEMS,
   ESTIMATE_CATEGORIES,
-  FURNITURE_CATEGORY,
+  FURNITURE_CATEGORIES,
   MATERIAL_CATEGORIES,
   emptyQtyMap,
   formatCurrency,
@@ -39,7 +39,7 @@ import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
 
-const STORAGE_KEY = "funtology-estimate-v3";
+const STORAGE_KEY = "funtology-estimate-v4";
 
 function Sparkline({
   color,
@@ -147,7 +147,7 @@ function QuantityTable({
   headerIcon: LucideIcon;
 }) {
   return (
-    <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
+    <Card className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
       <div
         className={`flex items-center gap-3 px-4 py-3 text-white ${headerGradient}`}
       >
@@ -309,7 +309,11 @@ export default function EstimateCalculatorPage({
     [itemQty]
   );
   const furnitureTotal = useMemo(
-    () => sumLineItems(FURNITURE_CATEGORY.items, itemQty),
+    () =>
+      sumLineItems(
+        FURNITURE_CATEGORIES.flatMap((c) => c.items),
+        itemQty
+      ),
     [itemQty]
   );
 
@@ -381,6 +385,50 @@ export default function EstimateCalculatorPage({
     minute: "2-digit",
   });
 
+  // Stack shorter sections under Registration beside the tall Building card
+  const besideBuildingIds = [
+    "registration",
+    "professional",
+    "insurance",
+    "utilities",
+    "laundry",
+    "barber",
+    "reception",
+  ] as const;
+  const besideBuildingCategories = besideBuildingIds
+    .map((id) => ESTIMATE_CATEGORIES.find((c) => c.id === id))
+    .filter(
+      (c): c is (typeof ESTIMATE_CATEGORIES)[number] => Boolean(c)
+    );
+  const buildingCategory = ESTIMATE_CATEGORIES.find((c) => c.id === "building");
+  const remainingCategories = ESTIMATE_CATEGORIES.filter(
+    (c) =>
+      c.id !== "building" &&
+      !(besideBuildingIds as readonly string[]).includes(c.id)
+  );
+
+  const renderCategory = (
+    category: (typeof ESTIMATE_CATEGORIES)[number]
+  ) => {
+    const sectionTotal = sumLineItems(category.items, itemQty);
+    return (
+      <QuantityTable
+        key={category.id}
+        title={category.title}
+        subtitle={category.subtitle}
+        items={category.items}
+        qtyById={itemQty}
+        onQtyChange={(id, value) =>
+          setItemQty((prev) => ({ ...prev, [id]: value }))
+        }
+        sectionTotal={sectionTotal}
+        totalLabel="Section Total"
+        headerGradient={category.headerGradient}
+        headerIcon={category.headerIcon}
+      />
+    );
+  };
+
   const content = (
       <>
         <div>
@@ -416,8 +464,9 @@ export default function EstimateCalculatorPage({
             </h1>
           )}
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Enter quantities for raw materials and salon furniture &amp;
-            equipment. Final total is the sum of all selected line items.
+            Enter quantities for registration, build-out, furniture, equipment,
+            and operating costs. Final total is the sum of all selected line
+            items (unit price × quantity).
           </p>
         </div>
 
@@ -431,8 +480,8 @@ export default function EstimateCalculatorPage({
             sparkline={[4, 8, 6, 12, 9, 15, 13, 18]}
           />
           <KpiCard
-            label="Raw Materials"
-            sublabel="Construction Materials"
+            label="Build & Setup"
+            sublabel="Registration & Construction"
             value={formatCurrency(materialsTotal)}
             helper={
               grandTotal > 0
@@ -444,8 +493,8 @@ export default function EstimateCalculatorPage({
             sparkline={[3, 5, 4, 7, 6, 9, 8, 11]}
           />
           <KpiCard
-            label="Furniture & Equipment"
-            sublabel="Salon Retail Items"
+            label="Furniture & Ops"
+            sublabel="Equipment, Tools & Services"
             value={formatCurrency(furnitureTotal)}
             icon={PieChart}
             gradient="bg-gradient-to-br from-sky-500 to-blue-700"
@@ -462,26 +511,19 @@ export default function EstimateCalculatorPage({
 
         <ProfitBreakdownCharts />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          {ESTIMATE_CATEGORIES.map((category) => {
-            const sectionTotal = sumLineItems(category.items, itemQty);
-            return (
-              <QuantityTable
-                key={category.id}
-                title={category.title}
-                subtitle={category.subtitle}
-                items={category.items}
-                qtyById={itemQty}
-                onQtyChange={(id, value) =>
-                  setItemQty((prev) => ({ ...prev, [id]: value }))
-                }
-                sectionTotal={sectionTotal}
-                totalLabel="Section Total"
-                headerGradient={category.headerGradient}
-                headerIcon={category.headerIcon}
-              />
-            );
-          })}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            <div className="flex flex-col gap-4">
+              {besideBuildingCategories.map(renderCategory)}
+            </div>
+            {buildingCategory ? (
+              <div>{renderCategory(buildingCategory)}</div>
+            ) : null}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            {remainingCategories.map(renderCategory)}
+          </div>
         </div>
 
         <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 shadow-lg">
