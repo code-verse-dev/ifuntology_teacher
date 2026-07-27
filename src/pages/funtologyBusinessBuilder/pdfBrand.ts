@@ -59,75 +59,85 @@ export const CATEGORY_PALETTES: Record<
   string,
   { accent: Rgb; soft: Rgb; header: Rgb }
 > = {
-  "Framing & Structural Materials": {
-    accent: [234, 120, 48],
-    soft: [255, 237, 223],
-    header: [234, 120, 48],
-  },
-  Flooring: {
-    accent: [15, 148, 136],
-    soft: [224, 247, 244],
-    header: [15, 148, 136],
-  },
-  "Paint & Wall Finishes": {
-    accent: [34, 160, 90],
-    soft: [226, 247, 233],
-    header: [34, 160, 90],
-  },
-  "Ceiling Materials": {
-    accent: [56, 140, 200],
-    soft: [227, 241, 252],
-    header: [56, 140, 200],
-  },
-  "Electrical Materials": {
-    accent: [201, 162, 39],
-    soft: [252, 244, 214],
-    header: [201, 162, 39],
-  },
-  "Plumbing Materials": {
-    accent: [14, 116, 144],
-    soft: [224, 242, 254],
-    header: [14, 116, 144],
-  },
-  "HVAC & Ventilation": {
-    accent: [71, 85, 105],
-    soft: [241, 245, 249],
-    header: [71, 85, 105],
-  },
-  "Doors & Windows": {
+  "Business Registration & Licensing": {
     accent: [79, 70, 229],
     soft: [238, 242, 255],
     header: [79, 70, 229],
   },
-  "Counters, Cabinets & Storage": {
-    accent: [110, 140, 50],
-    soft: [236, 244, 220],
-    header: [110, 140, 50],
-  },
-  "Mirror & Glasswork": {
-    accent: [15, 118, 110],
-    soft: [204, 251, 241],
-    header: [15, 118, 110],
-  },
-  "Plaster Molding Baseboards": {
-    accent: [124, 92, 191],
-    soft: [239, 233, 252],
-    header: [124, 92, 191],
-  },
-  "Restroom Materials": {
-    accent: [30, 64, 175],
-    soft: [219, 234, 254],
-    header: [30, 64, 175],
-  },
-  "Estimated Construction Cost by Size": {
-    accent: [15, 32, 56],
-    soft: [232, 238, 247],
-    header: [15, 32, 56],
-  },
-  "Salon Furniture & Equipment": {
+  "Building & Construction": {
     accent: [234, 120, 48],
     soft: [255, 237, 223],
     header: [234, 120, 48],
+  },
+  "Counters, Cabinets, Sinks & Storage": {
+    accent: [15, 148, 136],
+    soft: [224, 247, 244],
+    header: [15, 148, 136],
+  },
+  "Reception Area": {
+    accent: [56, 140, 200],
+    soft: [227, 241, 252],
+    header: [56, 140, 200],
+  },
+  "Salon Furniture": {
+    accent: [225, 29, 72],
+    soft: [255, 228, 230],
+    header: [225, 29, 72],
+  },
+  "Barber Equipment": {
+    accent: [71, 85, 105],
+    soft: [241, 245, 249],
+    header: [71, 85, 105],
+  },
+  "Cosmetology Tools": {
+    accent: [219, 39, 119],
+    soft: [252, 231, 243],
+    header: [219, 39, 119],
+  },
+  "Nail Equipment": {
+    accent: [192, 38, 211],
+    soft: [250, 232, 255],
+    header: [192, 38, 211],
+  },
+  "Skincare Equipment": {
+    accent: [8, 145, 178],
+    soft: [207, 250, 254],
+    header: [8, 145, 178],
+  },
+  "Laundry & Cleaning": {
+    accent: [37, 99, 235],
+    soft: [219, 234, 254],
+    header: [37, 99, 235],
+  },
+  "Safety & Sanitation": {
+    accent: [101, 163, 13],
+    soft: [236, 252, 203],
+    header: [101, 163, 13],
+  },
+  Technology: {
+    accent: [124, 58, 237],
+    soft: [237, 233, 254],
+    header: [124, 58, 237],
+  },
+  Marketing: {
+    accent: [234, 88, 12],
+    soft: [255, 237, 213],
+    header: [234, 88, 12],
+  },
+  Insurance: {
+    accent: [87, 83, 78],
+    soft: [245, 245, 244],
+    header: [87, 83, 78],
+  },
+  Utilities: {
+    accent: [5, 150, 105],
+    soft: [209, 250, 229],
+    header: [5, 150, 105],
+  },
+  "Professional Services": {
+    accent: [124, 92, 191],
+    soft: [239, 233, 252],
+    header: [124, 92, 191],
   },
 };
 
