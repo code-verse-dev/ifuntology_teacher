@@ -41,8 +41,7 @@ export default function FuntologyBusinessBuilderPage() {
             Funtology Business Builder
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Tap a card to view the full image. Use zoom controls or scroll to
-            enlarge details.
+          Create your own business using the Business Builder. Tap any image card to view examples of completed projects. Select View & Zoom to enlarge images for inspiration. When you're ready, click Student Budget to begin building your business plan. Be sure to save your work as you complete each section.
           </p>
         </div>
 

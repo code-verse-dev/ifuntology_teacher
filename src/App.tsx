@@ -52,6 +52,8 @@ import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplore
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
 import StudentPracticalSheetView from "./pages/myStudents/StudentPracticalSheetView";
+import PracticalSheetsPage from "./pages/practicalSheets";
+import PracticalSheetEntryDetailsPage from "./pages/practicalSheets/PracticalSheetEntryDetailsPage";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -344,6 +346,16 @@ const App = () => {
               <Route path="/my-students" element={
                 <ProtectedRoute>
                   <MyStudents />
+                </ProtectedRoute>
+              } />
+              <Route path="/practical-sheets/:studentId/:courseType/:entryDate" element={
+                <ProtectedRoute>
+                  <PracticalSheetEntryDetailsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/practical-sheets" element={
+                <ProtectedRoute>
+                  <PracticalSheetsPage />
                 </ProtectedRoute>
               } />
               <Route path="/affiliate-program" element={

@@ -399,11 +399,11 @@ export function drawBrandedHeader(
 
   // Date badge (gold-bordered navy pill)
   const dateLabel = new Date().toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
-  const chipW = Math.max(34, dateLabel.length * 2.15 + 16);
+  const chipW = Math.max(42, dateLabel.length * 2.05 + 16);
   const chipX = pageWidth - PDF.marginX - chipW - 4;
   pdf.setFillColor(...colors.navyMid);
   pdf.setDrawColor(...colors.gold);
