@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Box,
+  ClipboardList,
   FileText,
   GraduationCap,
   LayoutDashboard,
@@ -88,6 +89,7 @@ export default function DashboardSidebar() {
     { title: "Learning Management", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
+    { title: "Practical Sheets", url: "/practical-sheets", icon: ClipboardList },
     { title: "Video Library", url: "/video-library", icon: Video },
   ];
 
