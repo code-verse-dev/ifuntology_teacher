@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import { useBuilderPaths } from '../lib/builderPaths'
-import { BookBuilder } from './BookBuilder'
+import BookBuilder from './BookBuilder'
 import { CharacterComposerPage } from './CharacterComposerPage'
 
 /**

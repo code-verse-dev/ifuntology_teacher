@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useBuilderPaths } from "@/book-builder/lib/builderPaths";
-import { BookBuilder } from "@/book-builder/pages/BookBuilder";
+import BookBuilder from "@/book-builder/pages/BookBuilder";
 import { CharacterComposerPage } from "@/book-builder/pages/CharacterComposerPage";
 import { DailyAssignmentsGalleryPage } from "./DailyAssignmentsGalleryPage";
 
