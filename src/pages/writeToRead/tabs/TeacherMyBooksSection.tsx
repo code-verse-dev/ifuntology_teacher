@@ -6,7 +6,6 @@ import {
   BookOpen,
   Loader2,
   MoreVertical,
-  Plus,
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,11 @@ function pdfExportHint(book: TeacherBookDoc): string | null {
   return null;
 }
 
-export function TeacherMyBooksSection() {
+export function TeacherMyBooksSection({
+  createBookRequestId = 0,
+}: {
+  createBookRequestId?: number;
+}) {
   const navigate = useNavigate();
   const { data, isLoading, refetch } = useGetMyBooksQuery({ page: 1, limit: 50 });
   const [createBook, { isLoading: isCreating }] = useCreateBookMutation();
@@ -106,6 +109,12 @@ export function TeacherMyBooksSection() {
     window.addEventListener("wtr-book-saved", onSaved);
     return () => window.removeEventListener("wtr-book-saved", onSaved);
   }, [refetch]);
+
+  useEffect(() => {
+    if (createBookRequestId > 0) {
+      setCreateOpen(true);
+    }
+  }, [createBookRequestId]);
 
   const stats = useMemo(() => {
     const total = books.length;
@@ -173,21 +182,11 @@ export function TeacherMyBooksSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1 text-left">
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Grade Books</h2>
-          <p className="text-sm font-medium text-slate-500">
-            Create, manage, and grade student writing projects.
-          </p>
-        </div>
-        <Button
-          type="button"
-          className="h-11 shrink-0 gap-2 rounded-full border-none bg-lime-600 px-6 font-bold text-white hover:bg-lime-700"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Create Book
-        </Button>
+      <div className="space-y-1 text-left">
+        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Grade Books</h2>
+        <p className="text-sm font-medium text-slate-500">
+          Create, manage, and grade student writing projects.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -272,7 +271,7 @@ export function TeacherMyBooksSection() {
           <Card className="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900/50">
             <p className="text-sm font-medium text-slate-500">
               {books.length === 0
-                ? 'You haven\'t created any books yet. Click "Create Book" to start.'
+                ? 'You haven\'t created any books yet. Use "Create Book" under View Invoice to start.'
                 : "No books match your search or filter."}
             </p>
           </Card>
