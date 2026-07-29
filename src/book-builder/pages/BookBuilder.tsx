@@ -585,11 +585,27 @@ function newPageId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+/** First content page is always the cover; later content pages are Page 1, Page 2, … */
+export const COVER_PAGE_LABEL = 'Cover page'
+
+function defaultContentPageLabel(contentOrdinal: number): string {
+  return contentOrdinal <= 0 ? COVER_PAGE_LABEL : `Page ${contentOrdinal}`
+}
+
+/** 0-based index among content pages only (TOC pages ignored). */
+function contentOrdinalAt(pages: BookPageData[], pageIndex: number): number {
+  let n = -1
+  for (let i = 0; i <= pageIndex && i < pages.length; i++) {
+    if (pages[i]?.kind === 'content') n++
+  }
+  return n
+}
+
 function createInitialPages(): BookPageData[] {
   return [
     {
       id: newPageId(),
-      label: 'Page 1',
+      label: COVER_PAGE_LABEL,
       fill: null,
       characters: [],
       thoughtBubble: null,
@@ -2705,7 +2721,7 @@ export function BookBuilder() {
         const fallback =
           pg?.kind === 'toc'
             ? 'Table of contents'
-            : `Page ${pageIndex + 1}`
+            : defaultContentPageLabel(contentOrdinalAt(prev, pageIndex))
         const v = renameDraft.trim() || fallback
         return prev.map((p, idx) =>
           idx === pageIndex ? { ...p, label: v } : p,
@@ -4392,7 +4408,7 @@ export function BookBuilder() {
         ...p,
         {
           id: newPageId(),
-          label: `Page ${contentCount + 1}`,
+          label: defaultContentPageLabel(contentCount),
           fill: null,
           characters: [],
           thoughtBubble: null,
@@ -5543,9 +5559,11 @@ Delete/Backspace: remove selected element"
                             />
                           ) : (
                             <>
-                              {pageNoPosition === 'bottom-center' && (
+                              {pageNoPosition === 'bottom-center' &&
+                                p.kind === 'content' &&
+                                contentOrdinalAt(pages, i) > 0 && (
                                 <span className="book-page__num book-page__num--inside">
-                                  {i + 1}
+                                  {contentOrdinalAt(pages, i)}
                                 </span>
                               )}
                               {(p.kind === 'content'
@@ -5947,9 +5965,11 @@ Delete/Backspace: remove selected element"
                         </div>
                       </div>
                     </div>
-                    {pageNoPosition === 'bottom-outside' && p.kind !== 'toc' && (
+                    {pageNoPosition === 'bottom-outside' &&
+                      p.kind === 'content' &&
+                      contentOrdinalAt(pages, i) > 0 && (
                       <span className="book-page__num book-page__num--below">
-                        {i + 1}
+                        {contentOrdinalAt(pages, i)}
                       </span>
                     )}
                   </div>

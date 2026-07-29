@@ -2713,6 +2713,13 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+.bg-modal__search {
+  margin: 0.75rem 1rem 0.25rem;
+  width: auto;
+  max-width: none;
+  box-sizing: border-box;
+}
+
 .bg-modal__tabs {
   display: flex;
   gap: 0.25rem;

@@ -2,13 +2,20 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type MouseEvent,
 } from 'react'
+import { Search } from 'lucide-react'
 import { BackgroundImageCropForm } from './BackgroundImageCropForm'
 import { GradientLibraryForm } from './GradientLibraryForm'
-import { apiUrl, assetUrl, builderFetch } from '../lib/api'
+import {
+  apiUrl,
+  assetUrl,
+  builderFetch,
+  readApiErrorMessage,
+} from '../lib/api'
 import { useBuilderPaths } from '../lib/builderPaths'
 import { getOrCreateBuilderUserId } from '../lib/builderUserId'
 import type { PageTrimMm } from '../lib/cropImage'
@@ -20,6 +27,23 @@ import type {
 
 type ModalTab = BackgroundKind
 type SubModalKind = 'image' | 'color' | 'gradient'
+
+type WebBgHit = {
+  id: string
+  source: 'pixabay' | 'openverse'
+  previewUrl: string
+  importUrl: string
+  alt: string
+  artist: string
+  pageUrl: string
+}
+
+type WebSearchResponse = {
+  items: WebBgHit[]
+  page: number
+  hasMore: boolean
+  sources: string[]
+}
 
 type Props = {
   open: boolean
@@ -46,6 +70,24 @@ export function PageBackgroundModal({
   const [savingSub, setSavingSub] = useState(false)
   const [libraryErr, setLibraryErr] = useState<string | null>(null)
   const [subFormKey, setSubFormKey] = useState(0)
+
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [webItems, setWebItems] = useState<WebBgHit[]>([])
+  const [webPage, setWebPage] = useState(1)
+  const [webHasMore, setWebHasMore] = useState(false)
+  const [webLoading, setWebLoading] = useState(false)
+  const [webLoadingMore, setWebLoadingMore] = useState(false)
+  const [importingWebId, setImportingWebId] = useState<string | null>(null)
+  const [webErr, setWebErr] = useState<string | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const webPageRef = useRef(1)
+  const webHasMoreRef = useRef(false)
+  const webLoadMoreInFlightRef = useRef(false)
+  const searchGenRef = useRef(0)
+
+  const isImageTab = tab === 'image'
+  const isSearchMode = isImageTab && debouncedSearch.length > 0
 
   const loadCatalog = useCallback(async () => {
     setLoading(true)
@@ -78,8 +120,95 @@ export function PageBackgroundModal({
 
   useEffect(() => {
     if (!open) return
+    setSearch('')
+    setDebouncedSearch('')
+    setWebItems([])
+    setWebPage(1)
+    setWebHasMore(false)
+    setWebErr(null)
     void loadCatalog()
   }, [open, loadCatalog])
+
+  useEffect(() => {
+    if (!open || !isImageTab) return
+    const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => window.clearTimeout(t)
+  }, [open, search, isImageTab])
+
+  const fetchWeb = useCallback(
+    async (q: string, pageNum: number, append: boolean) => {
+      const params = new URLSearchParams({ q, page: String(pageNum) })
+      const res = await builderFetch(
+        apiUrl(`/api/builder/clipart/background-search?${params.toString()}`),
+        fetchInit,
+      )
+      if (!res.ok) throw new Error(await readApiErrorMessage(res))
+      const data = (await res.json()) as WebSearchResponse
+      const next = Array.isArray(data.items) ? data.items : []
+      setWebItems((prev) => (append ? [...prev, ...next] : next))
+      const page = data.page ?? pageNum
+      setWebPage(page)
+      webPageRef.current = page
+      const more = !!data.hasMore
+      setWebHasMore(more)
+      webHasMoreRef.current = more
+    },
+    [fetchInit],
+  )
+
+  useEffect(() => {
+    if (!open || !isSearchMode) {
+      setWebItems([])
+      setWebHasMore(false)
+      webHasMoreRef.current = false
+      return
+    }
+    const gen = ++searchGenRef.current
+    setWebLoading(true)
+    setWebErr(null)
+    webLoadMoreInFlightRef.current = false
+    void fetchWeb(debouncedSearch, 1, false)
+      .catch((e) => {
+        if (gen !== searchGenRef.current) return
+        setWebErr(e instanceof Error ? e.message : 'Online search failed')
+        setWebItems([])
+        setWebHasMore(false)
+        webHasMoreRef.current = false
+      })
+      .finally(() => {
+        if (gen === searchGenRef.current) setWebLoading(false)
+      })
+  }, [debouncedSearch, fetchWeb, isSearchMode, open])
+
+  const loadMoreWeb = useCallback(async () => {
+    if (webLoadMoreInFlightRef.current || !isSearchMode) return
+    if (!webHasMoreRef.current) return
+    webLoadMoreInFlightRef.current = true
+    setWebLoadingMore(true)
+    try {
+      await fetchWeb(debouncedSearch, webPageRef.current + 1, true)
+    } catch {
+      /* ignore */
+    } finally {
+      webLoadMoreInFlightRef.current = false
+      setWebLoadingMore(false)
+    }
+  }, [debouncedSearch, fetchWeb, isSearchMode])
+
+  useEffect(() => {
+    if (!open || !isSearchMode || webLoading) return
+    const el = sentinelRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((x) => x.isIntersecting)) return
+        if (webHasMoreRef.current) void loadMoreWeb()
+      },
+      { rootMargin: '220px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [isSearchMode, loadMoreWeb, open, webLoading])
 
   useEffect(() => {
     if (!open) return
@@ -96,8 +225,13 @@ export function PageBackgroundModal({
   }, [open, subModal, savingSub])
 
   const filtered = useMemo(() => {
+    const q = debouncedSearch.toLowerCase()
     const rows = items
       .filter((x) => x.kind === tab)
+      .filter((x) => {
+        if (tab !== 'image' || !q) return true
+        return x.label.toLowerCase().includes(q)
+      })
       .slice()
       .sort((a, b) => {
         const sa = a.source === 'user' ? 1 : 0
@@ -106,7 +240,7 @@ export function PageBackgroundModal({
         return a.label.localeCompare(b.label)
       })
     return rows
-  }, [items, tab])
+  }, [debouncedSearch, items, tab])
 
   if (!open) return null
 
@@ -153,6 +287,33 @@ export function PageBackgroundModal({
       return
     }
     await loadCatalog()
+  }
+
+  const importWebBackground = async (hit: WebBgHit) => {
+    const key = `${hit.source}:${hit.id}`
+    setImportingWebId(key)
+    setWebErr(null)
+    try {
+      const res = await builderFetch(apiUrl('/api/builder/clipart/import'), {
+        ...fetchInit,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(fetchInit?.headers as Record<string, string> | undefined),
+        },
+        body: JSON.stringify({ url: hit.importUrl, source: hit.source }),
+      })
+      if (!res.ok) throw new Error(await readApiErrorMessage(res))
+      const json = (await res.json()) as { imagePath?: string }
+      const path = json.imagePath?.trim()
+      if (!path) throw new Error('Import did not return imagePath')
+      onApply({ kind: 'image', value: path })
+      onClose()
+    } catch (e) {
+      setWebErr(e instanceof Error ? e.message : 'Could not add background')
+    } finally {
+      setImportingWebId(null)
+    }
   }
 
   const uploadCroppedBackground = async (file: File, label: string) => {
@@ -256,8 +417,7 @@ export function PageBackgroundModal({
               Page background
             </h2>
             <p className="bg-modal__sub">
-              Pick a background or add your own — new items are saved to your
-              library on this device automatically.
+              Pick a background, search free online photos, or upload your own.
             </p>
           </div>
           <div className="bg-modal__head-actions">
@@ -293,6 +453,11 @@ export function PageBackgroundModal({
                   setTab(k)
                   setSubModal(null)
                   setLibraryErr(null)
+                  setWebErr(null)
+                  if (k !== 'image') {
+                    setSearch('')
+                    setDebouncedSearch('')
+                  }
                 }}
               >
                 {label}
@@ -312,9 +477,23 @@ export function PageBackgroundModal({
           </button>
         </div>
 
+        {isImageTab ? (
+          <label className="element-picker-search bg-modal__search">
+            <Search size={18} aria-hidden />
+            <input
+              type="search"
+              className="element-picker-search__input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search library & online photos"
+            />
+          </label>
+        ) : null}
+
         {libraryErr ? (
           <p className="bg-modal__library-err">{libraryErr}</p>
         ) : null}
+        {webErr ? <p className="bg-modal__library-err">{webErr}</p> : null}
 
         {loadErr && <p className="bg-modal__err">{loadErr}</p>}
         {loading && !items.length ? (
@@ -322,69 +501,160 @@ export function PageBackgroundModal({
         ) : null}
 
         <div className="bg-modal__grid-wrap">
-          <div className="bg-modal__grid">
-            <button
-              type="button"
-              className={
-                'bg-modal__tile bg-modal__tile--white' +
-                (!currentFill ? ' is-selected' : '')
-              }
-              onClick={pickWhite}
-            >
-              <span
-                className="bg-modal__tile-visual bg-modal__tile-visual--white"
-                aria-hidden
-              />
-              <span className="bg-modal__tile-label">Plain white</span>
-            </button>
-            {filtered.map((item) => (
-              <div key={item.id} className="bg-modal__tile-outer">
-                <button
-                  type="button"
-                  className={
-                    'bg-modal__tile' +
-                    (isSelected(item) ? ' is-selected' : '')
-                  }
-                  onClick={() => pick(item)}
-                  title={item.label}
-                >
-                  <span className="bg-modal__tile-visual">
-                    {item.kind === 'image' && (
-                      <img
-                        src={assetUrl(item.value)}
-                        alt=""
-                        className="bg-modal__thumb"
-                      />
-                    )}
-                    {item.kind === 'color' && (
-                      <span
-                        className="bg-modal__swatch"
-                        style={{ background: item.value }}
-                      />
-                    )}
-                    {item.kind === 'gradient' && (
-                      <span
-                        className="bg-modal__swatch"
-                        style={{ background: item.value }}
-                      />
-                    )}
-                  </span>
-                  <span className="bg-modal__tile-label">{item.label}</span>
-                </button>
-                {item.source === 'user' ? (
+          {!isSearchMode ? (
+            <div className="bg-modal__grid">
+              <button
+                type="button"
+                className={
+                  'bg-modal__tile bg-modal__tile--white' +
+                  (!currentFill ? ' is-selected' : '')
+                }
+                onClick={pickWhite}
+              >
+                <span
+                  className="bg-modal__tile-visual bg-modal__tile-visual--white"
+                  aria-hidden
+                />
+                <span className="bg-modal__tile-label">Plain white</span>
+              </button>
+              {filtered.map((item) => (
+                <div key={item.id} className="bg-modal__tile-outer">
                   <button
                     type="button"
-                    className="bg-modal__tile-remove"
-                    title="Remove from my library"
-                    aria-label={`Remove ${item.label}`}
-                    onClick={(ev) => deleteUserItem(item, ev)}
+                    className={
+                      'bg-modal__tile' +
+                      (isSelected(item) ? ' is-selected' : '')
+                    }
+                    onClick={() => pick(item)}
+                    title={item.label}
                   >
-                    ×
+                    <span className="bg-modal__tile-visual">
+                      {item.kind === 'image' && (
+                        <img
+                          src={assetUrl(item.value)}
+                          alt=""
+                          className="bg-modal__thumb"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
+                      {item.kind === 'color' && (
+                        <span
+                          className="bg-modal__swatch"
+                          style={{ background: item.value }}
+                        />
+                      )}
+                      {item.kind === 'gradient' && (
+                        <span
+                          className="bg-modal__swatch"
+                          style={{ background: item.value }}
+                        />
+                      )}
+                    </span>
+                    <span className="bg-modal__tile-label">{item.label}</span>
                   </button>
+                  {item.source === 'user' ? (
+                    <button
+                      type="button"
+                      className="bg-modal__tile-remove"
+                      title="Remove from my library"
+                      aria-label={`Remove ${item.label}`}
+                      onClick={(ev) => deleteUserItem(item, ev)}
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {filtered.length > 0 ? (
+                <section className="element-picker-section">
+                  <h3 className="element-picker-section__title">Your library</h3>
+                  <div className="bg-modal__grid">
+                    {filtered.map((item) => (
+                      <div key={item.id} className="bg-modal__tile-outer">
+                        <button
+                          type="button"
+                          className={
+                            'bg-modal__tile' +
+                            (isSelected(item) ? ' is-selected' : '')
+                          }
+                          onClick={() => pick(item)}
+                          title={item.label}
+                        >
+                          <span className="bg-modal__tile-visual">
+                            <img
+                              src={assetUrl(item.value)}
+                              alt=""
+                              className="bg-modal__thumb"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </span>
+                          <span className="bg-modal__tile-label">
+                            {item.label}
+                          </span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <section className="element-picker-section element-picker-section--web">
+                <h3 className="element-picker-section__title">
+                  Online photos
+                </h3>
+                {webLoading && !webItems.length ? (
+                  <p className="bg-modal__loading">Searching…</p>
+                ) : !webItems.length ? (
+                  <p className="bg-modal__loading">
+                    No online matches. Try another word.
+                  </p>
+                ) : (
+                  <div className="bg-modal__grid">
+                    {webItems.map((hit) => {
+                      const key = `${hit.source}:${hit.id}`
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className="bg-modal__tile element-picker-web-tile"
+                          disabled={importingWebId != null}
+                          title={`${hit.alt} — ${hit.artist}`}
+                          onClick={() => void importWebBackground(hit)}
+                        >
+                          <span className="bg-modal__tile-visual">
+                            <img
+                              src={hit.previewUrl}
+                              alt={hit.alt}
+                              className="bg-modal__thumb"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </span>
+                          <span className="bg-modal__tile-label">
+                            {importingWebId === key
+                              ? 'Adding…'
+                              : hit.alt}
+                          </span>
+                          <span className="element-picker-web-tile__badge">
+                            {hit.source}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {webLoadingMore ? (
+                  <p className="bg-modal__loading">Loading more…</p>
                 ) : null}
-              </div>
-            ))}
-          </div>
+                <div ref={sentinelRef} />
+              </section>
+            </>
+          )}
         </div>
       </div>
 

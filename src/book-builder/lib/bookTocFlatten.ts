@@ -16,18 +16,9 @@ export function newTocEntryId(): string {
     : `toc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-const MAX_TOC_DEPTH = 64
-
-export function flattenTocEntries(
-  entries: TocEntry[],
-  depth = 0,
-  seen: Set<string> = new Set(),
-): TocFlatRow[] {
-  if (depth > MAX_TOC_DEPTH) return []
+export function flattenTocEntries(entries: TocEntry[], depth = 0): TocFlatRow[] {
   const out: TocFlatRow[] = []
   for (const e of entries) {
-    if (seen.has(e.id)) continue
-    seen.add(e.id)
     out.push({
       id: e.id,
       title: e.title,
@@ -35,7 +26,7 @@ export function flattenTocEntries(
       depth,
     })
     if (e.children?.length) {
-      out.push(...flattenTocEntries(e.children, depth + 1, seen))
+      out.push(...flattenTocEntries(e.children, depth + 1))
     }
   }
   return out
@@ -81,9 +72,12 @@ export function seedTocDataFromContentPages(
   contentLabels: string[],
   heading = 'Contents',
 ): TocPageData {
+  // Skip cover (first content page) so TOC starts at Page 1.
+  const start = /^cover\s*page$/i.test(contentLabels[0] ?? '') ? 1 : 0
+  const body = contentLabels.slice(start)
   return {
     heading,
-    entries: contentLabels.map((label, idx) => ({
+    entries: body.map((label, idx) => ({
       id: newTocEntryId(),
       title: label,
       pageNumber: String(idx + 1),
