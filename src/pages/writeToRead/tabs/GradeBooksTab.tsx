@@ -114,7 +114,11 @@ function primaryGradeActionLabel(book: ReviewBookDoc): string {
   return isBookGraded(book) ? "Update Grade" : "Grade book";
 }
 
-export function GradeBooksTab() {
+export function GradeBooksTab({
+  createBookRequestId = 0,
+}: {
+  createBookRequestId?: number;
+}) {
   const { data: booksRes, isLoading, isError, refetch } =
     useGetAvailableForReviewQuery({ page: 1, limit: 20 });
   const [assignGrade, { isLoading: isSubmitting }] = useAssignGradeMutation();
@@ -265,7 +269,7 @@ export function GradeBooksTab() {
       value="grade"
       className="mt-0 space-y-8 outline-none text-left"
     >
-      <TeacherMyBooksSection />
+      <TeacherMyBooksSection createBookRequestId={createBookRequestId} />
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
