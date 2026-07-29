@@ -38,7 +38,7 @@ import './book-builder.css'
 type SelectionMap = Record<string, string | null>
 
 function cloneSelectionMap(src: SelectionMap): SelectionMap {
-  return { ...src }
+  return JSON.parse(JSON.stringify(src)) as SelectionMap
 }
 
 function IconToolCharacter() {
@@ -77,15 +77,17 @@ function CharacterCategoryIconButton({
     [resolvedIcon?.imageUrl],
   )
 
-  const tip = resolvedIcon?.tooltip ?? cat.name
+  const label = cat.name
 
   return (
-    <Tooltip content={tip} fill>
-      <button
-        type="button"
-        className={'char-panel__cat-icon' + (isActive ? ' is-active' : '')}
-        onClick={onSelect}
-      >
+    <button
+      type="button"
+      className={'char-panel__cat-icon' + (isActive ? ' is-active' : '')}
+      onClick={onSelect}
+      aria-label={label}
+      aria-pressed={isActive}
+    >
+      <span className="char-panel__cat-icon-visual" aria-hidden>
         <PublicRasterIcon
           candidates={candidates}
           className="char-composer__cat-icon-img"
@@ -96,8 +98,9 @@ function CharacterCategoryIconButton({
             </span>
           }
         />
-      </button>
-    </Tooltip>
+      </span>
+      <span className="char-panel__cat-name">{label}</span>
+    </button>
   )
 }
 

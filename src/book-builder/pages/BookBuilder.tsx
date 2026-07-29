@@ -5034,14 +5034,16 @@ export function BookBuilder() {
                 'book-tool-sidebar__btn' +
                 (bgModalOpen ? ' is-active' : '')
               }
-              title="Page background"
               aria-label="Page background"
               onClick={() => setBgModalOpen(true)}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_PAGE_BACKGROUND}
-                fallback={<IconToolPageBackground />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_PAGE_BACKGROUND}
+                  fallback={<IconToolPageBackground />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Background</span>
             </button>
             <button
               type="button"
@@ -5050,11 +5052,6 @@ export function BookBuilder() {
                 (tocEditorOpen || getTocBlockRange(pages, activePageIndex)
                   ? ' is-active'
                   : '')
-              }
-              title={
-                getTocBlockRange(pages, activePageIndex)
-                  ? 'Edit table of contents'
-                  : 'Add table of contents page'
               }
               aria-label={
                 getTocBlockRange(pages, activePageIndex)
@@ -5069,10 +5066,13 @@ export function BookBuilder() {
                 addTocPage(defaultMergedToc)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_TOC}
-                fallback={<IconToolToc />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_TOC}
+                  fallback={<IconToolToc />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Contents</span>
             </button>
             <button
               type="button"
@@ -5082,11 +5082,6 @@ export function BookBuilder() {
                 activeContentPage?.id === textBoxSelectedPageId
                   ? ' is-active'
                   : '')
-              }
-              title={
-                activeContentPage
-                  ? 'Text box — add or edit on this page'
-                  : 'Text box (choose a content page)'
               }
               aria-label="Text box"
               disabled={!activeContentPage}
@@ -5114,10 +5109,13 @@ export function BookBuilder() {
                 setTextBoxSelectedPageId(pid)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_TEXT_BOX}
-                fallback={<IconToolTextBox />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_TEXT_BOX}
+                  fallback={<IconToolTextBox />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Text</span>
             </button>
             <button
               type="button"
@@ -5128,13 +5126,6 @@ export function BookBuilder() {
                   activeContentPage?.id === thoughtBubbleSelectedPageId)
                   ? ' is-active'
                   : '')
-              }
-              title={
-                !hasAnyContentPage
-                  ? 'Thought bubble — add a content page first'
-                  : activeContentPage
-                    ? 'Thought bubble — placed SVG on the page (not page background; use picture tool for fill)'
-                    : 'Thought bubble — pick a bubble (jumps to first content page)'
               }
               aria-label="Thought bubble — placed art, not page background"
               disabled={!hasAnyContentPage}
@@ -5147,21 +5138,19 @@ export function BookBuilder() {
                 setTextBubbleModalOpen(true)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_BUBBLE}
-                fallback={<IconToolBubble />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_BUBBLE}
+                  fallback={<IconToolBubble />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Bubble</span>
             </button>
             <button
               type="button"
               className={
                 'book-tool-sidebar__btn' +
                 (shapeToolActive ? ' is-active' : '')
-              }
-              title={
-                activeContentPage
-                  ? 'Add or edit shape on this page'
-                  : 'Shapes (choose a content page)'
               }
               aria-label="Shapes"
               disabled={!activeContentPage}
@@ -5173,21 +5162,19 @@ export function BookBuilder() {
                 setShapePickerOpen(true)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_SHAPE}
-                fallback={<IconToolShape />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_SHAPE}
+                  fallback={<IconToolShape />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Shapes</span>
             </button>
             <button
               type="button"
               className={
                 'book-tool-sidebar__btn' +
                 (elementToolActive ? ' is-active' : '')
-              }
-              title={
-                activeContentPage
-                  ? 'Search & add 2D elements (PNG)'
-                  : 'Elements (choose a content page)'
               }
               aria-label="Elements"
               disabled={!hasAnyContentPage}
@@ -5199,21 +5186,19 @@ export function BookBuilder() {
                 setElementPickerOpen(true)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_ELEMENT}
-                fallback={<IconToolElement />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_ELEMENT}
+                  fallback={<IconToolElement />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Elements</span>
             </button>
             <button
               type="button"
               className={
                 'book-tool-sidebar__btn' +
                 (savedCharactersModalOpen ? ' is-active' : '')
-              }
-              title={
-                activeContentPage
-                  ? 'Characters — saved designs & builder'
-                  : 'Characters (choose a content page)'
               }
               aria-label="Characters"
               disabled={!hasAnyContentPage}
@@ -5225,10 +5210,13 @@ export function BookBuilder() {
                 setSavedCharactersModalOpen(true)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_CHARACTER}
-                fallback={<IconToolCharacter />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_CHARACTER}
+                  fallback={<IconToolCharacter />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Characters</span>
             </button>
           </div>
           <div className="book-tool-sidebar__footer">
@@ -5238,7 +5226,6 @@ export function BookBuilder() {
                 'book-tool-sidebar__btn' +
                 (paperModalOpen ? ' is-active' : '')
               }
-              title="Page settings"
               aria-label="Page settings"
               onClick={() => {
                 setPageSettingsTab('border')
@@ -5246,10 +5233,13 @@ export function BookBuilder() {
                 setPaperModalOpen(true)
               }}
             >
-              <BookSidebarRasterIcon
-                candidates={BOOK_SIDEBAR_ICON_SETTINGS}
-                fallback={<IconToolSettings />}
-              />
+              <span className="book-tool-sidebar__btn-visual" aria-hidden>
+                <BookSidebarRasterIcon
+                  candidates={BOOK_SIDEBAR_ICON_SETTINGS}
+                  fallback={<IconToolSettings />}
+                />
+              </span>
+              <span className="book-tool-sidebar__btn-label">Settings</span>
             </button>
           </div>
         </aside>
