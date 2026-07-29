@@ -7656,3 +7656,5 @@ Delete/Backspace: remove selected element"
     </div>
   )
 }
+
+export default BookBuilder
