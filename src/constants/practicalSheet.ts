@@ -138,7 +138,7 @@ export const NAILTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
   col("handArmMassages", "Hand/Arm Massages", 1, C.cream),
   col("nailArtServices", "Nail Art Services", 1.5, C.red),
   col("manicures", "Manicures", 1, C.blueSoft),
-  col("facialMassages", "Facial Massages", 1, C.tan),
+  // col("facialMassages", "Facial Massages", 1, C.tan),
   col("pedicures", "Pedicures", 1, C.teal),
   col("nailPolishing5Nails", "Nail Polishing: 5 Nails", 0.75, C.sky),
   col("nailPolishing10Nails", "Nail Polishing: 10 Nails", 1.5, C.green),
