@@ -477,7 +477,7 @@ export function PageBackgroundModal({
           </button>
         </div>
 
-        {isImageTab ? (
+        {/* {isImageTab ? (
           <label className="element-picker-search bg-modal__search">
             <Search size={18} aria-hidden />
             <input
@@ -488,7 +488,7 @@ export function PageBackgroundModal({
               placeholder="Search library & online photos"
             />
           </label>
-        ) : null}
+        ) : null} */}
 
         {libraryErr ? (
           <p className="bg-modal__library-err">{libraryErr}</p>

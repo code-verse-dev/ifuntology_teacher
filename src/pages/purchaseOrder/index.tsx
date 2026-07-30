@@ -13,6 +13,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGetMyPuchaseOrdersQuery, useGetMyPurchaseOrderStatsQuery, useUploadPurchaseOrderDocumentMutation } from "@/redux/services/apiSlices/purchaseOrderSlice";
+import { UPLOADS_URL } from "@/constants/api";
+
+const MAX_PO_DOCUMENTS = 3;
+
+const resolvePoDocuments = (po: any): string[] => {
+  if (Array.isArray(po?.poDocuments) && po.poDocuments.length > 0) {
+    return po.poDocuments.filter(Boolean);
+  }
+  if (po?.poDocument) return [po.poDocument];
+  return [];
+};
 
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
@@ -82,7 +93,8 @@ export default function PurchaseOrder() {
   const [uploadingPoId, setUploadingPoId] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
-  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [selectedExistingDocs, setSelectedExistingDocs] = useState<string[]>([]);
+  const [selectedPdfFiles, setSelectedPdfFiles] = useState<File[]>([]);
   const res = data?.data;
   const docs = Array.isArray(res?.docs) ? res.docs : [];
   
@@ -113,20 +125,29 @@ export default function PurchaseOrder() {
     }));
   };
 
-  const handleUploadPoDocument = async (poId: string, file?: File | null) => {
-    if (!file) return;
-    const lowerName = file.name.toLowerCase();
-    const isPdf =
-      file.type === "application/pdf" || lowerName.endsWith(".pdf");
-    if (!isPdf) {
-      toast.error("Only PDF files are allowed.");
+  const handleUploadPoDocument = async (poId: string, files: File[]) => {
+    if (!files.length) return;
+    for (const file of files) {
+      const lowerName = file.name.toLowerCase();
+      const isPdf =
+        file.type === "application/pdf" || lowerName.endsWith(".pdf");
+      if (!isPdf) {
+        toast.error("Only PDF files are allowed.");
+        return;
+      }
+    }
+    const remainingSlots = MAX_PO_DOCUMENTS - selectedExistingDocs.length;
+    if (files.length > remainingSlots) {
+      toast.error(
+        `You can upload up to ${remainingSlots} more document(s) (max ${MAX_PO_DOCUMENTS}).`
+      );
       return;
     }
     try {
       setUploadingPoId(poId);
       const res: any = await uploadPurchaseOrderDocument({
         id: poId,
-        file,
+        files,
       }).unwrap();
       if (res?.status) {
         toast.success(res?.message ?? "PO document uploaded successfully.");
@@ -143,11 +164,15 @@ export default function PurchaseOrder() {
     }
   };
 
-  const openUploadDialog = (poId: string) => {
-    setSelectedPoId(poId);
-    setSelectedPdfFile(null);
+  const openUploadDialog = (po: any) => {
+    setSelectedPoId(String(po?._id));
+    setSelectedExistingDocs(resolvePoDocuments(po));
+    setSelectedPdfFiles([]);
     setUploadDialogOpen(true);
   };
+
+  const remainingUploadSlots =
+    MAX_PO_DOCUMENTS - selectedExistingDocs.length;
 
   return (
     <DashboardWithSidebarLayout>
@@ -265,6 +290,7 @@ export default function PurchaseOrder() {
                     const status = po.status ?? "—";
                     const payment = po.paymentStatus ?? "—";
                     const date = formatDate(po.createdAt ?? po.date);
+                    const poDocs = resolvePoDocuments(po);
                     return (
                       <tr key={id} className="align-top">
                         <td className="py-3">
@@ -295,21 +321,39 @@ export default function PurchaseOrder() {
                         </td>
                         <td className="py-3">{date}</td>
                         <td className="py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <NavLink
                               to={`/purchase-orders/${po?.quote?._id}`}
                               className="inline-block"
                             >
                               <Button variant="ghost">View</Button>
                             </NavLink>
+                            {poDocs.map((docName, idx) => (
+                              <Button
+                                key={`${docName}-${idx}`}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  window.open(
+                                    `${UPLOADS_URL}${docName}`,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  )
+                                }
+                              >
+                                Doc {idx + 1}
+                              </Button>
+                            ))}
                             {String(status).toLowerCase() === "approved" &&
-                              String(payment).toLowerCase() === "pending" && !po?.poDocument && (
+                              String(payment).toLowerCase() === "pending" &&
+                              String(po?.poDocumentStatus || "").toLowerCase() !==
+                                "approved" &&
+                              poDocs.length < MAX_PO_DOCUMENTS && (
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() =>
-                                    openUploadDialog(String(po?._id))
-                                  }
+                                  onClick={() => openUploadDialog(po)}
                                   disabled={
                                     isUploadingPoDocument &&
                                     uploadingPoId === String(po?._id)
@@ -318,7 +362,9 @@ export default function PurchaseOrder() {
                                   {isUploadingPoDocument &&
                                   uploadingPoId === String(po?._id)
                                     ? "Uploading..."
-                                    : "Upload PO"}
+                                    : poDocs.length > 0
+                                      ? "Add PO Doc"
+                                      : "Upload PO"}
                                 </Button>
                               )}
                           </div>
@@ -400,7 +446,8 @@ export default function PurchaseOrder() {
           setUploadDialogOpen(open);
           if (!open) {
             setSelectedPoId(null);
-            setSelectedPdfFile(null);
+            setSelectedExistingDocs([]);
+            setSelectedPdfFiles([]);
           }
         }}
       >
@@ -408,13 +455,76 @@ export default function PurchaseOrder() {
           <div className="space-y-4">
             <DialogTitle>Upload Purchase Order Document</DialogTitle>
             <DialogDescription>
-              Select a single PDF file to upload.
+              Upload up to {MAX_PO_DOCUMENTS} PDF documents
+              {selectedExistingDocs.length > 0
+                ? ` (${selectedExistingDocs.length} already uploaded, ${remainingUploadSlots} remaining).`
+                : "."}
             </DialogDescription>
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              onChange={(e) => setSelectedPdfFile(e.target.files?.[0] ?? null)}
-            />
+            {selectedExistingDocs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Already uploaded
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedExistingDocs.map((docName, idx) => (
+                    <Button
+                      key={`${docName}-${idx}`}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          `${UPLOADS_URL}${docName}`,
+                          "_blank",
+                          "noopener,noreferrer",
+                        )
+                      }
+                    >
+                      Document {idx + 1}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {remainingUploadSlots > 0 ? (
+              <>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  multiple
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    const pdfs = picked.filter((file) => {
+                      const lowerName = file.name.toLowerCase();
+                      return (
+                        file.type === "application/pdf" ||
+                        lowerName.endsWith(".pdf")
+                      );
+                    });
+                    if (pdfs.length !== picked.length) {
+                      toast.error("Only PDF files are allowed.");
+                    }
+                    setSelectedPdfFiles(pdfs.slice(0, remainingUploadSlots));
+                    if (pdfs.length > remainingUploadSlots) {
+                      toast.error(
+                        `Only ${remainingUploadSlots} more document(s) can be uploaded.`,
+                      );
+                    }
+                  }}
+                />
+                {selectedPdfFiles.length > 0 && (
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    {selectedPdfFiles.map((file) => (
+                      <li key={file.name}>{file.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Maximum of {MAX_PO_DOCUMENTS} documents already uploaded.
+              </p>
+            )}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -426,10 +536,14 @@ export default function PurchaseOrder() {
               <Button
                 onClick={async () => {
                   if (!selectedPoId) return;
-                  await handleUploadPoDocument(selectedPoId, selectedPdfFile);
+                  await handleUploadPoDocument(selectedPoId, selectedPdfFiles);
                   setUploadDialogOpen(false);
                 }}
-                disabled={!selectedPdfFile || isUploadingPoDocument}
+                disabled={
+                  !selectedPdfFiles.length ||
+                  remainingUploadSlots <= 0 ||
+                  isUploadingPoDocument
+                }
               >
                 {isUploadingPoDocument ? "Uploading..." : "Upload"}
               </Button>
