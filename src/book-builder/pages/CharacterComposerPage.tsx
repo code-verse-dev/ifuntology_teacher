@@ -30,6 +30,7 @@ import {
   newSavedCharacterId,
   upsertSavedCharacter,
 } from '../lib/savedCharacters'
+import { queuePendingCharacterInsert } from '../lib/pendingCharacterInsert'
 import type { CatalogCategory } from '../types/character'
 import type { CatalogVariation } from '../types/character'
 import type { CharacterSidebarIconItem } from '../types/characterSidebarIcons'
@@ -142,6 +143,27 @@ function IconToolSave() {
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
       <path d="M17 21v-8H7v8" />
       <path d="M7 3v5h8" />
+    </svg>
+  )
+}
+
+function IconToolInsert() {
+  return (
+    <svg
+      width={28}
+      height={28}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden
+    >
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <rect x="4" y="15" width="16" height="6" rx="1.5" />
     </svg>
   )
 }
@@ -545,24 +567,65 @@ export function CharacterComposerPage() {
     setSaveDialogOpen(true)
   }
 
-  const commitSave = () => {
-    const name = saveNameInput.trim()
-    if (!name) return
-    const id =
-      editId && getSavedCharacter(editId) ? editId : newSavedCharacterId()
-    const prev = getSavedCharacter(id)
-    upsertSavedCharacter({
-      id,
-      name,
-      createdAt: prev?.createdAt ?? Date.now(),
+  const hasCharacterParts = useMemo(
+    () => Object.values(selection).some((id) => Boolean(id)),
+    [selection],
+  )
+
+  const buildInsertPayload = useCallback(
+    () => ({
       selection: cloneSelectionMap(selection),
       layerOrder: [...layerOrder],
       layerVisibility: { ...layerVisibility },
-    })
+    }),
+    [selection, layerOrder, layerVisibility],
+  )
+
+  const persistCharacter = useCallback(
+    (nameHint?: string) => {
+      const existing = editId ? getSavedCharacter(editId) : null
+      const name =
+        (nameHint ?? saveNameInput).trim() ||
+        existing?.name?.trim() ||
+        'My character'
+      const id =
+        editId && getSavedCharacter(editId) ? editId : newSavedCharacterId()
+      const prev = getSavedCharacter(id)
+      upsertSavedCharacter({
+        id,
+        name,
+        createdAt: prev?.createdAt ?? Date.now(),
+        selection: cloneSelectionMap(selection),
+        layerOrder: [...layerOrder],
+        layerVisibility: { ...layerVisibility },
+      })
+      return id
+    },
+    [editId, saveNameInput, selection, layerOrder, layerVisibility],
+  )
+
+  const commitSave = (andInsert = false) => {
+    const name = saveNameInput.trim()
+    if (!name) return
+    const id = persistCharacter(name)
     setSaveDialogOpen(false)
+    if (andInsert) {
+      queuePendingCharacterInsert(buildInsertPayload())
+      navigate(builderHref)
+      return
+    }
     if (!editId || editId !== id) {
       navigate(characterComposerUrl(id), { replace: true })
     }
+  }
+
+  /** Save to library and place on the book page. */
+  const insertOntoPage = () => {
+    if (!hasCharacterParts) return
+    persistCharacter()
+    queuePendingCharacterInsert(buildInsertPayload())
+    setSaveDialogOpen(false)
+    navigate(builderHref)
   }
 
   const saveDialogPortal =
@@ -581,11 +644,14 @@ export function CharacterComposerPage() {
           onClick={(e) => e.stopPropagation()}
           onSubmit={(e) => {
             e.preventDefault()
-            commitSave()
+            commitSave(false)
           }}
         >
           <h3 id="char-save-title">Save character</h3>
-          <p>This character is stored in your browser on this device.</p>
+          <p>
+            This character is stored in your browser on this device. Insert also
+            saves, then places it on the book page.
+          </p>
           <label htmlFor="char-save-name" className="visually-hidden">
             Name
           </label>
@@ -601,7 +667,17 @@ export function CharacterComposerPage() {
             <button type="button" onClick={() => setSaveDialogOpen(false)}>
               Cancel
             </button>
-            <button type="submit">Save</button>
+            <button
+              type="button"
+              className="char-save-dialog__btn--insert"
+              disabled={!hasCharacterParts}
+              onClick={insertOntoPage}
+            >
+              Insert onto page
+            </button>
+            <button type="submit" disabled={!saveNameInput.trim()}>
+              Save
+            </button>
           </div>
         </form>
       </div>,
@@ -730,6 +806,19 @@ export function CharacterComposerPage() {
                   aria-label="Redo"
                 >
                   ↷
+                </button>
+              </Tooltip>
+              <Tooltip content="Insert" placement="bottom">
+                <button
+                  type="button"
+                  className="book-icon-square book-icon-square--orange"
+                  onClick={insertOntoPage}
+                  disabled={
+                    catalog.length === 0 || !!loadError || !hasCharacterParts
+                  }
+                  aria-label="Insert character onto page"
+                >
+                  <IconToolInsert />
                 </button>
               </Tooltip>
               <Tooltip content="Save to your device" placement="bottom">

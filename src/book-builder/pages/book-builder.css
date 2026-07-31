@@ -2033,11 +2033,16 @@
   width: fit-content;
   min-width: 0;
   padding: 0.75rem 0.4rem;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .book-shell--character .book-tool-sidebar__icons {
   width: 4.75rem;
   align-items: stretch;
+  justify-content: flex-start;
+  align-content: flex-start;
+  flex: 1 1 auto;
 }
 
 .book-shell--character .char-composer__sidebar-cats {
@@ -5002,6 +5007,7 @@
 
 .char-save-dialog__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
 }
@@ -5016,10 +5022,21 @@
   cursor: pointer;
 }
 
+.char-save-dialog__actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .char-save-dialog__actions button[type='submit'] {
   border-color: #fdba74;
   background: #fff7ed;
   color: #9a3412;
+}
+
+.char-save-dialog__actions .char-save-dialog__btn--insert {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .visually-hidden {
