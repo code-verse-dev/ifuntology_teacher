@@ -324,7 +324,12 @@ export function ElementPickerModal({ open, onClose, onSelect }: Props) {
           'Content-Type': 'application/json',
           ...(fetchInit?.headers as Record<string, string> | undefined),
         },
-        body: JSON.stringify({ url: hit.importUrl, source: hit.source }),
+        body: JSON.stringify({
+          url: hit.importUrl,
+          source: hit.source,
+          alt: hit.alt,
+          artist: hit.artist,
+        }),
       })
       if (!res.ok) throw new Error(await readApiErrorMessage(res))
       const json = (await res.json()) as { imagePath?: string }

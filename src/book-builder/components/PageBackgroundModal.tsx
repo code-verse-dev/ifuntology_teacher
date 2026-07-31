@@ -301,7 +301,12 @@ export function PageBackgroundModal({
           'Content-Type': 'application/json',
           ...(fetchInit?.headers as Record<string, string> | undefined),
         },
-        body: JSON.stringify({ url: hit.importUrl, source: hit.source }),
+        body: JSON.stringify({
+          url: hit.importUrl,
+          source: hit.source,
+          alt: hit.alt,
+          artist: hit.artist,
+        }),
       })
       if (!res.ok) throw new Error(await readApiErrorMessage(res))
       const json = (await res.json()) as { imagePath?: string }
@@ -417,7 +422,7 @@ export function PageBackgroundModal({
               Page background
             </h2>
             <p className="bg-modal__sub">
-              Pick a background, search free online photos, or upload your own.
+              Pick a background or upload your own.
             </p>
           </div>
           <div className="bg-modal__head-actions">
