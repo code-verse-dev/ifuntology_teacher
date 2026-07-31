@@ -1,9 +1,11 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
+import { batchSlice } from "./batchSlice";
 
 export const invitationSlice = createApi({
     reducerPath: "invitationApi",
     baseQuery: baseQueryWithReauth,
+    tagTypes: ["MyStudents"],
     endpoints: (builder) => ({
         inviteStudent: builder.mutation({
             query: (body) => ({
@@ -39,6 +41,7 @@ export const invitationSlice = createApi({
                 method: "GET",
                 params: { page, limit, keyword, courseType },
             }),
+            providesTags: ["MyStudents"],
         }),
         getStudentById: builder.query<any, { studentId: string }>({
             query: ({ studentId }) => ({
@@ -52,6 +55,31 @@ export const invitationSlice = createApi({
                 method: "POST",
                 body: { password },
             }),
+        }),
+        addStudentToWriteToRead: builder.mutation<
+            any,
+            {
+                studentId: string;
+                batchId?: string;
+                title?: string;
+                teacherName?: string;
+                organizationName?: string;
+            }
+        >({
+            query: ({ studentId, ...body }) => ({
+                url: `/invitation/my-students/${studentId}/add-to-write-to-read`,
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: ["MyStudents"],
+            async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    dispatch(batchSlice.util.invalidateTags(["InviteBatch"]));
+                } catch {
+                    // leave cache as-is on failure
+                }
+            },
         }),
         getAverageProgress: builder.query<
             any,
@@ -77,6 +105,7 @@ export const {
     useGetMyStudentsQuery,
     useGetStudentByIdQuery,
     useResetStudentPasswordMutation,
+    useAddStudentToWriteToReadMutation,
     useGetAverageProgressQuery,
     useGetAdminAccountQuery,
     useInviteStudentBulkMutation,

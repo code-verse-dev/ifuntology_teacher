@@ -496,6 +496,16 @@ body.student-book-builder-active .char-save-dialog__actions button {
   color: hsl(var(--foreground));
 }
 
+body.student-book-builder-active .char-save-dialog__actions .char-save-dialog__btn--insert {
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--primary) / 0.45);
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .char-save-dialog__actions .char-save-dialog__btn--insert:hover:not(:disabled) {
+  border-color: hsl(var(--primary));
+}
+
 body.student-book-builder-active .char-save-dialog__actions button[type='submit'] {
   background: var(--wtr-green);
   border-color: rgba(70, 162, 23, 0.5);

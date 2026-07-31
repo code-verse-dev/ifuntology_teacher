@@ -183,7 +183,7 @@ export function TeacherMyBooksSection({
   return (
     <div className="space-y-6">
       <div className="space-y-1 text-left">
-        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Grade Books</h2>
+        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Book Assessment Center</h2>
         <p className="text-sm font-medium text-slate-500">
           Create, manage, and grade student writing projects.
         </p>

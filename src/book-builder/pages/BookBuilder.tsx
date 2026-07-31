@@ -19,7 +19,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { BookTocEditorPanel } from '../components/BookTocEditorPanel'
 import { CharacterComposite } from '../components/CharacterComposite'
 import { PageBackgroundModal } from '../components/PageBackgroundModal'
@@ -76,6 +76,7 @@ import {
   type CanvasPickTarget,
   type PickCycleState,
 } from '../lib/canvasLayerPick'
+import { takePendingCharacterInsert } from '../lib/pendingCharacterInsert'
 import {
   applyGroupTranslate,
   captureGroupDragSnap,
@@ -682,6 +683,7 @@ const FALLBACK_GLOBAL_FONT: GlobalFont = {
 }
 
 export function BookBuilder() {
+  const location = useLocation()
   const builderHost = useBuilderHost()
   const draftGetPath = builderHost?.draftGetPath ?? '/api/books/draft'
   const draftPutPath = builderHost?.draftPutPath ?? '/api/books/draft'
@@ -1103,6 +1105,16 @@ export function BookBuilder() {
     },
     [pages, activePageIndex, firstContentPageIndex, paperSize],
   )
+
+  // Character composer can queue a one-shot insert (direct or save & insert).
+  // Only consume when we're on the book builder route (composer stays mounted under the workspace).
+  useEffect(() => {
+    const path = location.pathname.replace(/\/$/, '')
+    if (path.includes('/character')) return
+    const pending = takePendingCharacterInsert()
+    if (!pending) return
+    placeSavedCharacterSelection(pending)
+  }, [location.pathname, location.key, placeSavedCharacterSelection])
 
   const canvasKeyNavRef = useRef({
     pages,

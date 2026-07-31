@@ -171,7 +171,7 @@ export default function WriteToRead() {
                             <TabsList className="scrollbar-hide h-auto w-full justify-start gap-8 overflow-x-auto rounded-none bg-transparent p-0">
                                 {[
                                     { id: "students", label: "Students & Batches", icon: Users },
-                                    { id: "grade", label: "Grade Books", icon: BookOpen },
+                                    { id: "grade", label: "Book Assessment Center", icon: BookOpen },
                                     { id: "print", label: "Print Orders", icon: Printer },
                                     { id: "assignments", label: "Assignments", icon: FileText },
                                 ].map((t) => (

@@ -11,6 +11,7 @@ import {
 } from "@/redux/services/apiSlices/cartSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import { TAX_RATE, TAX_RATE_PERCENT } from "@/constants/tax";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Modal } from "antd";
@@ -32,13 +33,12 @@ export default function CartPage() {
   const isCouponApplied = Boolean(appliedCoupon);
 
   const subtotal = items.reduce((sum: number, i: any) => sum + i.total, 0);
-  // const tax = +(subtotal * 0.08).toFixed(2); // example 8% tax
-  const tax = 0; // example 8% tax
-  // const shipping = items.length ? 99.95 : 0;
+  const cartTotal = Number(cartData?.data?.total ?? 0);
   const shipping = 0;
-  const total = +(cartData?.data?.total + tax + shipping).toFixed(2);
+  const tax = +(cartTotal * TAX_RATE).toFixed(2);
+  const total = +(cartTotal + tax + shipping).toFixed(2);
 
-  const discount = subtotal > total ? subtotal - total : 0;
+  const discount = subtotal > cartTotal ? subtotal - cartTotal : 0;
   const [clearCartMutation, { isLoading: clearingCart }] =
     useClearCartMutation();
 
@@ -229,7 +229,7 @@ export default function CartPage() {
                 )}
 
                 <div className="flex justify-between">
-                  <span>Tax:</span>
+                  <span>Tax ({TAX_RATE_PERCENT}%):</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
 
@@ -240,7 +240,7 @@ export default function CartPage() {
 
                 <div className="mt-3 rounded-md bg-secondary/10 p-3 flex justify-between font-semibold text-accent">
                   <span>Total Amount:</span>
-                  <span>${(total + tax + shipping).toFixed(2)}</span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
               </div>
 
