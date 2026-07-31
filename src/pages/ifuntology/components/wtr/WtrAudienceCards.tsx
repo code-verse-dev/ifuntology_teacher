@@ -9,7 +9,7 @@ const wtrAudienceCards: AudienceCardItem[] = [
     imageAlt: "Teacher instructor character",
     features: [
       "Invite & manage students and batches",
-      "Grade books & provide feedback",
+      "Grade Books & provide feedback",
       "Approve print requests & manage ISBNs",
       "Access lesson plans, view reports and billing",
     ],

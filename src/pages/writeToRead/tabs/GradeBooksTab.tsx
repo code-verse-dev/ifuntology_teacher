@@ -40,16 +40,37 @@ type ReviewBookDoc = {
   grade?: AssignBookGradeBody["grade"];
   owner?:
     | string
-    | { firstName?: string; lastName?: string; email?: string };
+    | {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        username?: string;
+      };
+  wtrBatch?: {
+    _id?: string;
+    title?: string;
+    teacherName?: string;
+    organizationName?: string;
+  } | null;
+  lmsCourseTypes?: string[];
 };
 
 function authorLabel(book: ReviewBookDoc): string {
   const o = book.owner;
   if (o && typeof o === "object") {
     const name = [o.firstName, o.lastName].filter(Boolean).join(" ").trim();
-    return name || o.email || "Student";
+    return name || o.username || o.email || "Student";
   }
   return "Student";
+}
+
+function courseEnrollmentLabel(book: ReviewBookDoc): string {
+  const batchTitle = book.wtrBatch?.title?.trim();
+  const lmsCourses = (book.lmsCourseTypes ?? []).filter(Boolean);
+  const parts: string[] = [];
+  if (batchTitle) parts.push(batchTitle);
+  if (lmsCourses.length) parts.push(lmsCourses.join(", "));
+  return parts.join(" · ") || "—";
 }
 
 function formatSubmitted(submittedAt?: string): string {
@@ -344,10 +365,6 @@ export function GradeBooksTab({
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-bold leading-tight text-slate-900 dark:text-white">
                           {book.title}
-                          <span className="font-normal text-slate-400">
-                            {" "}
-                            — by {authorLabel(book)}
-                          </span>
                         </h3>
                         <Badge
                           className={cn(
@@ -368,6 +385,12 @@ export function GradeBooksTab({
                                 : book.status ?? "—"}
                         </Badge>
                       </div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Student: {authorLabel(book)}
+                      </p>
+                      <p className="text-xs font-medium text-slate-500">
+                        Course / batch: {courseEnrollmentLabel(book)}
+                      </p>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                         Submitted on {formatSubmitted(book.submittedAt)}
                       </p>
@@ -488,7 +511,13 @@ export function GradeBooksTab({
                 : "Grade book"}
             </DialogTitle>
             <p className="text-xs font-medium text-slate-400">
-              By {selectedBook ? authorLabel(selectedBook) : "—"}
+              Student: {selectedBook ? authorLabel(selectedBook) : "—"}
+              {selectedBook ? (
+                <>
+                  {" · "}
+                  Course / batch: {courseEnrollmentLabel(selectedBook)}
+                </>
+              ) : null}
             </p>
           </DialogHeader>
 

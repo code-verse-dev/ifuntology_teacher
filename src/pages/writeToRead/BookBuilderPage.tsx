@@ -57,7 +57,7 @@ export default function BookBuilderPage() {
           variant="outline"
           onClick={() => navigate("/write-to-read", { state: { wtrActiveTab: "grade" } })}
         >
-          Back to Grade Books
+          Back to Book Assessment Center
         </Button>
       </div>
     );
