@@ -85,7 +85,7 @@ export default function AffiliateProgram() {
     const referredUsers: any[] = dashboard?.data?.referredUsers ?? [];
     const activeSubscribers = referredUsers.filter((u) => u.status === "ACTIVE").length;
     const pendingSubscribers = referredUsers.filter((u) => u.status !== "ACTIVE").length;
-    const totalCommission = referredUsers.reduce((acc, u) => acc + (u.commissionEarned ?? 0), 0);
+    const totalCommission = Number(dashboard?.data?.totalEarned ?? 0);
 
     return (
         <DashboardWithSidebarLayout>
@@ -118,7 +118,7 @@ export default function AffiliateProgram() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-medium">Total Commission</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">${totalCommission.toFixed(2) || 0}</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">${totalCommission.toFixed(2)}</h3>
                         </div>
                     </Card>
                     <Card className="p-4 rounded-2xl border-none shadow-sm bg-white dark:bg-slate-900">
@@ -219,7 +219,7 @@ export default function AffiliateProgram() {
                                         <td className="px-4 py-4 font-medium">{user.firstName} {user.lastName}</td>
                                         <td className="px-4 py-4 text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
                                         <td className="px-4 py-4 font-semibold text-slate-700 dark:text-slate-300">${user.totalPaid.toFixed(2)}</td>
-                                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">${user.commissionEarned.toFixed(2)}</td>
+                                        <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">${Number(user.commissionEarned ?? 0).toFixed(2)}</td>
                                         {/* <td className="px-4 py-4 text-center">
                                         <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 dark:bg-green-900/10 dark:text-green-400 dark:border-green-900 font-normal rounded-full px-4">
                                             Active
@@ -261,7 +261,7 @@ export default function AffiliateProgram() {
                             </div> */}
                         </div>
                         <p className="text-sm text-slate-500 font-medium">
-                            Commission is auto-calculated at 10% on all products and services.
+                            Commission is one-time: 15% on LMS, 10% on ecommerce and Write to Read.
                         </p>
                     </div>
                 </Card>
