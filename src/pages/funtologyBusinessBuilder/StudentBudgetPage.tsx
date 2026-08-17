@@ -6,7 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileDown, Wallet } from "lucide-react";
+import { ArrowLeft, FileDown, Save, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
@@ -38,6 +38,12 @@ import {
 } from "./studentBudgetData";
 import { generateStudentBudgetPdf } from "./generateStudentBudgetPdf";
 import type { IntroFormData } from "./introFormData";
+import {
+  clearBusinessBuilderDraft,
+  createEmptyBudgetInput,
+  loadBusinessBuilderDraft,
+  saveBusinessBuilderDraft,
+} from "./businessBuilderDraftStorage";
 
 function StatCard({
   label,
@@ -91,36 +97,65 @@ type StudentBudgetPageProps = {
    * loan form before generating a PDF that includes the loan application.
    */
   onGenerateWithLoan?: (payload: StudentBudgetInput) => void;
+  /**
+   * Wizard mode: persist budget + any registered estimate draft together.
+   * When omitted (standalone), only budget fields are saved.
+   */
+  onSaveEstimate?: (budget: StudentBudgetInput) => void;
+  /** Called after a successful PDF export so the wizard can reset all steps. */
+  onAfterPdfExport?: () => void;
+  /** Lets the wizard read current budget when saving from another step. */
+  registerSnapshot?: (getter: (() => StudentBudgetInput) | null) => void;
 };
 
 export default function StudentBudgetPage({
   embedded = false,
   intro = null,
   onGenerateWithLoan,
+  onSaveEstimate,
+  onAfterPdfExport,
+  registerSnapshot,
 }: StudentBudgetPageProps) {
-  const [annualSalary, setAnnualSalary] = useState("");
-  const [maritalStatus, setMaritalStatus] = useState("single");
-  const [children, setChildren] = useState("0");
-  const [savingsRate, setSavingsRate] = useState(DEFAULT_SAVINGS_RATE);
+  const savedBudget = useMemo(
+    () => loadBusinessBuilderDraft()?.budget ?? null,
+    []
+  );
+
+  const [annualSalary, setAnnualSalary] = useState(
+    () => savedBudget?.annualSalary ?? ""
+  );
+  const [maritalStatus, setMaritalStatus] = useState(
+    () => savedBudget?.maritalStatus ?? "single"
+  );
+  const [children, setChildren] = useState(() => savedBudget?.children ?? "0");
+  const [savingsRate, setSavingsRate] = useState(
+    () => savedBudget?.savingsRate ?? DEFAULT_SAVINGS_RATE
+  );
 
   const [billSelections, setBillSelections] = useState<Record<string, string>>(
-    {}
+    () => savedBudget?.billSelections ?? {}
   );
-  const [childcareChildren, setChildcareChildren] = useState("0");
+  const [childcareChildren, setChildcareChildren] = useState(
+    () => savedBudget?.childcareChildren ?? "0"
+  );
 
-  const [clothing, setClothing] = useState("none");
-  const [diningOut, setDiningOut] = useState("");
+  const [clothing, setClothing] = useState(
+    () => savedBudget?.clothing ?? "none"
+  );
+  const [diningOut, setDiningOut] = useState(
+    () => savedBudget?.diningOut ?? ""
+  );
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<
     Set<string>
-  >(() => new Set());
+  >(() => new Set(savedBudget?.selectedSubscriptions ?? []));
   const [selectedPets, setSelectedPets] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(savedBudget?.selectedPets ?? [])
   );
   const [selectedVacations, setSelectedVacations] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(savedBudget?.selectedVacations ?? [])
   );
   const [vacationTrips, setVacationTrips] = useState<Record<string, string>>(
-    {}
+    () => savedBudget?.vacationTrips ?? {}
   );
 
   useEffect(() => {
@@ -160,6 +195,12 @@ export default function StudentBudgetPage({
     ]
   );
 
+  useEffect(() => {
+    if (!registerSnapshot) return;
+    registerSnapshot(() => input);
+    return () => registerSnapshot(null);
+  }, [input, registerSnapshot]);
+
   const r = useMemo(() => computeStudentBudget(input), [input]);
 
   const toggleInSet = (
@@ -175,6 +216,35 @@ export default function StudentBudgetPage({
     });
   };
 
+  const resetBudgetForm = () => {
+    const empty = createEmptyBudgetInput();
+    setAnnualSalary(empty.annualSalary);
+    setMaritalStatus(empty.maritalStatus);
+    setChildren(empty.children);
+    setSavingsRate(empty.savingsRate);
+    setBillSelections(empty.billSelections);
+    setChildcareChildren(empty.childcareChildren);
+    setClothing(empty.clothing);
+    setDiningOut(empty.diningOut);
+    setSelectedSubscriptions(new Set());
+    setSelectedPets(new Set());
+    setSelectedVacations(new Set());
+    setVacationTrips({});
+  };
+
+  const handleSaveEstimate = () => {
+    try {
+      if (onSaveEstimate) {
+        onSaveEstimate(input);
+      } else {
+        saveBusinessBuilderDraft({ budget: input });
+        toast.success("Estimate saved.");
+      }
+    } catch {
+      toast.error("Failed to save estimate.");
+    }
+  };
+
   const handleGeneratePdf = async () => {
     if (r.totalAnnualIncome <= 0) {
       toast.error("Enter an annual salary before generating a PDF.");
@@ -182,6 +252,9 @@ export default function StudentBudgetPage({
     }
     try {
       await generateStudentBudgetPdf({ ...input, intro });
+      clearBusinessBuilderDraft();
+      resetBudgetForm();
+      onAfterPdfExport?.();
       toast.success("Student budget PDF downloaded.");
     } catch {
       toast.error("Failed to generate PDF. Please try again.");
@@ -737,6 +810,15 @@ export default function StudentBudgetPage({
               </p>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={handleSaveEstimate}
+              >
+                <Save className="h-4 w-4" />
+                Save Estimate
+              </Button>
               <Button
                 type="button"
                 variant="brand"

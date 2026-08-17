@@ -38,8 +38,11 @@ import {
 import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
-
-const STORAGE_KEY = "funtology-estimate-v4";
+import {
+  clearBusinessBuilderDraft,
+  loadBusinessBuilderDraft,
+  saveBusinessBuilderDraft,
+} from "./businessBuilderDraftStorage";
 
 function Sparkline({
   color,
@@ -250,20 +253,6 @@ function SummaryStat({
   );
 }
 
-type SavedEstimate = {
-  itemQty: Record<string, string>;
-};
-
-function loadSavedEstimate(): SavedEstimate | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as SavedEstimate;
-  } catch {
-    return null;
-  }
-}
-
 type EstimateCalculatorPageProps = {
   /** When true, render step content only (no page chrome). */
   embedded?: boolean;
@@ -279,14 +268,28 @@ type EstimateCalculatorPageProps = {
     furnitureTotal: number;
     grandTotal: number;
   }) => void;
+  /**
+   * Wizard mode: persist estimate + any registered budget draft together.
+   * When omitted (standalone), only estimate quantities are saved.
+   */
+  onSaveEstimate?: (itemQty: Record<string, string>) => void;
+  /** Called after a successful PDF export so the wizard can reset all steps. */
+  onAfterPdfExport?: () => void;
+  /** Lets the wizard read current quantities when saving from another step. */
+  registerSnapshot?: (
+    getter: (() => Record<string, string>) | null
+  ) => void;
 };
 
 export default function EstimateCalculatorPage({
   embedded = false,
   intro = null,
   onGenerateWithLoan,
+  onSaveEstimate,
+  onAfterPdfExport,
+  registerSnapshot,
 }: EstimateCalculatorPageProps) {
-  const saved = useMemo(loadSavedEstimate, []);
+  const saved = useMemo(() => loadBusinessBuilderDraft(), []);
 
   const [itemQty, setItemQty] = useState(() => ({
     ...emptyQtyMap(ALL_ESTIMATE_ITEMS),
@@ -299,6 +302,12 @@ export default function EstimateCalculatorPage({
       document.title = "Calculate Your Estimate • iFuntology Teacher";
     }
   }, [embedded]);
+
+  useEffect(() => {
+    if (!registerSnapshot) return;
+    registerSnapshot(() => itemQty);
+    return () => registerSnapshot(null);
+  }, [itemQty, registerSnapshot]);
 
   const materialsTotal = useMemo(
     () =>
@@ -333,12 +342,20 @@ export default function EstimateCalculatorPage({
   ).length;
   const materialsShare = grandTotal > 0 ? (materialsTotal / grandTotal) * 100 : 0;
 
+  const resetEstimateForm = () => {
+    setItemQty(emptyQtyMap(ALL_ESTIMATE_ITEMS));
+    setLastUpdated(new Date());
+  };
+
   const handleSaveEstimate = () => {
     try {
-      const payload: SavedEstimate = { itemQty };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      if (onSaveEstimate) {
+        onSaveEstimate(itemQty);
+      } else {
+        saveBusinessBuilderDraft({ itemQty });
+        toast.success("Estimate saved.");
+      }
       setLastUpdated(new Date());
-      toast.success("Estimate saved.");
     } catch {
       toast.error("Failed to save estimate.");
     }
@@ -361,6 +378,9 @@ export default function EstimateCalculatorPage({
         ...buildEstimatePayload(),
         intro,
       });
+      clearBusinessBuilderDraft();
+      resetEstimateForm();
+      onAfterPdfExport?.();
       toast.success("Report exported.");
     } catch {
       toast.error("Failed to export report. Please try again.");
