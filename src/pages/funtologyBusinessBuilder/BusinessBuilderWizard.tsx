@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -36,6 +36,10 @@ import {
 } from "./generateEstimatePdf";
 import { generateStudentBudgetPdf } from "./generateStudentBudgetPdf";
 import type { StudentBudgetInput } from "./studentBudgetData";
+import {
+  clearBusinessBuilderDraft,
+  saveBusinessBuilderDraft,
+} from "./businessBuilderDraftStorage";
 
 const STEPS = [
   {
@@ -92,6 +96,12 @@ export default function BusinessBuilderWizard() {
   const [visitedLoan, setVisitedLoan] = useState(false);
   const [pendingPdf, setPendingPdf] = useState<PendingPdfIntent | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+
+  const estimateSnapshotRef = useRef<(() => Record<string, string>) | null>(
+    null
+  );
+  const budgetSnapshotRef = useRef<(() => StudentBudgetInput) | null>(null);
 
   const canAccessLoanStep = pendingPdf !== null;
 
@@ -105,6 +115,56 @@ export default function BusinessBuilderWizard() {
     if (step === 3) setVisitedBudget(true);
     if (step === 4) setVisitedLoan(true);
   }, [step]);
+
+  const registerEstimateSnapshot = useCallback(
+    (getter: (() => Record<string, string>) | null) => {
+      estimateSnapshotRef.current = getter;
+    },
+    []
+  );
+
+  const registerBudgetSnapshot = useCallback(
+    (getter: (() => StudentBudgetInput) | null) => {
+      budgetSnapshotRef.current = getter;
+    },
+    []
+  );
+
+  const persistEstimateDraft = useCallback((itemQty: Record<string, string>) => {
+    try {
+      saveBusinessBuilderDraft({
+        itemQty,
+        budget: budgetSnapshotRef.current?.(),
+      });
+      toast.success("Estimate saved.");
+    } catch {
+      toast.error("Failed to save estimate.");
+    }
+  }, []);
+
+  const persistBudgetDraft = useCallback((budget: StudentBudgetInput) => {
+    try {
+      saveBusinessBuilderDraft({
+        budget,
+        itemQty: estimateSnapshotRef.current?.(),
+      });
+      toast.success("Estimate saved.");
+    } catch {
+      toast.error("Failed to save estimate.");
+    }
+  }, []);
+
+  const resetWizardForms = useCallback(() => {
+    clearBusinessBuilderDraft();
+    setIntro(createEmptyIntroForm());
+    setLoan(createEmptyLoanApplication());
+    setPendingPdf(null);
+    setVisitedEstimate(false);
+    setVisitedBudget(false);
+    setVisitedLoan(false);
+    setFormKey((k) => k + 1);
+    setStep(1);
+  }, []);
 
   const goNext = () => {
     if (step === 1) {
@@ -183,8 +243,8 @@ export default function BusinessBuilderWizard() {
         });
         toast.success("Student budget PDF with loan application downloaded.");
       }
-      clearPendingPdf();
-    } catch(error:any) {
+      resetWizardForms();
+    } catch (error: any) {
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setGeneratingPdf(false);
@@ -324,22 +384,30 @@ export default function BusinessBuilderWizard() {
           {visitedEstimate && (
             <div className={step === 2 ? "block" : "hidden"}>
               <EstimateCalculatorPage
+                key={`estimate-${formKey}`}
                 embedded
                 intro={intro}
                 onGenerateWithLoan={(payload) =>
                   goToLoanForPdf({ kind: "estimate", payload })
                 }
+                onSaveEstimate={persistEstimateDraft}
+                onAfterPdfExport={resetWizardForms}
+                registerSnapshot={registerEstimateSnapshot}
               />
             </div>
           )}
           {visitedBudget && (
             <div className={step === 3 ? "block" : "hidden"}>
               <StudentBudgetPage
+                key={`budget-${formKey}`}
                 embedded
                 intro={intro}
                 onGenerateWithLoan={(payload) =>
                   goToLoanForPdf({ kind: "budget", payload })
                 }
+                onSaveEstimate={persistBudgetDraft}
+                onAfterPdfExport={resetWizardForms}
+                registerSnapshot={registerBudgetSnapshot}
               />
             </div>
           )}
