@@ -31,6 +31,14 @@ import {
   Video,
   UserPlus,
 } from "lucide-react";
+import {
+  calendarDateYmdFromApi,
+  formatUtcSlotLocalDate,
+  formatUtcSlotRangeInLocal,
+  formatUtcTimeInLocal,
+  getLocalTimezoneAbbr,
+  utcSlotToDate,
+} from "@/utils/sessionTimezone";
 
 interface Query {
   from?: string;
@@ -41,14 +49,47 @@ interface Query {
   keyword?: string;
 }
 
-function to12Hour(time: string) {
+/** Display wall-clock times that are already in the teacher's local sense (teacher-hosted). */
+function formatWallClock12h(time: string): string {
   if (!time) return "—";
   const [h, m] = time.split(":").map(Number);
-  const hour = typeof h === "number" && !isNaN(h) ? h % 24 : 0;
-  const min = typeof m === "number" && !isNaN(m) ? m : 0;
+  const hour = typeof h === "number" && !Number.isNaN(h) ? h % 24 : 0;
+  const min = typeof m === "number" && !Number.isNaN(m) ? m : 0;
   const ampm = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 || 12;
-  return `${hour12}:${min.toString().padStart(2, "0")} ${ampm}`;
+  return `${hour12}:${String(min).padStart(2, "0")} ${ampm}`;
+}
+
+function formatSessionSlotStart(session: any, slot: { startTime?: string }): string {
+  const startTime = String(slot?.startTime ?? "");
+  if (!startTime) return "—";
+  if (session?.teacherHosted) return formatWallClock12h(startTime);
+  const dateYmd = calendarDateYmdFromApi(session.date);
+  return `${formatUtcTimeInLocal(dateYmd, startTime)} ${getLocalTimezoneAbbr(
+    utcSlotToDate(dateYmd, startTime)
+  )}`.trim();
+}
+
+function formatSessionSlotRange(session: any, slot: { startTime?: string; endTime?: string }): string {
+  const startTime = String(slot?.startTime ?? "");
+  const endTime = String(slot?.endTime ?? "");
+  if (!startTime || !endTime) return "—";
+  if (session?.teacherHosted) {
+    return `${formatWallClock12h(startTime)} - ${formatWallClock12h(endTime)}`;
+  }
+  return formatUtcSlotRangeInLocal(
+    calendarDateYmdFromApi(session.date),
+    startTime,
+    endTime
+  );
+}
+
+function formatSessionDateLabel(session: any): string {
+  const slot = Array.isArray(session?.slots) ? session.slots[0] : null;
+  if (slot?.startTime && !session?.teacherHosted) {
+    return formatUtcSlotLocalDate(session.date, String(slot.startTime));
+  }
+  return calendarDateYmdFromApi(session.date) || "—";
 }
 
 function getInvitedStudentIds(session: any): string[] {
@@ -257,12 +298,12 @@ export default function MyOrdersPage() {
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-                          {format(new Date(session.date), "yyyy-MM-dd")}
+                          {formatSessionDateLabel(session)}
                         </div>
                         {slot && (
                           <div className="flex items-center gap-2 text-xs font-medium">
                             <Clock className="h-3.5 w-3.5 shrink-0" />
-                            {to12Hour(String(slot.startTime))}
+                            {formatSessionSlotStart(session, slot)}
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400">
@@ -501,16 +542,7 @@ export default function MyOrdersPage() {
                       (session: any, index: number) => (
                         <tr key={session._id || index} className="align-top">
                           <td className="py-3">
-                            {(() => {
-                              const d = new Date(session.date);
-                              if (isNaN(d.getTime())) return session.date;
-                              const day = String(d.getDate()).padStart(2, "0");
-                              const month = d
-                                .toLocaleString("en-GB", { month: "short" })
-                                .toLowerCase();
-                              const year = d.getFullYear();
-                              return `${day} ${month}, ${year}`;
-                            })()}
+                            {formatSessionDateLabel(session)}
                           </td>
                           <td className="py-3 font-mono">
                             {session.sessionId}
@@ -537,22 +569,11 @@ export default function MyOrdersPage() {
                           </td>
                           <td className="py-3">
                             {Array.isArray(session.slots)
-                              ? session.slots.map((slot: any, i: number) => {
-                                  const to12Hour = (time: string) => {
-                                    const [h, m] = time.split(":").map(Number);
-                                    const hour = h % 12 || 12;
-                                    const ampm = h >= 12 ? "PM" : "AM";
-                                    return `${hour}:${m
-                                      .toString()
-                                      .padStart(2, "0")} ${ampm}`;
-                                  };
-                                  return (
-                                    <div key={i} className="text-xs">
-                                      {to12Hour(slot.startTime)} -{" "}
-                                      {to12Hour(slot.endTime)}
-                                    </div>
-                                  );
-                                })
+                              ? session.slots.map((slot: any, i: number) => (
+                                  <div key={i} className="text-xs">
+                                    {formatSessionSlotRange(session, slot)}
+                                  </div>
+                                ))
                               : "-"}
                           </td>
                         </tr>
