@@ -295,7 +295,7 @@ export default function DashboardHomePage() {
                 <Button
                   size="pill"
                   className="w-full rounded-full border-0 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 sm:w-auto"
-                  onClick={() => navigate("/quotes/request")}
+                  onClick={() => navigate("/shop")}
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   Request a Quote
