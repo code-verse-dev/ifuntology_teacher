@@ -17,18 +17,15 @@ export default function PurchaseOrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
-
   const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
-  const purchaseOrderData = purchaseOrder?.data;
+  let purchaseOrderData = purchaseOrder?.data;
+  const quoteTotals = getQuoteTotals(purchaseOrderData?.quote);
   const quoteApproved =
     String(purchaseOrderData?.quote?.status ?? "").toLowerCase() === "approved";
 
   useEffect(() => {
     document.title = `${purchaseOrderData?.poNumber ?? "Purchase Order"} • Purchase Order Details`;
   }, [id]);
-  const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
-  let purchaseOrderData = purchaseOrder?.data;
-  const quoteTotals = getQuoteTotals(purchaseOrderData?.quote);
 
   return (
     <DashboardWithSidebarLayout>
