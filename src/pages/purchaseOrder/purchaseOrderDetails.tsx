@@ -6,6 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useGetPurchaseOrderByQuoteIdQuery } from "@/redux/services/apiSlices/purchaseOrderSlice";
 import QuoteItemsBreakdown from "@/components/quotes/QuoteItemsBreakdown";
+import {
+  formatQuoteCurrency,
+  getQuoteTotals,
+} from "@/components/quotes/quoteBreakdownUtils";
 import { formatDate } from "@/lib/utils";
 
 export default function PurchaseOrderDetails() {
@@ -18,6 +22,7 @@ export default function PurchaseOrderDetails() {
   }, [id]);
   const { data: purchaseOrder, isLoading: isLoadingPurchaseOrder } = useGetPurchaseOrderByQuoteIdQuery(id ?? "");
   let purchaseOrderData = purchaseOrder?.data;
+  const quoteTotals = getQuoteTotals(purchaseOrderData?.quote);
 
   return (
     <DashboardWithSidebarLayout>
@@ -162,15 +167,21 @@ export default function PurchaseOrderDetails() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Subtotal:</div>
-                          <div className="text-sm font-medium">${purchaseOrderData?.quote?.total ?? "-"}</div>
+                          <div className="text-sm font-medium">
+                            {formatQuoteCurrency(quoteTotals.lineSubtotal)}
+                          </div>
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Tax:</div>
-                          <div className="text-sm font-medium">${purchaseOrderData?.quote?.taxAmount.toFixed(2) ?? "-"}</div>
+                          <div className="text-sm font-medium">
+                            {formatQuoteCurrency(quoteTotals.tax)}
+                          </div>
                         </div>
                         <div className="flex items-center justify-between rounded-md bg-muted p-3">
                           <div className="text-sm text-muted-foreground">Shipping:</div>
-                          <div className="text-sm font-medium">$0</div>
+                          <div className="text-sm font-medium">
+                            {formatQuoteCurrency(quoteTotals.shipping)}
+                          </div>
                         </div>
                       </div>
                     </div>
