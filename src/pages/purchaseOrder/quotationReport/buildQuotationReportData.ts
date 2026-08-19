@@ -1,3 +1,4 @@
+import { getQuoteTotals } from "@/components/quotes/quoteBreakdownUtils";
 import type { QuotationLineItem, QuotationReportData } from "./types";
 
 const formatReportDate = (dateVal: string | Date | undefined): string => {
@@ -184,11 +185,9 @@ export function buildQuotationReportData(
 
   const quote = purchaseOrder.quote;
   const lineItems = buildLineItems(quote);
-  const subtotal = Number(quote.subTotal ?? purchaseOrder.amount ?? 0);
-  const shipping = 0;
-  const total = Number(
-    quote.total ?? purchaseOrder.amount ?? subtotal + Number(quote.taxAmount ?? 0)
-  );
+  const { lineSubtotal, tax, shipping, grandTotal } = getQuoteTotals(quote);
+  const subtotal = lineSubtotal;
+  const total = Number(purchaseOrder.amount ?? grandTotal);
 
   return {
     date: formatReportDate(purchaseOrder.createdAt ?? quote.createdAt),
@@ -204,6 +203,7 @@ export function buildQuotationReportData(
     lineItems,
     subtotal,
     shipping,
+    tax,
     total,
   };
 }

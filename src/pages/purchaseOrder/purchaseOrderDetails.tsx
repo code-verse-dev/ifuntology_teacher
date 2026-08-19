@@ -11,6 +11,7 @@ import {
   getQuoteTotals,
 } from "@/components/quotes/quoteBreakdownUtils";
 import { formatDate } from "@/lib/utils";
+import QuotationReportDownload from "./quotationReport/QuotationReportDownload";
 
 export default function PurchaseOrderDetails() {
   const { id } = useParams();
@@ -36,8 +37,9 @@ export default function PurchaseOrderDetails() {
 
           <div className="flex items-center gap-3">
             {/* <Button variant="accent">Pay Invoice</Button> */}
-            <Button variant="ghost">Download</Button>
-            <Button variant="ghost">Copy PO</Button>
+            {purchaseOrderData ? (
+              <QuotationReportDownload purchaseOrder={purchaseOrderData} />
+            ) : null}
             <Button variant="outline" onClick={() => navigate(-1)}>Close</Button>
           </div>
         </div>
