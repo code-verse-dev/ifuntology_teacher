@@ -99,6 +99,7 @@ export default function QuotationReportDownload({
           <DropdownMenuItem
             disabled={!isReady || isDownloading}
             onClick={() => handleDownload("pdf")}
+            className="cursor-pointer"
           >
             <FileText className="mr-2 h-4 w-4" />
             Download PDF
@@ -106,6 +107,7 @@ export default function QuotationReportDownload({
           <DropdownMenuItem
             disabled={!isReady || isDownloading}
             onClick={() => handleDownload("jpeg")}
+            className="cursor-pointer"
           >
             <FileImage className="mr-2 h-4 w-4" />
             Download Image (JPG)

@@ -274,7 +274,8 @@ const QuotationReportTemplate = forwardRef<HTMLDivElement, Props>(
             <tbody>
               {[
                 { label: "SUBTOTAL", value: data.subtotal },
-                { label: "SHIPPING (1)", value: data.shipping },
+                { label: "SHIPPING", value: data.shipping },
+                { label: "TAX", value: data.tax },
                 { label: "TOTAL", value: data.total, bold: true },
               ].map((row) => (
                 <tr key={row.label}>

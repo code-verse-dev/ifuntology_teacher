@@ -20,5 +20,6 @@ export type QuotationReportData = {
   lineItems: QuotationLineItem[];
   subtotal: number;
   shipping: number;
+  tax: number;
   total: number;
 };

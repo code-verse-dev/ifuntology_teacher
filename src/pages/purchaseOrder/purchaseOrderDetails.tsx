@@ -38,7 +38,8 @@ export default function PurchaseOrderDetails() {
           </div>
 
           <div className="flex items-center gap-3">
-            {quoteApproved && purchaseOrderData ? (
+            {/* <Button variant="accent">Pay Invoice</Button> */}
+            {purchaseOrderData ? (
               <QuotationReportDownload purchaseOrder={purchaseOrderData} />
             ) : null}
             <Button variant="outline" onClick={() => navigate(-1)}>Close</Button>
