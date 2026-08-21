@@ -22,6 +22,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { buildCartItems, ImageUrl } from "@/utils/Functions";
+import { getPackStep, requiresPackQuantity } from "@/utils/packQuantity";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSidebarOptional, SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -330,13 +331,22 @@ function CartSheet() {
   const [clearCartMutation, { isLoading: clearingCart }] =
     useClearCartMutation();
 
+  const persistItems = async (updatedItems: any[]) => {
+    if (!updatedItems.length) {
+      await clearCartMutation().unwrap();
+      return;
+    }
+    await createCart({ items: updatedItems }).unwrap();
+  };
+
   const updateQty = async (
     productId: string,
-    action: "increment" | "decrement"
+    action: "increment" | "decrement",
+    step = 1
   ) => {
-    const updatedItems = buildCartItems(productId, cartData, action);
+    const updatedItems = buildCartItems(productId, cartData, action, step);
     try {
-      await createCart({ items: updatedItems }).unwrap();
+      await persistItems(updatedItems);
     } catch (err: any) {
       console.error(err);
     }
@@ -384,7 +394,15 @@ function CartSheet() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => updateQty(it.product._id, "decrement")}
+                    onClick={() =>
+                      updateQty(
+                        it.product._id,
+                        "decrement",
+                        requiresPackQuantity(it.product)
+                          ? getPackStep(it.quantity, it.product._id)
+                          : 1
+                      )
+                    }
                   >
                     -
                   </Button>
@@ -392,7 +410,15 @@ function CartSheet() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => updateQty(it.product._id, "increment")}
+                    onClick={() =>
+                      updateQty(
+                        it.product._id,
+                        "increment",
+                        requiresPackQuantity(it.product)
+                          ? getPackStep(it.quantity, it.product._id)
+                          : 1
+                      )
+                    }
                   >
                     +
                   </Button>

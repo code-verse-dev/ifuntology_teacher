@@ -7,6 +7,11 @@ import {
   LMS_KIT_QUANTITY_ERROR,
 } from "./utils/lmsKitQuantity";
 import {
+  isValidPackQuantity,
+  PACK_QUANTITY_ERROR,
+  requiresPackQuantity,
+} from "@/utils/packQuantity";
+import {
   getShopContactDetailsError,
   isShopContactDetailsComplete,
 } from "./utils/shopContactDetails";
@@ -16,6 +21,7 @@ export type CatalogSelectedProduct = {
   image?: string;
   price: number;
   quantity: string;
+  isAllowedSingle?: boolean;
 };
 
 export type ShopFormState = {
@@ -310,6 +316,16 @@ export function buildSubmitPayload(
     const validProducts = getMergedEnrichmentProducts(state);
     if (!validProducts.length) {
       return { payload: null, error: "Add at least one enrichment product" };
+    }
+    for (const meta of Object.values(state.catalogSelectedProducts)) {
+      if (!requiresPackQuantity(meta)) continue;
+      const qty = Number(meta.quantity);
+      if (!isValidPackQuantity(qty)) {
+        return {
+          payload: null,
+          error: `${meta.name}: ${PACK_QUANTITY_ERROR}`,
+        };
+      }
     }
     payload.enrichment = {
       products: validProducts,

@@ -14,6 +14,14 @@ import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 import { cn } from "@/lib/utils";
 import type { CatalogSelectedProduct } from "../shopPayload";
+import {
+  PACK_SIZE_12,
+  PACK_SIZE_15,
+  getPackStep,
+  rememberPackStep,
+  requiresPackQuantity,
+  type PackSize,
+} from "@/utils/packQuantity";
 
 type Category = { _id: string; title: string };
 
@@ -83,11 +91,30 @@ export default function EnrichmentProductPickerDialog({
     [categories]
   );
 
-  const handleQuantityChange = (productId: string, delta: number) => {
+  const handleQuantityChange = (productId: string, delta: number, step = 1) => {
     const current = selectedProducts[productId];
     if (!current) return;
-    const next = Math.max(1, Number(current.quantity || 1) + delta);
+    const next = Number(current.quantity || step) + delta * step;
+    if (next <= 0) {
+      onUpdateProduct(productId, null);
+      return;
+    }
     onUpdateProduct(productId, { ...current, quantity: String(next) });
+  };
+
+  const addPackProduct = (
+    product: any,
+    productId: string,
+    size: PackSize
+  ) => {
+    rememberPackStep(productId, size);
+    onUpdateProduct(productId, {
+      name: product.name,
+      image: product.image,
+      price: Number(product.price ?? 0),
+      quantity: String(size),
+      isAllowedSingle: product.isAllowedSingle,
+    });
   };
 
   return (
@@ -195,6 +222,11 @@ export default function EnrichmentProductPickerDialog({
                     <p className="mt-1.5 text-base font-bold text-foreground">
                       ${Number(product.price ?? 0).toFixed(2)}
                     </p>
+                    {requiresPackQuantity(product) && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Sold in packs of 12 and 15
+                      </p>
+                    )}
 
                     {selected ? (
                       <div className="mt-auto space-y-2.5 pt-4">
@@ -208,7 +240,18 @@ export default function EnrichmentProductPickerDialog({
                               variant="outline"
                               size="icon"
                               className="h-9 w-9"
-                              onClick={() => handleQuantityChange(productId, -1)}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  productId,
+                                  -1,
+                                  requiresPackQuantity(product)
+                                    ? getPackStep(
+                                        Number(selected.quantity),
+                                        productId
+                                      )
+                                    : 1
+                                )
+                              }
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
@@ -220,7 +263,18 @@ export default function EnrichmentProductPickerDialog({
                               variant="outline"
                               size="icon"
                               className="h-9 w-9"
-                              onClick={() => handleQuantityChange(productId, 1)}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  productId,
+                                  1,
+                                  requiresPackQuantity(product)
+                                    ? getPackStep(
+                                        Number(selected.quantity),
+                                        productId
+                                      )
+                                    : 1
+                                )
+                              }
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -237,6 +291,29 @@ export default function EnrichmentProductPickerDialog({
                           Remove
                         </Button>
                       </div>
+                    ) : requiresPackQuantity(product) ? (
+                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() =>
+                            addPackProduct(product, productId, PACK_SIZE_12)
+                          }
+                        >
+                          Add {PACK_SIZE_12}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="brand"
+                          className="h-10"
+                          onClick={() =>
+                            addPackProduct(product, productId, PACK_SIZE_15)
+                          }
+                        >
+                          Add {PACK_SIZE_15}
+                        </Button>
+                      </div>
                     ) : (
                       <Button
                         type="button"
@@ -248,6 +325,7 @@ export default function EnrichmentProductPickerDialog({
                             image: product.image,
                             price: Number(product.price ?? 0),
                             quantity: "1",
+                            isAllowedSingle: product.isAllowedSingle,
                           })
                         }
                       >
