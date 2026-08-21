@@ -15,55 +15,79 @@ export const ImageUrl = (image: string) => {
 export const buildCartItems = (
   productId: string,
   cartData: any,
-  action: "increment" | "decrement" | "add" = "add" // default to "add"
+  action: "increment" | "decrement" | "add" | "set" = "add",
+  step = 1
 ) => {
   const existingItems = cartData?.data?.items || [];
+  const amount = Number(step) || 0;
 
   const found = existingItems.find(
-    (item: any) => (item.product as any)._id === productId || item.product === productId
+    (item: any) =>
+      (item.product as any)._id === productId || item.product === productId
   );
 
-  // If item exists in cart
+  const toLine = (item: any, quantity: number) => ({
+    product: (item.product as any)._id || item.product,
+    quantity,
+  });
+
+  const mapOthers = () =>
+    existingItems
+      .filter(
+        (item: any) =>
+          (item.product as any)._id !== productId && item.product !== productId
+      )
+      .map((item: any) => toLine(item, item.quantity));
+
+  if (action === "set") {
+    if (amount <= 0) {
+      return mapOthers();
+    }
+    if (found) {
+      return existingItems
+        .map((item: any) => {
+          if (
+            (item.product as any)._id === productId ||
+            item.product === productId
+          ) {
+            return toLine(item, amount);
+          }
+          return toLine(item, item.quantity);
+        })
+        .filter(Boolean);
+    }
+    return [...mapOthers(), { product: productId, quantity: amount }];
+  }
+
+  const delta = Math.max(1, amount);
+
   if (found) {
     return existingItems
       .map((item: any) => {
-        if ((item.product as any)._id === productId || item.product === productId) {
+        if (
+          (item.product as any)._id === productId ||
+          item.product === productId
+        ) {
           let newQty = item.quantity;
 
-          if (action === "increment" || action === "add") newQty = item.quantity + 1;
-          else if (action === "decrement") newQty = item.quantity - 1;
+          if (action === "increment" || action === "add") {
+            newQty = item.quantity + delta;
+          } else if (action === "decrement") {
+            newQty = item.quantity - delta;
+          }
 
-          // Remove item if quantity <= 0
           if (newQty <= 0) return null;
 
-          return {
-            product: (item.product as any)._id || item.product,
-            quantity: newQty,
-          };
+          return toLine(item, newQty);
         }
-        return {
-          product: (item.product as any)._id || item.product,
-          quantity: item.quantity,
-        };
+        return toLine(item, item.quantity);
       })
-      .filter(Boolean); // remove nulls
+      .filter(Boolean);
   }
 
-  // Item does NOT exist → add it if action is "add" or "increment"
   if (action === "add" || action === "increment") {
-    return [
-      ...existingItems.map((item: any) => ({
-        product: (item.product as any)._id || item.product,
-        quantity: item.quantity,
-      })),
-      { product: productId, quantity: 1 },
-    ];
+    return [...mapOthers(), { product: productId, quantity: delta }];
   }
 
-  // If action is decrement and item doesn't exist → just return existing items
-  return existingItems.map((item: any) => ({
-    product: (item.product as any)._id || item.product,
-    quantity: item.quantity,
-  }));
+  return existingItems.map((item: any) => toLine(item, item.quantity));
 };
-

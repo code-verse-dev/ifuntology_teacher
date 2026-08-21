@@ -12,12 +12,20 @@ import {
 } from "@/components/ui/carousel";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
+import PackSizeChoiceDialog from "@/components/enrichment/PackSizeChoiceDialog";
 import { useGetProductByIdQuery } from "@/redux/services/apiSlices/productSlice";
 import { UPLOADS_URL } from "@/constants/api";
 import {
   useGetCartQuery,
   useCreateCartMutation,
+  useClearCartMutation,
 } from "@/redux/services/apiSlices/cartSlice";
+import {
+  getPackStep,
+  rememberPackStep,
+  requiresPackQuantity,
+  type PackSize,
+} from "@/utils/packQuantity";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -34,6 +42,7 @@ export default function ProductDetails() {
   const [thumbApi, setThumbApi] = useState<CarouselApi | null>(null);
   const [addedDialogOpen, setAddedDialogOpen] = useState(false);
   const [lastAddedTitle, setLastAddedTitle] = useState<string>();
+  const [packDialogOpen, setPackDialogOpen] = useState(false);
 
   useEffect(() => {
     document.title = `Product Details • ${productData?.data?.name ?? ""}`;
@@ -61,17 +70,71 @@ export default function ProductDetails() {
 
   const { data: cartData } = useGetCartQuery();
   const [createCart, { isLoading: cartLoading }] = useCreateCartMutation();
-    const updateQty = async (
-      productId: string,
-      action: "increment" | "decrement"
-    ) => {
-      const updatedItems = buildCartItems(productId, cartData, action);
-      try {
-        await createCart({ items: updatedItems }).unwrap();
-      } catch (err: any) {
-        console.error(err);
+  const [clearCartMutation] = useClearCartMutation();
+
+  const persistItems = async (updatedItems: any[]) => {
+    if (!updatedItems.length) {
+      await clearCartMutation().unwrap();
+      return;
+    }
+    await createCart({ items: updatedItems }).unwrap();
+  };
+
+  const updateQty = async (
+    productId: string,
+    action: "increment" | "decrement",
+    step = 1
+  ) => {
+    const updatedItems = buildCartItems(productId, cartData, action, step);
+    try {
+      await persistItems(updatedItems);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    const product = productData?.data;
+    if (!product) return;
+    try {
+      if (requiresPackQuantity(product)) {
+        const existing = cartData?.data?.items?.find(
+          (it: any) => it.product._id === product._id
+        );
+        if (existing) {
+          const step = getPackStep(existing.quantity, product._id);
+          await persistItems(
+            buildCartItems(product._id, cartData, "add", step)
+          );
+          setLastAddedTitle(product.name);
+          setAddedDialogOpen(true);
+          return;
+        }
+        setPackDialogOpen(true);
+        return;
       }
-    };
+
+      await persistItems(buildCartItems(product._id, cartData));
+      setLastAddedTitle(product.name);
+      setAddedDialogOpen(true);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const handlePackSizeSelect = async (size: PackSize) => {
+    const product = productData?.data;
+    if (!product) return;
+    try {
+      rememberPackStep(product._id, size);
+      await persistItems(buildCartItems(product._id, cartData, "add", size));
+      setPackDialogOpen(false);
+      setLastAddedTitle(product.name);
+      setAddedDialogOpen(true);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
   /* ---------- Loading State ---------- */
   if (productLoading) {
     return (
@@ -95,6 +158,11 @@ export default function ProductDetails() {
   if (isError || !productData?.data) return null;
 
   const product = productData.data;
+  const isPackProduct = requiresPackQuantity(product);
+  const cartQty =
+    cartData?.data?.items?.find((it: any) => it.product._id === product._id)
+      ?.quantity ?? 0;
+  const packStep = getPackStep(cartQty, product._id);
 
   return (
     <DashboardWithSidebarLayout>
@@ -209,49 +277,72 @@ export default function ProductDetails() {
                 {product.description}
               </p>
 
-              <div className="mt-6 flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    disabled={cartLoading}
-                    onClick={() => updateQty(product._id, "decrement")}
-                  >
-                    -
-                  </Button>
-                  <div className="w-10 text-center">
-                    {cartData?.data?.items?.find((it : any) => it.product._id === product._id)
-                      ?.quantity ?? 1}
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end">
+                {(!isPackProduct || cartQty > 0) && (
+                  <div className="space-y-2">
+                    {isPackProduct && (
+                      <p className="text-sm text-muted-foreground">
+                        Quantity increases by {packStep}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        disabled={cartLoading}
+                        onClick={() =>
+                          updateQty(
+                            product._id,
+                            "decrement",
+                            isPackProduct ? packStep : 1
+                          )
+                        }
+                      >
+                        -
+                      </Button>
+                      <div className="w-10 text-center">
+                        {isPackProduct ? cartQty : cartQty || 1}
+                      </div>
+                      <Button
+                        disabled={cartLoading}
+                        onClick={() =>
+                          updateQty(
+                            product._id,
+                            "increment",
+                            isPackProduct ? packStep : 1
+                          )
+                        }
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
+                )}
+
+                <div className="space-y-2">
+                  {isPackProduct && cartQty <= 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Sold in multiples of 12 or 15
+                    </p>
+                  )}
                   <Button
+                    className="bg-emerald-600 text-white"
+                    onClick={handleAddToCart}
                     disabled={cartLoading}
-                    onClick={() => updateQty(product._id, "increment")}
                   >
-                    +
+                    Add to Cart
                   </Button>
                 </div>
-
-                <Button
-                  className="bg-emerald-600 text-white"
-                  onClick={async () => {
-                    try {
-                      const items = buildCartItems(product._id, cartData);
-
-                      await createCart({ items }).unwrap();
-
-                      setLastAddedTitle(product.name);
-                      setAddedDialogOpen(true);
-                    } catch (err: any) {
-                      console.error(err);
-                    }
-                  }}
-                  disabled={cartLoading}
-                >
-                  Add to Cart
-                </Button>
               </div>
             </div>
           </div>
         </Card>
 
+        <PackSizeChoiceDialog
+          open={packDialogOpen}
+          onOpenChange={setPackDialogOpen}
+          productTitle={product.name}
+          loading={cartLoading}
+          onSelect={handlePackSizeSelect}
+        />
         <AddedToCartDialog
           open={addedDialogOpen}
           onOpenChange={setAddedDialogOpen}
