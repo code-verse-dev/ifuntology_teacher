@@ -23,7 +23,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, FUNTOLOGY_BRAIDING_PDF } from "@/constants/api";
+import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, CAREER_SUCCESS_PLANNER_PDF, FUNTOLOGY_BRAIDING_PDF } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
 import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
 import { isImportedAssessmentModule } from "@/constants/quiz";
@@ -150,6 +150,20 @@ export default function CourseDetails() {
                     {/* Lessons */}
                     <div className="lg:col-span-8">
                         <div className="mb-4 flex flex-wrap gap-3">
+                            <Button
+                                variant="brand"
+                                className="gap-2 rounded-full font-semibold"
+                                asChild
+                            >
+                                <a
+                                    href={CAREER_SUCCESS_PLANNER_PDF}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Career Success Planner
+                                </a>
+                            </Button>
                             <Button
                                 variant="brand"
                                 className="gap-2 rounded-full font-semibold"
