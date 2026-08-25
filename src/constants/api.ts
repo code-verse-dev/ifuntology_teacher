@@ -41,6 +41,6 @@ export const WORKFORCE_EXPLORATION_FORM_PDF =
 export const IFUNTOLOGY_GLOSSARY_PDF =
     "https://ifuntology.com/pdfs/iFuntology-Glossary.pdf";
 export const CAREER_SUCCESS_PLANNER_PDF =
-    "https://ifuntology.com/pdfs/iFuntology_Career_Success_Planner";
+    "https://ifuntology.com/pdfs/iFuntology_Career_Success_Planner.pdf";
 export const FUNTOLOGY_BRAIDING_PDF =
     "https://ifuntology.com/pdfs/Funtology-Braiding.pdf";
