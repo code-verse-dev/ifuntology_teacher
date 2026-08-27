@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
+import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ import {
     ChevronRight,
     Loader2,
     BookMarked,
+    Trash2,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -97,6 +99,10 @@ export default function MyStudents() {
     const [page, setPage] = useState(1);
     const limit = 10;
     const [resetTarget, setResetTarget] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{
         id: string;
         name: string;
     } | null>(null);
@@ -440,6 +446,19 @@ export default function MyStudents() {
                                                         Add to Write to Read
                                                     </DropdownMenuItem>
                                                 )}
+                                                <DropdownMenuItem
+                                                    className="text-rose-600 focus:text-rose-700"
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        setDeleteTarget({
+                                                            id: student.user._id,
+                                                            name: fullName,
+                                                        })
+                                                    }
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -761,6 +780,14 @@ export default function MyStudents() {
                 }}
                 studentId={resetTarget?.id}
                 studentName={resetTarget?.name}
+            />
+            <DeleteStudentConfirmDialog
+                open={Boolean(deleteTarget)}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteTarget(null);
+                }}
+                studentId={deleteTarget?.id}
+                studentName={deleteTarget?.name}
             />
         </DashboardWithSidebarLayout>
     );
