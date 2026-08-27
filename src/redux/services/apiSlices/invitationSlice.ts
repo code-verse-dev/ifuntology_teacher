@@ -1,6 +1,10 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
 import { batchSlice } from "./batchSlice";
+import { paymentSlice } from "./paymentSlice";
+import { subscriptionSlice } from "./subscriptionSlice";
+import { bookSlice } from "./bookSlice";
+import { chatSlice } from "./chatSlice";
 
 export const invitationSlice = createApi({
     reducerPath: "invitationApi",
@@ -48,6 +52,25 @@ export const invitationSlice = createApi({
                 url: `/invitation/my-students/${studentId}`,
                 method: "GET",
             }),
+        }),
+        deleteStudent: builder.mutation<any, { studentId: string }>({
+            query: ({ studentId }) => ({
+                url: `/invitation/my-students/${studentId}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["MyStudents"],
+            async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    dispatch(batchSlice.util.invalidateTags(["InviteBatch"]));
+                    dispatch(paymentSlice.util.invalidateTags(["WtrSubscription"]));
+                    dispatch(subscriptionSlice.util.invalidateTags(["Subscription"]));
+                    dispatch(bookSlice.util.invalidateTags(["Book", "MyBooks"]));
+                    dispatch(chatSlice.util.invalidateTags(["Chats", "Messages"]));
+                } catch {
+                    // leave cache as-is on failure
+                }
+            },
         }),
         resetStudentPassword: builder.mutation<any, { studentId: string; password: string }>({
             query: ({ studentId, password }) => ({
@@ -104,6 +127,7 @@ export const {
     useInviteStudentMutation,
     useGetMyStudentsQuery,
     useGetStudentByIdQuery,
+    useDeleteStudentMutation,
     useResetStudentPasswordMutation,
     useAddStudentToWriteToReadMutation,
     useGetAverageProgressQuery,

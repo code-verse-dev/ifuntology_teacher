@@ -37,13 +37,13 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
+import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
 import {
   useCreateInviteBatchMutation,
   useCreateInviteBatchCsvMutation,
   useAddBatchInvitesMutation,
   useUpdateInviteBatchMutation,
   useUpdateBatchStudentMutation,
-  useDeleteBatchStudentMutation,
   useGetInviteBatchesQuery,
   type InviteRowInput,
 } from "@/redux/services/apiSlices/batchSlice";
@@ -213,8 +213,6 @@ export function StudentsAndBatchesTab() {
   const [updateInviteBatch, { isLoading: isUpdatingBatch }] = useUpdateInviteBatchMutation();
   const [updateBatchStudent, { isLoading: isUpdatingStudent }] =
     useUpdateBatchStudentMutation();
-  const [deleteBatchStudent, { isLoading: isDeletingStudent }] =
-    useDeleteBatchStudentMutation();
 
   const batches = useMemo(() => {
     const raw = batchesRes?.data?.docs ?? batchesRes?.docs;
@@ -502,24 +500,6 @@ export function StudentsAndBatchesTab() {
       }
     } catch (e: any) {
       toast.error(e?.data?.message ?? e?.message ?? "Could not update student.");
-    }
-  };
-
-  const handleDeleteStudent = async () => {
-    if (!selectedBatch?._id || !deleteTarget?.id) return;
-    try {
-      const res = await deleteBatchStudent({
-        batchId: selectedBatch._id,
-        studentId: deleteTarget.id,
-      }).unwrap();
-      if (res?.status) {
-        toast.success(res?.message ?? "Student removed.");
-        setDeleteTarget(null);
-      } else {
-        toast.error(res?.message ?? "Could not remove student.");
-      }
-    } catch (e: any) {
-      toast.error(e?.data?.message ?? e?.message ?? "Could not remove student.");
     }
   };
 
@@ -1304,49 +1284,14 @@ export function StudentsAndBatchesTab() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <DeleteStudentConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-      >
-        <DialogContent className="rounded-[2rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[420px]">
-          <DialogHeader className="space-y-2 text-left">
-            <DialogTitle className="text-xl font-extrabold">Remove student?</DialogTitle>
-            <DialogDescription>
-              This will remove{" "}
-              <span className="font-semibold text-foreground">
-                {deleteTarget?.name || "this student"}
-              </span>{" "}
-              from the batch and free one seat. Their account will no longer have Write to Read
-              access for this class.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-6 flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 flex-1 rounded-full font-bold"
-              onClick={() => setDeleteTarget(null)}
-              disabled={isDeletingStudent}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="h-11 flex-1 rounded-full bg-rose-600 font-bold text-white hover:bg-rose-700"
-              onClick={handleDeleteStudent}
-              disabled={isDeletingStudent}
-            >
-              {isDeletingStudent ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Remove student"
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        studentId={deleteTarget?.id}
+        studentName={deleteTarget?.name}
+      />
 
       <Dialog
         open={credentialsOpen}
