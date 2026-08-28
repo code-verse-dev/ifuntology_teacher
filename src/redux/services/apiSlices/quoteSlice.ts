@@ -43,6 +43,13 @@ export const quoteSlice = createApi({
       }),
       providesTags: (_result, _error, id) => [{ type: "Quotes", id }],
     }),
+    deleteQuote: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `/quotes/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Quotes"],
+    }),
   }),
 
 });
@@ -52,4 +59,5 @@ export const {
   useGetMyQuotesQuery,
   useGetMyQuoteStatsQuery,
   useGetQuoteByIdQuery,
+  useDeleteQuoteMutation,
 } = quoteSlice;
