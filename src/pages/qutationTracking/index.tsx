@@ -8,6 +8,7 @@ import { useGetMyQuotesQuery } from "@/redux/services/apiSlices/quoteSlice";
 import {
   formatQuoteCurrency,
 } from "@/components/quotes/quoteBreakdownUtils";
+import DeleteQuoteConfirmDialog from "@/components/quotes/DeleteQuoteConfirmDialog";
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
   const d = new Date(dateVal);
@@ -64,6 +65,10 @@ export default function QutationTracking() {
     limit: 10,
     keyword: "",
   });
+  const [quoteToDelete, setQuoteToDelete] = useState<{
+    _id: string;
+    organizationName?: string;
+  } | null>(null);
   useEffect(() => {
     document.title = "Quotations Tracking • iFuntology Teacher";
   }, []);
@@ -176,7 +181,7 @@ export default function QutationTracking() {
                       )}
                     </div>
 
-                    <div className="ml-4 flex w-40 flex-col items-end justify-between">
+                    <div className="ml-4 flex min-w-[10rem] flex-col items-end justify-between">
                       <div className="text-lg font-semibold">
                         {formatQuoteCurrency(q.subTotal)}
                       </div>
@@ -192,7 +197,7 @@ export default function QutationTracking() {
                           )}
                         </div>
                       )}
-                      <div className="mt-3 flex gap-2">
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
                         <NavLink
                           to={
                             (q.status ?? "").toLowerCase() === "approved"
@@ -202,6 +207,19 @@ export default function QutationTracking() {
                         >
                           <Button variant="outline">View Details</Button>
                         </NavLink>
+                        {(status === "pending" || status === "revision") && (
+                          <Button
+                            variant="destructive"
+                            onClick={() =>
+                              setQuoteToDelete({
+                                _id: q._id,
+                                organizationName: q.organizationName,
+                              })
+                            }
+                          >
+                            Delete
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -273,6 +291,14 @@ export default function QutationTracking() {
             </div>
           </div>
       </section>
+      <DeleteQuoteConfirmDialog
+        open={!!quoteToDelete}
+        onOpenChange={(open) => {
+          if (!open) setQuoteToDelete(null);
+        }}
+        quoteId={quoteToDelete?._id}
+        organizationName={quoteToDelete?.organizationName}
+      />
     </DashboardWithSidebarLayout>
   );
 }
