@@ -90,8 +90,6 @@ export default function LoginPage() {
           <div>
             <a
               href="https://ifuntology.com"
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-block cursor-pointer"
               aria-label="Open iFuntology ERP"
             >
