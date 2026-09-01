@@ -28,6 +28,15 @@ export type SavedEstimatePayload = {
   budgetRemainingAnnual?: number;
 };
 
+export type GenerateSalonImagePayload = {
+  itemQty: Record<string, number>;
+};
+
+export type GenerateSalonImageResult = {
+  imageBase64: string;
+  mimeType: string;
+};
+
 export const businessBuilderSlice = createApi({
   reducerPath: "businessBuilderApi",
   baseQuery: baseQueryWithReauth,
@@ -81,6 +90,14 @@ export const businessBuilderSlice = createApi({
       }),
       invalidatesTags: ["SavedEstimates"],
     }),
+    generateSalonImage: builder.mutation<any, GenerateSalonImagePayload>({
+      query: (body) => ({
+        url: "/business-builder/generate-salon-image",
+        method: "POST",
+        body,
+        timeout: 120_000,
+      }),
+    }),
   }),
 });
 
@@ -90,4 +107,5 @@ export const {
   useCreateSavedEstimateMutation,
   useUpdateSavedEstimateMutation,
   useDeleteSavedEstimateMutation,
+  useGenerateSalonImageMutation,
 } = businessBuilderSlice;
