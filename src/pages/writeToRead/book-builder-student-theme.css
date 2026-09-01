@@ -73,6 +73,16 @@ body.student-book-builder-active .bg-app {
   background: hsl(var(--secondary));
 }
 
+.student-book-builder .book-tool-sidebar__btn-label {
+  color: hsl(var(--foreground));
+  opacity: 0.78;
+}
+
+.student-book-builder .book-tool-sidebar__btn.is-active .book-tool-sidebar__btn-label {
+  color: hsl(var(--foreground));
+  opacity: 1;
+}
+
 .student-book-builder .book-paper-custom {
   color: hsl(var(--muted-foreground));
 }
@@ -206,6 +216,14 @@ body.student-book-builder-active .bg-app {
 .student-book-builder .char-panel__cat-icon {
   background: hsl(var(--card));
   border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.student-book-builder .char-panel__cat-name {
+  color: hsl(var(--muted-foreground));
+}
+
+.student-book-builder .char-panel__cat-icon.is-active .char-panel__cat-name {
   color: hsl(var(--foreground));
 }
 
@@ -476,6 +494,16 @@ body.student-book-builder-active .char-save-dialog__actions button {
   background: hsl(var(--muted) / 0.25);
   border-color: hsl(var(--border));
   color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .char-save-dialog__actions .char-save-dialog__btn--insert {
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--primary) / 0.45);
+  color: hsl(var(--foreground));
+}
+
+body.student-book-builder-active .char-save-dialog__actions .char-save-dialog__btn--insert:hover:not(:disabled) {
+  border-color: hsl(var(--primary));
 }
 
 body.student-book-builder-active .char-save-dialog__actions button[type='submit'] {

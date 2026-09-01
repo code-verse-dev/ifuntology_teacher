@@ -15,7 +15,6 @@ export default function FuntologyBusinessBuilderSidebarItem() {
       <SidebarMenuButton asChild tooltip="Funtology Business Builder">
         <NavLink
           to="/funtology-business-builder"
-          end
           className="w-full"
           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
         >

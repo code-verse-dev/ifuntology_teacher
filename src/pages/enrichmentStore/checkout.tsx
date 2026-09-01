@@ -22,6 +22,7 @@ import {
   useCreateCartMutation,
 } from "@/redux/services/apiSlices/cartSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import { TAX_RATE, TAX_RATE_PERCENT } from "@/constants/tax";
 import { toast } from "sonner";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import swal from "sweetalert";
@@ -52,12 +53,13 @@ export default function CheckoutPage() {
   });
 
   const subtotal = items.reduce((sum: number, i: any) => sum + i.total, 0);
-  //   const tax = +(subtotal * 0.08).toFixed(2);
-  const tax = 0;
-  //   const shipping = items.length ? 99.95 : 0;
+  const cartTotal = Number(cartData?.data?.total ?? 0);
   const shipping = 0;
-  const total = +(cartData?.data?.total + tax + shipping).toFixed(2);
-  const discount = subtotal > total ? subtotal - total : 0;
+  const tax = formData.exemptTax
+    ? 0
+    : +(cartTotal * TAX_RATE).toFixed(2);
+  const total = +(cartTotal + tax + shipping).toFixed(2);
+  const discount = subtotal > cartTotal ? subtotal - cartTotal : 0;
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -495,7 +497,11 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax:</span>
+                  <span className="text-muted-foreground">
+                    Tax
+                    {formData.exemptTax ? " (exempt)" : ` (${TAX_RATE_PERCENT}%)`}
+                    :
+                  </span>
                   <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">

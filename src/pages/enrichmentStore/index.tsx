@@ -18,7 +18,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import AddedToCartDialog from "@/components/enrichment/AddedToCartDialog";
+import PackSizeChoiceDialog from "@/components/enrichment/PackSizeChoiceDialog";
 import { buildCartItems } from "@/utils/Functions";
+import {
+  getPackStep,
+  rememberPackStep,
+  requiresPackQuantity,
+  type PackSize,
+} from "@/utils/packQuantity";
 import { useGetCategoriesQuery } from "@/redux/services/apiSlices/categorySlice";
 import { useGetProductsQuery } from "@/redux/services/apiSlices/productSlice";
 import {
@@ -121,6 +128,8 @@ export default function EnrichmentStore() {
 
   const [addedDialogOpen, setAddedDialogOpen] = useState(false);
   const [lastAddedTitle, setLastAddedTitle] = useState<string | undefined>();
+  const [packDialogOpen, setPackDialogOpen] = useState(false);
+  const [packProduct, setPackProduct] = useState<any>(null);
 
   const { data: categoriesData } = useGetCategoriesQuery({});
   const { data: productsData, isLoading: productsLoading } =
@@ -186,6 +195,51 @@ export default function EnrichmentStore() {
   const handleClearFilters = () => {
     setSelectedCategory(null);
     setSearch("");
+  };
+
+  const addProductToCart = async (productId: string, step = 1) => {
+    const items = buildCartItems(productId, cartData, "add", step);
+    await createCart({ items }).unwrap();
+  };
+
+  const handleAddToCart = async (product: any) => {
+    try {
+      if (requiresPackQuantity(product)) {
+        const existing = cartData?.data?.items?.find(
+          (it: any) => it.product._id === product._id
+        );
+        if (existing) {
+          const step = getPackStep(existing.quantity, product._id);
+          await addProductToCart(product._id, step);
+          setLastAddedTitle(product.name);
+          setAddedDialogOpen(true);
+          return;
+        }
+        setPackProduct(product);
+        setPackDialogOpen(true);
+        return;
+      }
+
+      await addProductToCart(product._id);
+      setLastAddedTitle(product.name);
+      setAddedDialogOpen(true);
+    } catch (err: unknown) {
+      console.error(err);
+    }
+  };
+
+  const handlePackSizeSelect = async (size: PackSize) => {
+    if (!packProduct) return;
+    try {
+      rememberPackStep(packProduct._id, size);
+      await addProductToCart(packProduct._id, size);
+      setPackDialogOpen(false);
+      setLastAddedTitle(packProduct.name);
+      setPackProduct(null);
+      setAddedDialogOpen(true);
+    } catch (err: unknown) {
+      console.error(err);
+    }
   };
 
   return (
@@ -400,6 +454,11 @@ export default function EnrichmentStore() {
                     <p className="text-lg font-bold text-foreground">
                       ${Number(p.price).toFixed(2)}
                     </p>
+                    {requiresPackQuantity(p) && (
+                      <p className="text-xs text-muted-foreground">
+                        Sold in packs of 12 and 15
+                      </p>
+                    )}
                     <div className="flex flex-col gap-2">
                       <Button
                         variant="outline"
@@ -412,16 +471,7 @@ export default function EnrichmentStore() {
                         variant="outline"
                         className="w-full rounded-xl border-lime-500/50 font-semibold text-lime-500 hover:bg-lime-500/10 hover:text-lime-400"
                         disabled={cartLoading}
-                        onClick={async () => {
-                          try {
-                            const items = buildCartItems(p._id, cartData);
-                            await createCart({ items }).unwrap();
-                            setLastAddedTitle(p.name);
-                            setAddedDialogOpen(true);
-                          } catch (err: unknown) {
-                            console.error(err);
-                          }
-                        }}
+                        onClick={() => handleAddToCart(p)}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Add to Cart
@@ -467,6 +517,16 @@ export default function EnrichmentStore() {
           )}
         </div>
 
+        <PackSizeChoiceDialog
+          open={packDialogOpen}
+          onOpenChange={(open) => {
+            setPackDialogOpen(open);
+            if (!open) setPackProduct(null);
+          }}
+          productTitle={packProduct?.name}
+          loading={cartLoading}
+          onSelect={handlePackSizeSelect}
+        />
         <AddedToCartDialog
           open={addedDialogOpen}
           onOpenChange={setAddedDialogOpen}

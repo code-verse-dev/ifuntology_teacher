@@ -25,6 +25,8 @@ import {
   Upload,
   Filter,
   MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import {
   Select,
@@ -35,9 +37,13 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
+import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
 import {
   useCreateInviteBatchMutation,
   useCreateInviteBatchCsvMutation,
+  useAddBatchInvitesMutation,
+  useUpdateInviteBatchMutation,
+  useUpdateBatchStudentMutation,
   useGetInviteBatchesQuery,
   type InviteRowInput,
 } from "@/redux/services/apiSlices/batchSlice";
@@ -47,14 +53,17 @@ type InviteRow = {
   email: string;
   firstName: string;
   lastName: string;
+  username?: string | null;
   rowStatus?: string;
   booksCount?: number;
-  createdUser?: string;
+  createdUser?: string | { _id?: string };
 };
 
 export type InviteBatchDoc = {
   _id: string;
   title?: string;
+  teacherName?: string;
+  organizationName?: string;
   status?: string;
   createdAt?: string;
   invites?: InviteRow[];
@@ -68,6 +77,14 @@ type CreatedCredential = {
   username: string;
   password: string;
 };
+
+type InviteDialogMode = "new" | "existing";
+
+function resolveCreatedUserId(createdUser?: string | { _id?: string }) {
+  if (!createdUser) return "";
+  if (typeof createdUser === "string") return createdUser;
+  return createdUser._id ? String(createdUser._id) : "";
+}
 
 function extractManualCredentials(res: any): CreatedCredential[] {
   const data = res?.data;
@@ -154,14 +171,30 @@ export function StudentsAndBatchesTab() {
 
   const [selectedBatch, setSelectedBatch] = useState<InviteBatchDoc | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [inviteMode, setInviteMode] = useState<InviteDialogMode>("new");
+  const [existingBatchId, setExistingBatchId] = useState("");
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<CreatedCredential[]>([]);
   const [batchTitle, setBatchTitle] = useState("");
+  const [teacherName, setTeacherName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [studentRows, setStudentRows] = useState<StudentFieldRow[]>(() => [emptyStudentRow()]);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [resetTarget, setResetTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [editBatchOpen, setEditBatchOpen] = useState(false);
+  const [editBatchTitle, setEditBatchTitle] = useState("");
+  const [editTeacherName, setEditTeacherName] = useState("");
+  const [editOrganizationName, setEditOrganizationName] = useState("");
+  const [editStudentOpen, setEditStudentOpen] = useState(false);
+  const [editStudentId, setEditStudentId] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -176,11 +209,21 @@ export function StudentsAndBatchesTab() {
   );
   const [createBatch, { isLoading: isCreatingBatch }] = useCreateInviteBatchMutation();
   const [createBatchCsv, { isLoading: isCreatingBatchCsv }] = useCreateInviteBatchCsvMutation();
+  const [addBatchInvites, { isLoading: isAddingInvites }] = useAddBatchInvitesMutation();
+  const [updateInviteBatch, { isLoading: isUpdatingBatch }] = useUpdateInviteBatchMutation();
+  const [updateBatchStudent, { isLoading: isUpdatingStudent }] =
+    useUpdateBatchStudentMutation();
 
   const batches = useMemo(() => {
     const raw = batchesRes?.data?.docs ?? batchesRes?.docs;
     return Array.isArray(raw) ? (raw as InviteBatchDoc[]) : [];
   }, [batchesRes]);
+
+  useEffect(() => {
+    if (!selectedBatch?._id) return;
+    const refreshed = batches.find((b) => b._id === selectedBatch._id);
+    if (refreshed) setSelectedBatch(refreshed);
+  }, [batches, selectedBatch?._id]);
 
   const filteredBatches = useMemo(() => {
     if (statusFilter === "all") return batches;
@@ -197,13 +240,49 @@ export function StudentsAndBatchesTab() {
 
   const resetCreateForm = useCallback(() => {
     setBatchTitle("");
+    setTeacherName("");
+    setOrganizationName("");
     setCsvFile(null);
     setStudentRows([emptyStudentRow()]);
+    setInviteMode("new");
+    setExistingBatchId("");
   }, []);
 
   useEffect(() => {
     if (!createOpen) resetCreateForm();
   }, [createOpen, resetCreateForm]);
+
+  const openInviteDialog = (mode: InviteDialogMode, batch?: InviteBatchDoc) => {
+    if (!subscriptionId) {
+      toast.error("You need an active Write to Read subscription to invite students.");
+      return;
+    }
+    setInviteMode(mode);
+    setExistingBatchId(batch?._id ?? "");
+    setBatchTitle(batch?.title ?? "");
+    setTeacherName(batch?.teacherName ?? "");
+    setOrganizationName(batch?.organizationName ?? "");
+    setStudentRows([emptyStudentRow()]);
+    setCsvFile(null);
+    setCreateOpen(true);
+  };
+
+  const openEditBatchDialog = () => {
+    if (!selectedBatch) return;
+    setEditBatchTitle(selectedBatch.title ?? "");
+    setEditTeacherName(selectedBatch.teacherName ?? "");
+    setEditOrganizationName(selectedBatch.organizationName ?? "");
+    setEditBatchOpen(true);
+  };
+
+  const openEditStudentDialog = (inv: InviteRow) => {
+    const studentId = resolveCreatedUserId(inv.createdUser);
+    if (!studentId) return;
+    setEditStudentId(studentId);
+    setEditFirstName(inv.firstName ?? "");
+    setEditLastName(inv.lastName ?? "");
+    setEditStudentOpen(true);
+  };
 
   const updateStudentRow = (key: string, field: keyof InviteRowInput, value: string) => {
     setStudentRows((rows) => rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
@@ -239,21 +318,24 @@ export function StudentsAndBatchesTab() {
       setCreatedCredentials(credentials);
       setCredentialsOpen(true);
     }
-    toast.success(res?.message ?? "Batch created successfully.");
+    toast.success(
+      res?.message ??
+        (inviteMode === "existing"
+          ? "Students added successfully."
+          : "Batch created successfully."),
+    );
     setCreateOpen(false);
-    setSelectedBatch(null);
+    if (inviteMode === "existing" && existingBatchId) {
+      const refreshed = (batchesRes?.data?.docs ?? batchesRes?.docs ?? []).find(
+        (b: InviteBatchDoc) => b._id === existingBatchId,
+      );
+      if (refreshed) setSelectedBatch(refreshed);
+    } else {
+      setSelectedBatch(null);
+    }
   };
 
-  const handleSubmitCreate = async () => {
-    if (!subscriptionId) {
-      toast.error("You need an active Write to Read subscription to invite students.");
-      return;
-    }
-    const title = batchTitle.trim();
-    if (!title) {
-      toast.error("Please enter a batch name.");
-      return;
-    }
+  const buildInvitesPayload = (): InviteRowInput[] | null => {
     const invites: InviteRowInput[] = studentRows
       .map((r) => ({
         firstName: r.firstName.trim(),
@@ -264,20 +346,58 @@ export function StudentsAndBatchesTab() {
 
     if (invites.length === 0) {
       toast.error("Add at least one student with first name and last name.");
-      return;
+      return null;
     }
 
     const incomplete = invites.find((r) => !r.firstName || !r.lastName);
     if (incomplete) {
       toast.error("Each student needs a first name and last name.");
+      return null;
+    }
+    return invites;
+  };
+
+  const handleSubmitCreate = async () => {
+    if (!subscriptionId) {
+      toast.error("You need an active Write to Read subscription to invite students.");
       return;
     }
 
+    const invites = buildInvitesPayload();
+    if (!invites) return;
+
     try {
+      if (inviteMode === "existing") {
+        if (!existingBatchId) {
+          toast.error("Please select an existing batch.");
+          return;
+        }
+        const res = await addBatchInvites({
+          batchId: existingBatchId,
+          invites,
+        }).unwrap();
+        if (res?.status) {
+          handleBatchCreateSuccess(res);
+        } else {
+          toast.error(res?.message ?? "Could not add students.");
+        }
+        return;
+      }
+
+      const title = batchTitle.trim();
+      if (!title) {
+        toast.error("Please enter a batch name.");
+        return;
+      }
+
       const res = await createBatch({
         title,
         subscriptionId,
         invites,
+        ...(teacherName.trim() ? { teacherName: teacherName.trim() } : {}),
+        ...(organizationName.trim()
+          ? { organizationName: organizationName.trim() }
+          : {}),
       }).unwrap();
       if (res?.status) {
         handleBatchCreateSuccess(res);
@@ -285,13 +405,17 @@ export function StudentsAndBatchesTab() {
         toast.error(res?.message ?? "Could not create batch.");
       }
     } catch (e: any) {
-      toast.error(e?.data?.message ?? e?.message ?? "Could not create batch.");
+      toast.error(e?.data?.message ?? e?.message ?? "Could not save invitations.");
     }
   };
 
   const handleSubmitCreateCsv = async () => {
     if (!subscriptionId) {
       toast.error("You need an active Write to Read subscription to invite students.");
+      return;
+    }
+    if (inviteMode === "existing") {
+      toast.error("CSV upload is only available when creating a new batch. Add students manually for an existing batch.");
       return;
     }
     const title = batchTitle.trim();
@@ -313,6 +437,10 @@ export function StudentsAndBatchesTab() {
         title,
         subscriptionId,
         file: csvFile,
+        ...(teacherName.trim() ? { teacherName: teacherName.trim() } : {}),
+        ...(organizationName.trim()
+          ? { organizationName: organizationName.trim() }
+          : {}),
       }).unwrap();
       if (res?.status) {
         handleBatchCreateSuccess(res);
@@ -323,6 +451,59 @@ export function StudentsAndBatchesTab() {
       toast.error(e?.data?.message ?? e?.message ?? "Could not create batch from CSV.");
     }
   };
+
+  const handleSaveBatchDetails = async () => {
+    if (!selectedBatch?._id) return;
+    const title = editBatchTitle.trim();
+    if (!title) {
+      toast.error("Batch name is required.");
+      return;
+    }
+    try {
+      const res = await updateInviteBatch({
+        batchId: selectedBatch._id,
+        title,
+        teacherName: editTeacherName.trim(),
+        organizationName: editOrganizationName.trim(),
+      }).unwrap();
+      if (res?.status) {
+        toast.success(res?.message ?? "Batch updated.");
+        setEditBatchOpen(false);
+      } else {
+        toast.error(res?.message ?? "Could not update batch.");
+      }
+    } catch (e: any) {
+      toast.error(e?.data?.message ?? e?.message ?? "Could not update batch.");
+    }
+  };
+
+  const handleSaveStudent = async () => {
+    if (!selectedBatch?._id || !editStudentId) return;
+    const firstName = editFirstName.trim();
+    const lastName = editLastName.trim();
+    if (!firstName || !lastName) {
+      toast.error("First name and last name are required.");
+      return;
+    }
+    try {
+      const res = await updateBatchStudent({
+        batchId: selectedBatch._id,
+        studentId: editStudentId,
+        firstName,
+        lastName,
+      }).unwrap();
+      if (res?.status) {
+        toast.success(res?.message ?? "Student updated.");
+        setEditStudentOpen(false);
+      } else {
+        toast.error(res?.message ?? "Could not update student.");
+      }
+    } catch (e: any) {
+      toast.error(e?.data?.message ?? e?.message ?? "Could not update student.");
+    }
+  };
+
+  const isInviteSubmitting = isCreatingBatch || isCreatingBatchCsv || isAddingInvites;
 
   const loadingList = batchesLoading || isFetching;
 
@@ -357,16 +538,19 @@ export function StudentsAndBatchesTab() {
               </Select>
               <Button
                 className="h-11 shrink-0 rounded-full border-none bg-lime-600 px-6 font-bold text-white hover:bg-lime-700"
-                onClick={() => {
-                  if (!subscriptionId) {
-                    toast.error("You need an active Write to Read subscription to create a batch.");
-                    return;
-                  }
-                  setCreateOpen(true);
-                }}
+                onClick={() => openInviteDialog("new")}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create New Batch
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 shrink-0 rounded-full border-slate-200 px-6 font-bold dark:border-slate-700"
+                onClick={() => openInviteDialog("existing")}
+                disabled={batches.length === 0}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Add to Existing Batch
               </Button>
             </div>
           </div>
@@ -431,6 +615,13 @@ export function StudentsAndBatchesTab() {
                                 <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
                                   {batch.title ?? "Untitled batch"}
                                 </p>
+                                {(batch.teacherName || batch.organizationName) && (
+                                  <p className="truncate text-[11px] text-slate-500">
+                                    {[batch.teacherName, batch.organizationName]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -525,7 +716,7 @@ export function StudentsAndBatchesTab() {
         </div>
       ) : (
         <div className="space-y-6 text-left">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <Button
                 type="button"
@@ -543,6 +734,29 @@ export function StudentsAndBatchesTab() {
                 Created {formatBatchDate(selectedBatch.createdAt)} · Status:{" "}
                 {selectedBatch.status ?? "—"}
               </p>
+              <p className="text-xs text-slate-500">
+                Teacher: {selectedBatch.teacherName?.trim() || "—"} · Organization:{" "}
+                {selectedBatch.organizationName?.trim() || "—"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full font-bold"
+                onClick={openEditBatchDialog}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit batch
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full border-none bg-lime-600 font-bold text-white hover:bg-lime-700"
+                onClick={() => openInviteDialog("existing", selectedBatch)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add students
+              </Button>
             </div>
           </div>
 
@@ -553,6 +767,9 @@ export function StudentsAndBatchesTab() {
                   <tr className="border-b border-slate-50 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30">
                     <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Student
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Username
                     </th>
                     <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Email
@@ -574,7 +791,7 @@ export function StudentsAndBatchesTab() {
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {(selectedBatch.invites ?? []).length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-8 py-10 text-center text-sm text-slate-500">
+                      <td colSpan={7} className="px-8 py-10 text-center text-sm text-slate-500">
                         No students on this batch yet.
                       </td>
                     </tr>
@@ -587,6 +804,11 @@ export function StudentsAndBatchesTab() {
                         <td className="px-8 py-5">
                           <span className="text-sm font-bold text-slate-900 dark:text-white">
                             {inv.firstName} {inv.lastName}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-medium font-mono text-slate-600 dark:text-slate-300">
+                            {inv.username || "—"}
                           </span>
                         </td>
                         <td className="px-6 py-5">
@@ -613,24 +835,55 @@ export function StudentsAndBatchesTab() {
                           </Badge>
                         </td>
                         <td className="px-8 py-5 text-right">
-                          {inv.createdUser && inv.rowStatus === "CREATED" ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="rounded-full font-bold"
-                              onClick={() =>
-                                setResetTarget({
-                                  id: String(inv.createdUser),
-                                  name: `${inv.firstName} ${inv.lastName}`.trim(),
-                                })
-                              }
-                            >
-                              Reset password
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-slate-400">—</span>
-                          )}
+                          {(() => {
+                            const studentId = resolveCreatedUserId(inv.createdUser);
+                            if (!studentId || inv.rowStatus !== "CREATED") {
+                              return <span className="text-xs text-slate-400">—</span>;
+                            }
+                            return (
+                              <div className="flex flex-wrap items-center justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-full font-bold"
+                                  onClick={() => openEditStudentDialog(inv)}
+                                >
+                                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-full font-bold"
+                                  onClick={() =>
+                                    setResetTarget({
+                                      id: studentId,
+                                      name: `${inv.firstName} ${inv.lastName}`.trim(),
+                                    })
+                                  }
+                                >
+                                  Reset password
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-full font-bold text-rose-600 hover:text-rose-700"
+                                  onClick={() =>
+                                    setDeleteTarget({
+                                      id: studentId,
+                                      name: `${inv.firstName} ${inv.lastName}`.trim(),
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                  Delete
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </td>
                       </tr>
                     ))
@@ -646,7 +899,9 @@ export function StudentsAndBatchesTab() {
         <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[640px] md:p-12 custom-scrollbar">
           <DialogHeader className="space-y-4 text-left">
             <DialogTitle className="text-2xl font-extrabold leading-tight text-slate-900 dark:text-white">
-              Create batch & invite students
+              {inviteMode === "existing"
+                ? "Add students to existing batch"
+                : "Create batch & invite students"}
             </DialogTitle>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               At least one student row is required (first name and last name). Email is optional.
@@ -654,17 +909,91 @@ export function StudentsAndBatchesTab() {
           </DialogHeader>
 
           <div className="mt-6 space-y-8">
-            <div className="space-y-3 text-left">
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Batch name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                value={batchTitle}
-                onChange={(e) => setBatchTitle(e.target.value)}
-                placeholder="e.g. Spring 2026 – Grade 7"
-                className="h-14 rounded-2xl border-none bg-slate-50 px-6 text-sm font-medium dark:bg-slate-800/50"
-              />
+            <div className="flex gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+              <Button
+                type="button"
+                variant="ghost"
+                className={cn(
+                  "h-10 flex-1 rounded-full font-bold",
+                  inviteMode === "new" && "bg-white shadow-sm dark:bg-slate-900",
+                )}
+                onClick={() => setInviteMode("new")}
+              >
+                New batch
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className={cn(
+                  "h-10 flex-1 rounded-full font-bold",
+                  inviteMode === "existing" && "bg-white shadow-sm dark:bg-slate-900",
+                )}
+                onClick={() => setInviteMode("existing")}
+                disabled={batches.length === 0}
+              >
+                Existing batch
+              </Button>
             </div>
+
+            {inviteMode === "existing" ? (
+              <div className="space-y-3 text-left">
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Select batch <span className="text-red-500">*</span>
+                </Label>
+                <Select value={existingBatchId} onValueChange={setExistingBatchId}>
+                  <SelectTrigger className="h-14 rounded-2xl border-none bg-slate-50 px-6 text-sm font-medium dark:bg-slate-800/50">
+                    <SelectValue placeholder="Choose a batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batches.map((batch) => (
+                      <SelectItem key={batch._id} value={batch._id}>
+                        {batch.title ?? "Untitled batch"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3 text-left">
+                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Batch name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={batchTitle}
+                    onChange={(e) => setBatchTitle(e.target.value)}
+                    placeholder="e.g. Spring 2026 – Grade 7"
+                    className="h-14 rounded-2xl border-none bg-slate-50 px-6 text-sm font-medium dark:bg-slate-800/50"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-3 text-left">
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Teacher name{" "}
+                      <span className="font-normal text-slate-400">(optional)</span>
+                    </Label>
+                    <Input
+                      value={teacherName}
+                      onChange={(e) => setTeacherName(e.target.value)}
+                      placeholder="Ms. Rivera"
+                      className="h-14 rounded-2xl border-none bg-slate-50 px-6 text-sm font-medium dark:bg-slate-800/50"
+                    />
+                  </div>
+                  <div className="space-y-3 text-left">
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Organization{" "}
+                      <span className="font-normal text-slate-400">(optional)</span>
+                    </Label>
+                    <Input
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      placeholder="Lincoln Middle School"
+                      className="h-14 rounded-2xl border-none bg-slate-50 px-6 text-sm font-medium dark:bg-slate-800/50"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="space-y-4 text-left">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -758,45 +1087,47 @@ export function StudentsAndBatchesTab() {
               </div>
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Or upload CSV
-              </Label>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Required headers: <span className="font-mono">firstName,lastName</span>. Optional:{" "}
-                <span className="font-mono">email</span>
-              </p>
-              <Input
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
-                className="h-11 rounded-xl border-none bg-white px-4 text-sm dark:bg-slate-900"
-              />
-              {csvFile ? (
-                <p className="text-xs text-slate-600 dark:text-slate-300">
-                  Selected: <span className="font-semibold">{csvFile.name}</span>
+            {inviteMode === "new" ? (
+              <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Or upload CSV
+                </Label>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Required headers: <span className="font-mono">firstName,lastName</span>. Optional:{" "}
+                  <span className="font-mono">email</span>
                 </p>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-full font-bold"
-                disabled={isCreatingBatch || isCreatingBatchCsv}
-                onClick={handleSubmitCreateCsv}
-              >
-                {isCreatingBatchCsv ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading…
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <Upload className="h-4 w-4" />
-                    Upload CSV & send invitations
-                  </span>
-                )}
-              </Button>
-            </div>
+                <Input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                  className="h-11 rounded-xl border-none bg-white px-4 text-sm dark:bg-slate-900"
+                />
+                {csvFile ? (
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    Selected: <span className="font-semibold">{csvFile.name}</span>
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full font-bold"
+                  disabled={isInviteSubmitting}
+                  onClick={handleSubmitCreateCsv}
+                >
+                  {isCreatingBatchCsv ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading…
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload CSV & send invitations
+                    </span>
+                  )}
+                </Button>
+              </div>
+            ) : null}
 
             <div className="flex items-start gap-4 rounded-2xl border border-orange-100 bg-orange-50/50 p-5 dark:border-orange-900/30 dark:bg-orange-950/10">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-orange-500 dark:bg-slate-800">
@@ -820,22 +1151,147 @@ export function StudentsAndBatchesTab() {
               <Button
                 type="button"
                 className="h-14 flex-1 rounded-full border-none bg-lime-500 font-extrabold text-white shadow-lg hover:bg-lime-600"
-                disabled={isCreatingBatch || isCreatingBatchCsv}
+                disabled={isInviteSubmitting}
                 onClick={handleSubmitCreate}
               >
-                {isCreatingBatch ? (
+                {isInviteSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Sending…
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving…
                   </span>
+                ) : inviteMode === "existing" ? (
+                  "Add students"
                 ) : (
-                  "Create batch"
+                  "Create & invite"
                 )}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editBatchOpen} onOpenChange={setEditBatchOpen}>
+        <DialogContent className="rounded-[2rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[480px]">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-xl font-extrabold">Edit batch</DialogTitle>
+            <DialogDescription>
+              Update batch name, teacher name, and organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">Batch name</Label>
+              <Input
+                value={editBatchTitle}
+                onChange={(e) => setEditBatchTitle(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">
+                Teacher name <span className="font-normal text-slate-400">(optional)</span>
+              </Label>
+              <Input
+                value={editTeacherName}
+                onChange={(e) => setEditTeacherName(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">
+                Organization <span className="font-normal text-slate-400">(optional)</span>
+              </Label>
+              <Input
+                value={editOrganizationName}
+                onChange={(e) => setEditOrganizationName(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 flex-1 rounded-full font-bold"
+                onClick={() => setEditBatchOpen(false)}
+                disabled={isUpdatingBatch}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-11 flex-1 rounded-full bg-lime-600 font-bold text-white hover:bg-lime-700"
+                onClick={handleSaveBatchDetails}
+                disabled={isUpdatingBatch}
+              >
+                {isUpdatingBatch ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editStudentOpen} onOpenChange={setEditStudentOpen}>
+        <DialogContent className="rounded-[2rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[420px]">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-xl font-extrabold">Edit student</DialogTitle>
+            <DialogDescription>Update the student&apos;s first and last name.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">First name</Label>
+              <Input
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-bold">Last name</Label>
+              <Input
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 flex-1 rounded-full font-bold"
+                onClick={() => setEditStudentOpen(false)}
+                disabled={isUpdatingStudent}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-11 flex-1 rounded-full bg-lime-600 font-bold text-white hover:bg-lime-700"
+                onClick={handleSaveStudent}
+                disabled={isUpdatingStudent}
+              >
+                {isUpdatingStudent ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <DeleteStudentConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        studentId={deleteTarget?.id}
+        studentName={deleteTarget?.name}
+      />
 
       <Dialog
         open={credentialsOpen}

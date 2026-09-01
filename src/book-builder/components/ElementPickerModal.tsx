@@ -324,7 +324,12 @@ export function ElementPickerModal({ open, onClose, onSelect }: Props) {
           'Content-Type': 'application/json',
           ...(fetchInit?.headers as Record<string, string> | undefined),
         },
-        body: JSON.stringify({ url: hit.importUrl, source: hit.source }),
+        body: JSON.stringify({
+          url: hit.importUrl,
+          source: hit.source,
+          alt: hit.alt,
+          artist: hit.artist,
+        }),
       })
       if (!res.ok) throw new Error(await readApiErrorMessage(res))
       const json = (await res.json()) as { imagePath?: string }
@@ -353,17 +358,17 @@ export function ElementPickerModal({ open, onClose, onSelect }: Props) {
         <div className="builder-modal__head">
           <div>
             <h2 className="builder-modal__title">Elements</h2>
-            <p className="builder-modal__sub">
+            {/* <p className="builder-modal__sub">
               Search your library and free online clipart (PNG). Browse categories for
               preloaded sets only.
-            </p>
+            </p> */}
           </div>
           <button type="button" className="builder-modal__close" onClick={onClose}>
             ×
           </button>
         </div>
         <div className="paper-size-modal__body element-picker-modal__body">
-          <label className="element-picker-search">
+          {/* <label className="element-picker-search">
             <Search size={18} aria-hidden />
             <input
               type="search"
@@ -376,7 +381,7 @@ export function ElementPickerModal({ open, onClose, onSelect }: Props) {
               }}
               placeholder="Search elements"
             />
-          </label>
+          </label> */}
 
           {!isSearchMode ? (
             <>

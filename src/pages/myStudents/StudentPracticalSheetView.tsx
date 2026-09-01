@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,26 +15,28 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft,
-  Award,
   Calendar,
-  CalendarClock,
+  CalendarCheck,
+  CalendarRange,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Coins,
   Download,
   Filter,
   Loader2,
+  Save,
   Search,
   User,
-  Users,
 } from "lucide-react";
 import {
   computeRowCreditTotal,
-  createEmptyPracticalRows,
+  currentMonthRange,
+  formatEntryDateLabel,
   getPracticalColumnIcon,
   getPracticalColumns,
   getPracticalRowStatus,
-  PRACTICAL_SHEET_DATA_ROW_COUNT,
   PRACTICAL_SHEET_INTRO,
   PRACTICAL_SHEET_LOG_TITLE,
   type PracticalColumn,
@@ -40,15 +44,16 @@ import {
 } from "@/constants/practicalSheet";
 import {
   useGetStudentPracticalSheetQuery,
+  useTeacherUpdatePracticalEntryMutation,
+  type PracticalSheetMonthProgress,
   type PracticalSheetRow,
 } from "@/redux/services/apiSlices/practicalSheetSlice";
 
 type SheetViewState = {
   name: string;
-  batchClass: string;
-  startDate: string;
-  dueDate: string;
-  grade: string;
+  creditWeights: Record<string, string>;
+  monthProgress: PracticalSheetMonthProgress | null;
+  today: string | null;
   rows: PracticalSheetRow[];
   exists: boolean;
 };
@@ -81,33 +86,38 @@ const STATUS_META: Record<
   },
 };
 
+function normalizeRow(
+  row: PracticalSheetRow,
+  columns: PracticalColumn[],
+): PracticalSheetRow {
+  const cells = Object.fromEntries(
+    columns.map((col) => [
+      col.key,
+      col.key === "total" ? "" : (row.cells?.[col.key] ?? ""),
+    ]),
+  );
+  cells.total = computeRowCreditTotal(cells, columns);
+  return {
+    entryDate: row.entryDate ?? null,
+    cells,
+    approved: Boolean(row.approved),
+    approvedAt: row.approvedAt ?? null,
+    approvedBy: row.approvedBy ?? null,
+  };
+}
+
 function buildViewState(
   columns: PracticalColumn[],
   data?: Partial<SheetViewState> | null,
 ): SheetViewState {
-  const emptyRows = createEmptyPracticalRows(columns);
   const incomingRows = data?.rows ?? [];
-
   return {
     name: data?.name ?? "",
-    batchClass: data?.batchClass ?? "",
-    startDate: data?.startDate ?? "",
-    dueDate: data?.dueDate ?? "",
-    grade: data?.grade ?? "",
+    creditWeights: data?.creditWeights ?? {},
+    monthProgress: data?.monthProgress ?? null,
+    today: data?.today ?? null,
     exists: data?.exists ?? false,
-    rows: emptyRows.map((fallback, index) => {
-      if (index === 0) return fallback;
-      const incoming = incomingRows[index];
-      if (!incoming?.cells) return fallback;
-      const cells = Object.fromEntries(
-        columns.map((col) => [
-          col.key,
-          col.key === "total" ? "" : (incoming.cells?.[col.key] ?? ""),
-        ]),
-      );
-      cells.total = computeRowCreditTotal(cells, columns);
-      return { cells };
-    }),
+    rows: incomingRows.map((row) => normalizeRow(row, columns)),
   };
 }
 
@@ -168,7 +178,7 @@ function StatBox({
   icon,
 }: {
   label: string;
-  value: number;
+  value: string | number;
   tone: string;
   icon: React.ReactNode;
 }) {
@@ -189,26 +199,6 @@ function StatBox({
   );
 }
 
-function InfoField({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        {icon}
-        {label}
-      </p>
-      <p className="mt-1 font-semibold">{value || "—"}</p>
-    </div>
-  );
-}
-
 export default function StudentPracticalSheetView() {
   const { studentId, courseType } = useParams<{
     studentId: string;
@@ -221,74 +211,163 @@ export default function StudentPracticalSheetView() {
     [decodedCourseType],
   );
 
-  const { data, isLoading, isError } = useGetStudentPracticalSheetQuery(
-    {
-      studentId: studentId ?? "",
-      courseType: decodedCourseType,
-    },
-    { skip: !studentId || !decodedCourseType || !columns },
-  );
+  const defaultRange = useMemo(() => currentMonthRange(), []);
+  const [fromDate, setFromDate] = useState(defaultRange.from);
+  const [toDate, setToDate] = useState(defaultRange.to);
+  const [appliedFrom, setAppliedFrom] = useState(defaultRange.from);
+  const [appliedTo, setAppliedTo] = useState(defaultRange.to);
+
+  const { data, isLoading, isError, isFetching } =
+    useGetStudentPracticalSheetQuery(
+      {
+        studentId: studentId ?? "",
+        courseType: decodedCourseType,
+        from: appliedFrom,
+        to: appliedTo,
+      },
+      { skip: !studentId || !decodedCourseType || !columns },
+    );
+  const [updateEntry, { isLoading: isUpdatingEntry }] =
+    useTeacherUpdatePracticalEntryMutation();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
+  const [sheet, setSheet] = useState<SheetViewState | null>(null);
+  const [savingEntryDate, setSavingEntryDate] = useState<string | null>(null);
 
-  const sheet = useMemo(() => {
-    if (!columns) return null;
-    if (data?.data) return buildViewState(columns, data.data);
-    if (!isLoading) return buildViewState(columns);
-    return null;
+  useEffect(() => {
+    if (!columns) return;
+    if (data?.data) {
+      setSheet(buildViewState(columns, data.data));
+      return;
+    }
+    if (!isLoading) {
+      setSheet((prev) => prev ?? buildViewState(columns));
+    }
   }, [columns, data, isLoading]);
 
-  const stats = useMemo(() => {
-    const total = PRACTICAL_SHEET_DATA_ROW_COUNT;
-    if (!sheet || !columns) {
-      return { completed: 0, inProgress: 0, notStarted: total, remaining: total, percent: 0 };
-    }
-    let completed = 0;
-    let inProgress = 0;
-    let notStarted = 0;
-    sheet.rows.forEach((row, index) => {
-      if (index === 0) return;
-      const status = getPracticalRowStatus(row.cells, columns);
-      if (status === "completed") completed += 1;
-      else if (status === "in-progress") inProgress += 1;
-      else notStarted += 1;
+  const updateCell = (entryDate: string, columnKey: string, value: string) => {
+    if (!columns || columnKey === "total") return;
+    setSheet((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        rows: prev.rows.map((row) => {
+          if (row.entryDate !== entryDate) return row;
+          const cells = { ...row.cells, [columnKey]: value };
+          cells.total = computeRowCreditTotal(cells, columns);
+          return { ...row, cells };
+        }),
+      };
     });
-    const percent = total ? Math.round((completed / total) * 100) : 0;
-    return { completed, inProgress, notStarted, remaining: total - completed, percent };
+  };
+
+  const persistEntry = async (entryDate: string, approve: boolean) => {
+    if (!sheet || !studentId || !columns || !entryDate) return;
+    const row = sheet.rows.find((r) => r.entryDate === entryDate);
+    if (!row) return;
+    setSavingEntryDate(entryDate);
+    try {
+      const res = await updateEntry({
+        studentId,
+        courseType: decodedCourseType,
+        entryDate,
+        cells: row.cells,
+        approve,
+      }).unwrap();
+      if (res?.status === false) {
+        throw new Error(res?.message ?? "Failed to update entry");
+      }
+      if (res?.data) {
+        setSheet(buildViewState(columns, { ...res.data, exists: true }));
+      }
+      toast.success(
+        approve
+          ? `Entry for ${formatEntryDateLabel(entryDate)} saved and approved`
+          : `Entry for ${formatEntryDateLabel(entryDate)} saved`,
+      );
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message ?? error?.message ?? "Failed to update entry",
+      );
+    } finally {
+      setSavingEntryDate(null);
+    }
+  };
+
+  const applyDateFilter = () => {
+    if (!fromDate || !toDate) {
+      toast.error("Please select both from and to dates");
+      return;
+    }
+    if (fromDate > toDate) {
+      toast.error("From date cannot be after to date");
+      return;
+    }
+    setAppliedFrom(fromDate);
+    setAppliedTo(toDate);
+  };
+
+  const resetToCurrentMonth = () => {
+    const range = currentMonthRange();
+    setFromDate(range.from);
+    setToDate(range.to);
+    setAppliedFrom(range.from);
+    setAppliedTo(range.to);
+  };
+
+  const monthProgress = sheet?.monthProgress;
+
+  const stats = useMemo(() => {
+    if (!sheet || !columns) {
+      return { total: 0, approved: 0, pending: 0, totalCredits: "0" };
+    }
+    let approved = 0;
+    let creditSum = 0;
+    sheet.rows.forEach((row) => {
+      if (row.approved) approved += 1;
+      const total = computeRowCreditTotal(row.cells, columns);
+      if (total) creditSum += Number(total);
+    });
+    const rounded = Math.round(creditSum * 100) / 100;
+    return {
+      total: sheet.rows.length,
+      approved,
+      pending: sheet.rows.length - approved,
+      totalCredits: Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2),
+    };
   }, [sheet, columns]);
 
   const visibleRows = useMemo(() => {
     if (!sheet || !columns) return [];
     const query = search.trim().toLowerCase();
     return sheet.rows
-      .map((row, index) => ({
+      .map((row) => ({
         row,
-        index,
         status: getPracticalRowStatus(row.cells, columns),
-        isWeightRow: index === 0,
       }))
-      .filter(({ index, status }) => {
-        if (index === 0) return statusFilter === "all";
-        return statusFilter === "all" || status === statusFilter;
-      })
-      .filter(({ index, row }) => {
+      .filter(({ status }) => statusFilter === "all" || status === statusFilter)
+      .filter(({ row }) => {
         if (!query) return true;
-        if (index === 0) return "credits".includes(query) || "0".includes(query);
-        if (String(index).includes(query)) return true;
+        const label = formatEntryDateLabel(row.entryDate).toLowerCase();
+        if (label.includes(query)) return true;
+        if ((row.entryDate ?? "").includes(query)) return true;
         return columns!.some((col) =>
           (row.cells[col.key] ?? "").toLowerCase().includes(query),
         );
-      });
+      })
+      .sort((a, b) =>
+        String(b.row.entryDate ?? "").localeCompare(String(a.row.entryDate ?? "")),
+      );
   }, [sheet, columns, statusFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(visibleRows.length / rowsPerPage));
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, search, rowsPerPage]);
+  }, [statusFilter, search, rowsPerPage, appliedFrom, appliedTo]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -306,11 +385,16 @@ export default function StudentPracticalSheetView() {
   const handleExport = () => {
     if (!sheet || !columns) return;
     const escape = (value: string) => `"${(value ?? "").replace(/"/g, '""')}"`;
-    const header = ["Day", ...columns.map((col) => col.label)];
-    const lines = sheet.rows.map((row, index) => [
-      index === 0 ? "Credits" : String(index),
+    const header = [
+      "Date",
+      "Approved",
+      ...columns.map((col) => col.label),
+    ];
+    const lines = sheet.rows.map((row) => [
+      row.entryDate ?? "",
+      row.approved ? "Yes" : "No",
       ...columns.map((col) =>
-        col.key === "total" && index > 0
+        col.key === "total"
           ? computeRowCreditTotal(row.cells, columns)
           : (row.cells[col.key] ?? ""),
       ),
@@ -352,6 +436,7 @@ export default function StudentPracticalSheetView() {
   const notStarted = data?.data?.exists === false;
   const pageStart = visibleRows.length === 0 ? 0 : (page - 1) * rowsPerPage + 1;
   const pageEnd = Math.min(page * rowsPerPage, visibleRows.length);
+  const qtyColumns = columns.filter((col) => col.key !== "total");
 
   return (
     <DashboardWithSidebarLayout>
@@ -373,8 +458,8 @@ export default function StudentPracticalSheetView() {
               {PRACTICAL_SHEET_INTRO}
             </p>
             <p className="mt-1 text-xs font-medium text-muted-foreground">
-              {PRACTICAL_SHEET_LOG_TITLE} · Read-only · Row 0 = credit times · TOTAL =
-              count × credit time
+              {PRACTICAL_SHEET_LOG_TITLE} · Edit an entry, then Save or Approve ·
+              Approved entries are locked for the student
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -388,7 +473,7 @@ export default function StudentPracticalSheetView() {
               variant="outline"
               className="gap-2 rounded-xl font-semibold"
               onClick={handleExport}
-              disabled={!sheet}
+              disabled={!sheet || !sheet.rows.length}
             >
               <Download className="h-4 w-4" />
               Export
@@ -407,87 +492,142 @@ export default function StudentPracticalSheetView() {
         ) : (
           <>
             <Card className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <InfoField
-                  label="Student Name"
-                  value={sheet.name}
-                  icon={<User className="h-3.5 w-3.5" />}
+              <label className="block max-w-md space-y-1.5 text-sm">
+                <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                  <User className="h-3.5 w-3.5" />
+                  Student Name
+                </span>
+                <Input
+                  value={sheet.name || "—"}
+                  disabled
+                  className="bg-slate-50 dark:bg-slate-900"
                 />
-                <InfoField
-                  label="Batch / Class"
-                  value={sheet.batchClass}
-                  icon={<Users className="h-3.5 w-3.5" />}
-                />
-                <InfoField
-                  label="Start Date"
-                  value={sheet.startDate}
-                  icon={<Calendar className="h-3.5 w-3.5" />}
-                />
-                <InfoField
-                  label="Due Date"
-                  value={sheet.dueDate}
-                  icon={<CalendarClock className="h-3.5 w-3.5" />}
-                />
-                <InfoField
-                  label="Grade"
-                  value={sheet.grade}
-                  icon={<Award className="h-3.5 w-3.5" />}
-                />
-              </div>
+              </label>
             </Card>
 
             <Card className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-                <div className="flex items-center gap-4 lg:w-72 lg:shrink-0">
-                  <ProgressRing percent={stats.percent} />
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-4">
+                  <ProgressRing percent={monthProgress?.percent ?? 0} />
                   <div>
-                    <p className="text-sm font-bold">Overall Progress</p>
+                    <p className="text-sm font-bold">Monthly Progress</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {stats.completed} of {PRACTICAL_SHEET_DATA_ROW_COUNT} days completed
+                      {monthProgress?.filled ?? 0} of {monthProgress?.totalDays ?? 0}{" "}
+                      days filled this month
                     </p>
                     <div className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-lime-500 to-violet-500 transition-all"
-                        style={{ width: `${stats.percent}%` }}
+                        style={{ width: `${monthProgress?.percent ?? 0}%` }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-                  <StatBox
-                    label="Completed"
-                    value={stats.completed}
-                    tone="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                    icon={<ClipboardList className="h-4 w-4" />}
-                  />
-                  <StatBox
-                    label="In Progress"
-                    value={stats.inProgress}
-                    tone="bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                    icon={<Loader2 className="h-4 w-4" />}
-                  />
-                  <StatBox
-                    label="Not Started"
-                    value={stats.notStarted}
-                    tone="bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                    icon={<CalendarClock className="h-4 w-4" />}
-                  />
-                  <StatBox
-                    label="Days Remaining"
-                    value={stats.remaining}
-                    tone="bg-sky-500/15 text-sky-600 dark:text-sky-400"
-                    icon={<Calendar className="h-4 w-4" />}
-                  />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">From</Label>
+                    <Input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      className="h-10 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">To</Label>
+                    <Input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      className="h-10 rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="h-10 rounded-xl bg-lime-600 text-white hover:bg-lime-700"
+                    onClick={applyDateFilter}
+                    disabled={isFetching}
+                  >
+                    Apply
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 rounded-xl"
+                    onClick={resetToCurrentMonth}
+                    disabled={isFetching}
+                  >
+                    This month
+                  </Button>
                 </div>
               </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatBox
+                  label="Entries in Range"
+                  value={stats.total}
+                  tone="bg-sky-500/15 text-sky-600 dark:text-sky-400"
+                  icon={<CalendarRange className="h-4 w-4" />}
+                />
+                <StatBox
+                  label="Approved"
+                  value={stats.approved}
+                  tone="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  icon={<CalendarCheck className="h-4 w-4" />}
+                />
+                <StatBox
+                  label="Pending Approval"
+                  value={stats.pending}
+                  tone="bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                  icon={<ClipboardList className="h-4 w-4" />}
+                />
+                <StatBox
+                  label="Total Credits"
+                  value={stats.totalCredits}
+                  tone="bg-violet-500/15 text-violet-600 dark:text-violet-400"
+                  icon={<Coins className="h-4 w-4" />}
+                />
+              </div>
             </Card>
+
+            {qtyColumns.length > 0 && (
+              <Card className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Credit Weights Reference
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {qtyColumns.map((col) => {
+                    const Icon = getPracticalColumnIcon(col.key);
+                    const weight = sheet.creditWeights?.[col.key] ?? "";
+                    return (
+                      <div
+                        key={col.key}
+                        className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200"
+                        title={col.label}
+                      >
+                        <Icon className="h-3.5 w-3.5 text-violet-500" />
+                        <span className="max-w-[140px] truncate">{col.label}</span>
+                        <span className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                          ×{weight || "1"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
 
             <Card className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
               <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="flex items-center gap-2 text-sm font-bold">
                   <ClipboardList className="h-4 w-4 text-lime-600" />
-                  Daily Entry
+                  Daily Entries
+                  {isFetching && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      · refreshing…
+                    </span>
+                  )}
                 </h2>
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
@@ -510,7 +650,7 @@ export default function StudentPracticalSheetView() {
                     <Input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search day…"
+                      placeholder="Search date…"
                       className="h-9 w-[180px] rounded-xl pl-9"
                     />
                   </div>
@@ -518,11 +658,11 @@ export default function StudentPracticalSheetView() {
               </div>
 
               <div className="overflow-auto">
-                <table className="min-w-[1400px] w-full border-collapse text-[11px]">
+                <table className="min-w-[1500px] w-full border-collapse text-[11px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900/60">
-                      <th className="sticky left-0 z-10 w-12 border border-slate-200 bg-slate-100 px-2 py-3 text-center font-bold dark:border-slate-800 dark:bg-slate-900">
-                        Day
+                      <th className="sticky left-0 z-10 w-32 border border-slate-200 bg-slate-100 px-2 py-3 text-center font-bold dark:border-slate-800 dark:bg-slate-900">
+                        Date
                       </th>
                       {columns.map((col) => {
                         const Icon = getPracticalColumnIcon(col.key);
@@ -542,54 +682,125 @@ export default function StudentPracticalSheetView() {
                           </th>
                         );
                       })}
+                      <th className="sticky right-0 z-10 w-[11rem] border border-slate-200 bg-slate-100 px-2 py-3 text-center font-bold dark:border-slate-800 dark:bg-slate-900">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {pagedRows.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={columns.length + 1}
+                          colSpan={columns.length + 2}
                           className="border border-slate-200 px-4 py-10 text-center text-sm text-muted-foreground dark:border-slate-800"
                         >
-                          No days match your filters.
+                          No entries match your filters in this date range.
                         </td>
                       </tr>
                     ) : (
-                      pagedRows.map(({ row, index, status, isWeightRow }) => {
+                      pagedRows.map(({ row, status }) => {
+                        const entryDate = row.entryDate ?? "";
                         const meta = STATUS_META[status];
-                        const displayTotal = isWeightRow
-                          ? ""
-                          : computeRowCreditTotal(row.cells, columns);
+                        const isApproved = Boolean(row.approved);
+                        const isToday = sheet.today && entryDate === sheet.today;
+                        const displayTotal = computeRowCreditTotal(row.cells, columns);
+                        const rowBusy =
+                          isUpdatingEntry && savingEntryDate === entryDate;
                         return (
                           <tr
-                            key={index}
+                            key={entryDate}
                             className={
-                              isWeightRow
-                                ? "bg-amber-50 dark:bg-amber-950/20"
+                              isApproved
+                                ? "bg-emerald-50/70 dark:bg-emerald-950/20"
                                 : "bg-white dark:bg-slate-950"
                             }
                           >
                             <td className="sticky left-0 z-10 border border-slate-200 bg-slate-50 px-2 py-1.5 text-center dark:border-slate-800 dark:bg-slate-900">
-                              <span
-                                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${
-                                  isWeightRow
-                                    ? "bg-amber-500/20 text-amber-700 ring-1 ring-amber-500/40 dark:text-amber-300"
-                                    : meta.badge
-                                }`}
-                              >
-                                {isWeightRow ? "0" : index}
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    isApproved
+                                      ? "bg-emerald-500/20 text-emerald-700 ring-1 ring-emerald-500/40 dark:text-emerald-300"
+                                      : meta.badge
+                                  }`}
+                                >
+                                  <Calendar className="h-3 w-3" />
+                                  {formatEntryDateLabel(entryDate)}
+                                </span>
+                                {isToday && (
+                                  <span className="rounded-full bg-lime-500/15 px-1.5 py-0.5 text-[9px] font-bold text-lime-700 dark:text-lime-400">
+                                    Today
+                                  </span>
+                                )}
+                              </div>
                             </td>
-                            {columns.map((col) => (
-                              <td
-                                key={col.key}
-                                className="border border-slate-200 px-1 py-1.5 text-center font-medium text-slate-900 dark:border-slate-800 dark:text-slate-100"
-                              >
-                                {col.key === "total"
-                                  ? displayTotal
-                                  : row.cells[col.key] || ""}
-                              </td>
-                            ))}
+                            {columns.map((col) => {
+                              const isTotal = col.key === "total";
+                              const value = isTotal
+                                ? displayTotal
+                                : (row.cells[col.key] ?? "");
+                              return (
+                                <td
+                                  key={col.key}
+                                  className="border border-slate-200 p-0 dark:border-slate-800"
+                                >
+                                  {isTotal ? (
+                                    <div className="flex h-9 w-full items-center justify-center px-1 text-center text-[11px] font-semibold text-slate-800 dark:text-slate-100">
+                                      {value}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      className="h-9 w-full bg-transparent px-1 text-center text-[11px] text-slate-900 outline-none placeholder:text-slate-400 focus:bg-lime-50 dark:text-slate-100 dark:focus:bg-lime-950/30"
+                                      value={value}
+                                      onChange={(e) =>
+                                        updateCell(entryDate, col.key, e.target.value)
+                                      }
+                                      placeholder="0"
+                                      inputMode="decimal"
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="sticky right-0 z-10 border border-slate-200 bg-white px-1 py-1 text-center dark:border-slate-800 dark:bg-slate-950">
+                              <div className="flex flex-col items-center gap-1 py-0.5">
+                                {isApproved && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Approved
+                                  </span>
+                                )}
+                                <div className="flex flex-wrap items-center justify-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 rounded-full px-2 text-[10px]"
+                                    onClick={() => persistEntry(entryDate, false)}
+                                    disabled={isUpdatingEntry}
+                                  >
+                                    {rowBusy ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Save className="h-3 w-3" />
+                                    )}
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="h-7 gap-1 rounded-full bg-lime-600 px-2 text-[10px] text-white hover:bg-lime-700"
+                                    onClick={() => persistEntry(entryDate, true)}
+                                    disabled={isUpdatingEntry}
+                                  >
+                                    {rowBusy ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="h-3 w-3" />
+                                    )}
+                                    {isApproved ? "Re-approve" : "Approve"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })

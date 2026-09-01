@@ -4,6 +4,7 @@ import {
   BookOpen,
   Calendar,
   GraduationCap,
+  Home,
   Mail,
   PenLine,
   Shield,
@@ -89,8 +90,6 @@ export default function LoginPage() {
           <div>
             <a
               href="https://ifuntology.com"
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-block cursor-pointer"
               aria-label="Open iFuntology ERP"
             >
@@ -114,8 +113,20 @@ export default function LoginPage() {
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-count"
             />
-            <h2 className="text-xl font-bold text-foreground">Built for Educators</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <a
+              href="https://ifuntology.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute right-4 top-4 z-10 flex flex-col items-center gap-0.5 text-primary transition hover:opacity-80 sm:right-5 sm:top-5"
+              aria-label="Open iFuntology home"
+            >
+              <Home className="h-6 w-6" strokeWidth={1.75} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide">
+                Home
+              </span>
+            </a>
+            <h2 className="pr-14 text-xl font-bold text-foreground">Built for Educators</h2>
+            <p className="mt-1 pr-14 text-sm text-muted-foreground">
               Everything you need to teach, sell, and grow.
             </p>
             <ul className="mt-5 space-y-3.5 text-sm text-muted-foreground sm:text-base">

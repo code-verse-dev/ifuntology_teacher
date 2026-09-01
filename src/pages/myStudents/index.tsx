@@ -1,13 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import ResetStudentPasswordDialog from "@/components/students/ResetStudentPasswordDialog";
+import DeleteStudentConfirmDialog from "@/components/students/DeleteStudentConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Users,
     Activity,
@@ -21,6 +38,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Loader2,
+    BookMarked,
+    Trash2,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -28,8 +47,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useGetMyStudentsQuery } from "@/redux/services/apiSlices/invitationSlice";
+import {
+    useGetMyStudentsQuery,
+    useAddStudentToWriteToReadMutation,
+} from "@/redux/services/apiSlices/invitationSlice";
 import { useGetSubscriptionStatsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+import { useGetInviteBatchesQuery } from "@/redux/services/apiSlices/batchSlice";
+import { useGetMyWtrSubscriptionQuery } from "@/redux/services/apiSlices/paymentSlice";
 
 const COURSE_TYPES = ["Funtology", "Barbertology", "Nailtology", "Skintology"];
 
@@ -78,6 +102,19 @@ export default function MyStudents() {
         id: string;
         name: string;
     } | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
+    const [wtrTarget, setWtrTarget] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
+    const [wtrMode, setWtrMode] = useState<"existing" | "new">("existing");
+    const [selectedBatchId, setSelectedBatchId] = useState("");
+    const [newBatchTitle, setNewBatchTitle] = useState("");
+    const [newTeacherName, setNewTeacherName] = useState("");
+    const [newOrganizationName, setNewOrganizationName] = useState("");
 
     const debouncedKeyword = useDebounce(keyword, 400);
 
@@ -103,9 +140,113 @@ export default function MyStudents() {
     const totalModules = stats?.totalModules ?? 0;
     const certificatesEarned = stats?.certificatesIssued ?? 0;
 
+    const { data: wtrRes } = useGetMyWtrSubscriptionQuery();
+    const wtrSub = wtrRes?.status && wtrRes?.data ? wtrRes.data : null;
+    const wtrSubscriptionId = wtrSub?._id ? String(wtrSub._id) : "";
+    const seatsRemaining = useMemo(() => {
+        if (!wtrSub) return 0;
+        const cap = Number(wtrSub.numberOfSeats ?? 0);
+        const used = Number(wtrSub.usedSeats ?? 0);
+        return Math.max(0, cap - used);
+    }, [wtrSub]);
+
+    const { data: batchesRes, isLoading: batchesLoading } = useGetInviteBatchesQuery(
+        {
+            page: 1,
+            limit: 100,
+            subscriptionId: wtrSubscriptionId,
+        },
+        { skip: !wtrSubscriptionId || !wtrTarget },
+    );
+    const wtrBatches: any[] = useMemo(() => {
+        const raw = batchesRes?.data?.docs ?? batchesRes?.docs;
+        return Array.isArray(raw) ? raw : [];
+    }, [batchesRes]);
+
+    const [addStudentToWriteToRead, { isLoading: isAddingToWtr }] =
+        useAddStudentToWriteToReadMutation();
+
     useEffect(() => {
         document.title = "My Students • iFuntology Teacher";
     }, []);
+
+    useEffect(() => {
+        if (!wtrTarget) {
+            setWtrMode("existing");
+            setSelectedBatchId("");
+            setNewBatchTitle("");
+            setNewTeacherName("");
+            setNewOrganizationName("");
+            return;
+        }
+        if (!batchesLoading) {
+            if (wtrBatches.length === 0) {
+                setWtrMode("new");
+                setSelectedBatchId("");
+            } else {
+                setWtrMode("existing");
+                setSelectedBatchId((prev) => prev || String(wtrBatches[0]._id));
+            }
+        }
+    }, [wtrTarget, batchesLoading, wtrBatches]);
+
+    const handleAddToWriteToRead = async () => {
+        if (!wtrTarget?.id) return;
+        if (!wtrSubscriptionId) {
+            toast.error(
+                "You need an active Write to Read subscription before adding students.",
+            );
+            return;
+        }
+        if (seatsRemaining < 1) {
+            toast.error("No Write to Read seats remaining.");
+            return;
+        }
+
+        try {
+            let res: any;
+            if (wtrMode === "existing") {
+                if (!selectedBatchId) {
+                    toast.error("Please select a batch.");
+                    return;
+                }
+                res = await addStudentToWriteToRead({
+                    studentId: wtrTarget.id,
+                    batchId: selectedBatchId,
+                }).unwrap();
+            } else {
+                const title = newBatchTitle.trim();
+                if (!title) {
+                    toast.error("Please enter a batch name.");
+                    return;
+                }
+                res = await addStudentToWriteToRead({
+                    studentId: wtrTarget.id,
+                    title,
+                    ...(newTeacherName.trim()
+                        ? { teacherName: newTeacherName.trim() }
+                        : {}),
+                    ...(newOrganizationName.trim()
+                        ? { organizationName: newOrganizationName.trim() }
+                        : {}),
+                }).unwrap();
+            }
+
+            if (res?.status) {
+                toast.success(res?.message ?? "Student added to Write to Read.");
+                setWtrTarget(null);
+                navigate("/write-to-read");
+            } else {
+                toast.error(res?.message ?? "Could not add student to Write to Read.");
+            }
+        } catch (err: any) {
+            toast.error(
+                err?.data?.message ??
+                    err?.message ??
+                    "Could not add student to Write to Read.",
+            );
+        }
+    };
 
     return (
         <DashboardWithSidebarLayout>
@@ -286,6 +427,38 @@ export default function MyStudents() {
                                                 >
                                                     Reset password
                                                 </DropdownMenuItem>
+                                                {!student.isInWriteToRead && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            if (!student.user?._id) return;
+                                                            if (!wtrSubscriptionId) {
+                                                                toast.error(
+                                                                    "You need an active Write to Read subscription first.",
+                                                                );
+                                                                return;
+                                                            }
+                                                            setWtrTarget({
+                                                                id: student.user._id,
+                                                                name: fullName,
+                                                            });
+                                                        }}
+                                                    >
+                                                        Add to Write to Read
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem
+                                                    className="text-rose-600 focus:text-rose-700"
+                                                    onClick={() =>
+                                                        student.user?._id &&
+                                                        setDeleteTarget({
+                                                            id: student.user._id,
+                                                            name: fullName,
+                                                        })
+                                                    }
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -340,6 +513,42 @@ export default function MyStudents() {
                                                 {isActive ? "Active" : "Inactive"}
                                             </Badge>
                                         </div>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium">
+                                                Write to Read
+                                            </span>
+                                            {student.isInWriteToRead ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="rounded-md font-normal px-2 py-0 h-5 border-transparent bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400"
+                                                >
+                                                    Enrolled
+                                                </Badge>
+                                            ) : (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 px-2 text-[11px] font-semibold text-lime-700 hover:text-lime-800"
+                                                    onClick={() => {
+                                                        if (!student.user?._id) return;
+                                                        if (!wtrSubscriptionId) {
+                                                            toast.error(
+                                                                "You need an active Write to Read subscription first.",
+                                                            );
+                                                            return;
+                                                        }
+                                                        setWtrTarget({
+                                                            id: student.user._id,
+                                                            name: fullName,
+                                                        });
+                                                    }}
+                                                >
+                                                    <BookMarked className="mr-1 h-3 w-3" />
+                                                    Add
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </Card>
                             );
@@ -379,6 +588,191 @@ export default function MyStudents() {
                 )}
             </div>
 
+            <Dialog
+                open={Boolean(wtrTarget)}
+                onOpenChange={(open) => {
+                    if (!open) setWtrTarget(null);
+                }}
+            >
+                <DialogContent className="rounded-[2rem] border-none bg-white p-8 shadow-2xl dark:bg-slate-900 sm:max-w-[480px]">
+                    <DialogHeader className="space-y-2 text-left">
+                        <DialogTitle className="text-xl font-extrabold">
+                            Add to Write to Read
+                        </DialogTitle>
+                        <DialogDescription>
+                            Add{" "}
+                            <span className="font-semibold text-foreground">
+                                {wtrTarget?.name}
+                            </span>{" "}
+                            to a Write to Read batch.
+                            {wtrSub ? (
+                                <>
+                                    {" "}
+                                    Seats remaining:{" "}
+                                    <span className="font-semibold text-foreground">
+                                        {seatsRemaining}
+                                    </span>
+                                    .
+                                </>
+                            ) : null}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="mt-4 space-y-5">
+                        {!wtrSubscriptionId ? (
+                            <p className="text-sm text-rose-600">
+                                No active Write to Read subscription found.
+                            </p>
+                        ) : seatsRemaining < 1 ? (
+                            <p className="text-sm text-rose-600">
+                                No seats remaining on your Write to Read subscription.
+                            </p>
+                        ) : (
+                            <>
+                                <div className="flex gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className={`h-10 flex-1 rounded-full font-bold ${
+                                            wtrMode === "existing"
+                                                ? "bg-white shadow-sm dark:bg-slate-900"
+                                                : ""
+                                        }`}
+                                        onClick={() => setWtrMode("existing")}
+                                        disabled={wtrBatches.length === 0}
+                                    >
+                                        Existing batch
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className={`h-10 flex-1 rounded-full font-bold ${
+                                            wtrMode === "new"
+                                                ? "bg-white shadow-sm dark:bg-slate-900"
+                                                : ""
+                                        }`}
+                                        onClick={() => setWtrMode("new")}
+                                    >
+                                        Create new batch
+                                    </Button>
+                                </div>
+
+                                {wtrMode === "existing" ? (
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-bold">Select batch</Label>
+                                        {batchesLoading ? (
+                                            <div className="flex justify-center py-4">
+                                                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                            </div>
+                                        ) : wtrBatches.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">
+                                                No batches yet. Create a new batch for this student.
+                                            </p>
+                                        ) : (
+                                            <Select
+                                                value={selectedBatchId}
+                                                onValueChange={setSelectedBatchId}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-xl">
+                                                    <SelectValue placeholder="Choose a batch" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {wtrBatches.map((batch) => (
+                                                        <SelectItem
+                                                            key={batch._id}
+                                                            value={String(batch._id)}
+                                                        >
+                                                            {batch.title ?? "Untitled batch"}
+                                                            {batch.organizationName
+                                                                ? ` · ${batch.organizationName}`
+                                                                : ""}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold">
+                                                Batch name <span className="text-rose-500">*</span>
+                                            </Label>
+                                            <Input
+                                                value={newBatchTitle}
+                                                onChange={(e) => setNewBatchTitle(e.target.value)}
+                                                placeholder="e.g. Spring 2026 – WTR"
+                                                className="h-11 rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold">
+                                                Teacher name{" "}
+                                                <span className="font-normal text-slate-400">
+                                                    (optional)
+                                                </span>
+                                            </Label>
+                                            <Input
+                                                value={newTeacherName}
+                                                onChange={(e) => setNewTeacherName(e.target.value)}
+                                                placeholder="Ms. Rivera"
+                                                className="h-11 rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold">
+                                                Organization{" "}
+                                                <span className="font-normal text-slate-400">
+                                                    (optional)
+                                                </span>
+                                            </Label>
+                                            <Input
+                                                value={newOrganizationName}
+                                                onChange={(e) =>
+                                                    setNewOrganizationName(e.target.value)
+                                                }
+                                                placeholder="Lincoln Middle School"
+                                                className="h-11 rounded-xl"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-11 flex-1 rounded-full font-bold"
+                                onClick={() => setWtrTarget(null)}
+                                disabled={isAddingToWtr}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                className="h-11 flex-1 rounded-full bg-lime-600 font-bold text-white hover:bg-lime-700"
+                                onClick={handleAddToWriteToRead}
+                                disabled={
+                                    isAddingToWtr ||
+                                    !wtrSubscriptionId ||
+                                    seatsRemaining < 1 ||
+                                    (wtrMode === "existing" && !selectedBatchId) ||
+                                    (wtrMode === "new" && !newBatchTitle.trim())
+                                }
+                            >
+                                {isAddingToWtr ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    "Add & view in Write to Read"
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <ResetStudentPasswordDialog
                 open={Boolean(resetTarget)}
                 onOpenChange={(open) => {
@@ -386,6 +780,14 @@ export default function MyStudents() {
                 }}
                 studentId={resetTarget?.id}
                 studentName={resetTarget?.name}
+            />
+            <DeleteStudentConfirmDialog
+                open={Boolean(deleteTarget)}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteTarget(null);
+                }}
+                studentId={deleteTarget?.id}
+                studentName={deleteTarget?.name}
             />
         </DashboardWithSidebarLayout>
     );

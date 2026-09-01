@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buildCartItems } from "@/utils/Functions";
+import { getPackStep, requiresPackQuantity } from "@/utils/packQuantity";
 import { Link, useNavigate } from "react-router-dom";
 import {
   useGetCartQuery,
@@ -11,6 +12,7 @@ import {
 } from "@/redux/services/apiSlices/cartSlice";
 import { useCheckCouponMutation } from "@/redux/services/apiSlices/couponSlice";
 import { UPLOADS_URL } from "@/constants/api";
+import { TAX_RATE, TAX_RATE_PERCENT } from "@/constants/tax";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Modal } from "antd";
@@ -32,26 +34,34 @@ export default function CartPage() {
   const isCouponApplied = Boolean(appliedCoupon);
 
   const subtotal = items.reduce((sum: number, i: any) => sum + i.total, 0);
-  // const tax = +(subtotal * 0.08).toFixed(2); // example 8% tax
-  const tax = 0; // example 8% tax
-  // const shipping = items.length ? 99.95 : 0;
+  const cartTotal = Number(cartData?.data?.total ?? 0);
   const shipping = 0;
-  const total = +(cartData?.data?.total + tax + shipping).toFixed(2);
+  const tax = +(cartTotal * TAX_RATE).toFixed(2);
+  const total = +(cartTotal + tax + shipping).toFixed(2);
 
-  const discount = subtotal > total ? subtotal - total : 0;
+  const discount = subtotal > cartTotal ? subtotal - cartTotal : 0;
   const [clearCartMutation, { isLoading: clearingCart }] =
     useClearCartMutation();
 
   // -----------------------------
   // Helper to update quantity
   // -----------------------------
+  const persistItems = async (updatedItems: any[]) => {
+    if (!updatedItems.length) {
+      await clearCartMutation().unwrap();
+      return;
+    }
+    await createCart({ items: updatedItems }).unwrap();
+  };
+
   const updateQty = async (
     productId: string,
-    action: "increment" | "decrement"
+    action: "increment" | "decrement",
+    step = 1
   ) => {
-    const updatedItems = buildCartItems(productId, cartData, action);
+    const updatedItems = buildCartItems(productId, cartData, action, step);
     try {
-      await createCart({ items: updatedItems }).unwrap();
+      await persistItems(updatedItems);
     } catch (err: any) {
       console.error(err);
     }
@@ -177,7 +187,9 @@ export default function CartPage() {
                       <div>
                         <div className="font-medium">{it.product.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {it.product.name.includes("Dozen") ? "(Dozen)" : ""}
+                          {requiresPackQuantity(it.product)
+                            ? `Packs of ${getPackStep(it.quantity, it.product._id)}`
+                            : ""}
                         </div>
                       </div>
                     </div>
@@ -190,7 +202,15 @@ export default function CartPage() {
                       <div className="inline-flex items-center gap-2">
                         <Button
                           size="sm"
-                          onClick={() => updateQty(it.product._id, "decrement")}
+                          onClick={() =>
+                            updateQty(
+                              it.product._id,
+                              "decrement",
+                              requiresPackQuantity(it.product)
+                                ? getPackStep(it.quantity, it.product._id)
+                                : 1
+                            )
+                          }
                           disabled={updatingCart || isLoading}
                         >
                           -
@@ -198,7 +218,15 @@ export default function CartPage() {
                         <div className="w-8 text-center">{it.quantity}</div>
                         <Button
                           size="sm"
-                          onClick={() => updateQty(it.product._id, "increment")}
+                          onClick={() =>
+                            updateQty(
+                              it.product._id,
+                              "increment",
+                              requiresPackQuantity(it.product)
+                                ? getPackStep(it.quantity, it.product._id)
+                                : 1
+                            )
+                          }
                           disabled={updatingCart || isLoading}
                         >
                           +
@@ -229,7 +257,7 @@ export default function CartPage() {
                 )}
 
                 <div className="flex justify-between">
-                  <span>Tax:</span>
+                  <span>Tax ({TAX_RATE_PERCENT}%):</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
 
@@ -240,7 +268,7 @@ export default function CartPage() {
 
                 <div className="mt-3 rounded-md bg-secondary/10 p-3 flex justify-between font-semibold text-accent">
                   <span>Total Amount:</span>
-                  <span>${(total + tax + shipping).toFixed(2)}</span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
               </div>
 

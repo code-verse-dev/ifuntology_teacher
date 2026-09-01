@@ -32,6 +32,16 @@ import {
 import { toast } from "sonner";
 import swal from "sweetalert";
 import { useNavigate } from "react-router-dom";
+import {
+  calendarDateYmdFromApi,
+  formatUtcSlotLocalDate,
+  formatUtcSlotRangeInLocal,
+  formatUtcTimeInLocal,
+  getLocalTimezoneAbbr,
+  getLocalTimezoneName,
+  isUtcSlotInPast,
+  utcSlotToDate,
+} from "@/utils/sessionTimezone";
 
 /*
 const locales = {
@@ -122,6 +132,31 @@ export default function BookaSessionDashboard() {
       ? upcomingSessionsData.data.docs[0]
       : null;
 
+  const upcomingSlotDateYmd = upcomingSession
+    ? calendarDateYmdFromApi(upcomingSession.date)
+    : "";
+  const upcomingSlotStart = upcomingSession?.slots?.[0]?.startTime
+    ? String(upcomingSession.slots[0].startTime)
+    : "";
+  const upcomingIsTeacherHosted = Boolean(upcomingSession?.teacherHosted);
+  const upcomingLocalDate =
+    upcomingSession && upcomingSlotStart && !upcomingIsTeacherHosted
+      ? formatUtcSlotLocalDate(upcomingSession.date, upcomingSlotStart)
+      : upcomingSlotDateYmd;
+  const upcomingLocalTime = (() => {
+    if (!upcomingSession || !upcomingSlotStart) return "";
+    if (upcomingIsTeacherHosted) {
+      const [h, m] = upcomingSlotStart.split(":").map(Number);
+      const hour = (h ?? 0) % 12 || 12;
+      const ampm = (h ?? 0) >= 12 ? "PM" : "AM";
+      return `${hour}:${String(m ?? 0).padStart(2, "0")} ${ampm}`;
+    }
+    if (!upcomingSlotDateYmd) return "";
+    return `${formatUtcTimeInLocal(upcomingSlotDateYmd, upcomingSlotStart)} ${getLocalTimezoneAbbr(
+      utcSlotToDate(upcomingSlotDateYmd, upcomingSlotStart)
+    )}`.trim();
+  })();
+
   const handleMeetingAction = async () => {
     if (!upcomingSession?._id) return;
     const teacherHosted = Boolean(upcomingSession.teacherHosted);
@@ -154,13 +189,6 @@ export default function BookaSessionDashboard() {
     document.title = "Book With Admin • iFuntology Teacher";
   }, []);
 
-  const to12Hour = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    const hour = h % 12 || 12;
-    const ampm = h >= 12 ? "PM" : "AM";
-    return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
-  };
-
   /*
   const events: MyEvent[] = useMemo(() => {
     if (!mySessionsData?.data?.docs) return [];
@@ -178,11 +206,13 @@ export default function BookaSessionDashboard() {
         color: getRandomColor(),
         teacherHosted: Boolean(session.teacherHosted),
         timeRange: session.slots
-          .map((slot: any) => {
-            const start = to12Hour(slot.startTime);
-            const end = to12Hour(slot.endTime);
-            return `${start} - ${end}`;
-          })
+          .map((slot: any) =>
+            formatUtcSlotRangeInLocal(
+              format(sessionDate, "yyyy-MM-dd"),
+              slot.startTime,
+              slot.endTime
+            )
+          )
           .join(", "),
       };
     });
@@ -306,17 +336,6 @@ export default function BookaSessionDashboard() {
   };
   */
 
-  const formatTimeRange = (start: string, end: string) => {
-    const to12Hour = (time: string) => {
-      const [h, m] = time.split(":").map(Number);
-      const hour = h % 12 || 12;
-      const ampm = h >= 12 ? "PM" : "AM";
-      return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
-    };
-
-    return `${to12Hour(start)} - ${to12Hour(end)}`;
-  };
-
   const to24HourWithSeconds = (time: string) =>
     time.length === 5 ? `${time}:00` : time;
 
@@ -326,16 +345,9 @@ export default function BookaSessionDashboard() {
       return;
     }
 
-    const todayStrForCompare = format(new Date(), "yyyy-MM-dd");
-    if (selectedDate === todayStrForCompare) {
-      const startNormalized = to24HourWithSeconds(selectedSlot.startTime);
-      const timePart =
-        startNormalized.length === 5 ? `${startNormalized}:00` : startNormalized;
-      const slotStart = new Date(`${selectedDate}T${timePart}`);
-      if (Number.isNaN(slotStart.getTime()) || slotStart.getTime() <= Date.now()) {
-        toast.error("This slot has passed. Please select a future time.");
-        return;
-      }
+    if (isUtcSlotInPast(selectedDate, selectedSlot.startTime)) {
+      toast.error("This slot has passed. Please select a future time.");
+      return;
     }
 
     const payload: any = {
@@ -390,7 +402,8 @@ export default function BookaSessionDashboard() {
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               Request a session with an admin for approval. Choose a date, time slot,
-              and platform — we will notify you once it is confirmed.
+              and platform — we will notify you once it is confirmed. Times are shown
+              in your local timezone ({getLocalTimezoneName()}).
             </p>
           </div>
         </div>
@@ -493,10 +506,13 @@ export default function BookaSessionDashboard() {
 
           {/* Available Time Slots */}
           <Card className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
-            <div className="mb-6 flex items-center gap-2">
+            <div className="mb-2 flex items-center gap-2">
               <Clock className="h-5 w-5 text-foreground" />
               <h2 className="text-base font-bold text-foreground">Available Time Slots</h2>
             </div>
+            <p className="mb-6 text-[11px] text-muted-foreground">
+              Displayed in your timezone ({getLocalTimezoneName()})
+            </p>
 
             {isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -524,7 +540,11 @@ export default function BookaSessionDashboard() {
                       }`}
                     >
                       <Clock className="h-3.5 w-3.5 shrink-0" />
-                      {formatTimeRange(slot.startTime, slot.endTime)}
+                      {formatUtcSlotRangeInLocal(
+                        selectedDate,
+                        slot.startTime,
+                        slot.endTime
+                      )}
                     </button>
                   );
                 })}
@@ -550,11 +570,11 @@ export default function BookaSessionDashboard() {
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <CalendarIcon className="h-3.5 w-3.5" />
-                      {format(new Date(upcomingSession.date), "yyyy-MM-dd")}
+                      {upcomingLocalDate}
                     </div>
                     <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                       <Clock className="h-3.5 w-3.5" />
-                      {to12Hour(upcomingSession.slots[0].startTime)}
+                      {upcomingLocalTime}
                     </div>
                     <div className="flex items-center gap-2 text-xs font-medium text-blue-500">
                       <Video className="h-3.5 w-3.5" />

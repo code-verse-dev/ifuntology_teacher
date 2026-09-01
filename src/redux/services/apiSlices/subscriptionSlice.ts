@@ -30,6 +30,7 @@ export const subscriptionSlice = createApi({
         url: "/teacher-subscription/stats",
         method: "GET",
       }),
+      providesTags: ["Subscription"],
     }),
     toggleAutoRenewal: builder.mutation<
       any,

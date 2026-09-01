@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import {
   ALL_ESTIMATE_ITEMS,
   ESTIMATE_CATEGORIES,
-  FURNITURE_CATEGORY,
+  FURNITURE_CATEGORIES,
   MATERIAL_CATEGORIES,
   emptyQtyMap,
   formatCurrency,
@@ -35,10 +35,13 @@ import {
   sumLineItems,
   type EstimateLineItem,
 } from "./estimateData";
+import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
-
-const STORAGE_KEY = "funtology-estimate-v3";
+import { clearBusinessBuilderDraft } from "./businessBuilderDraftStorage";
+import SalonPreviewCard from "./SalonPreviewCard";
+import { pickSalonPreviewQty } from "./salonPreviewItems";
+import { useGenerateSalonImageMutation } from "@/redux/services/apiSlices/businessBuilderSlice";
 
 function Sparkline({
   color,
@@ -146,7 +149,7 @@ function QuantityTable({
   headerIcon: LucideIcon;
 }) {
   return (
-    <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
+    <Card className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 shadow-sm">
       <div
         className={`flex items-center gap-3 px-4 py-3 text-white ${headerGradient}`}
       >
@@ -249,41 +252,71 @@ function SummaryStat({
   );
 }
 
-type SavedEstimate = {
-  itemQty: Record<string, string>;
-};
-
-function loadSavedEstimate(): SavedEstimate | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as SavedEstimate;
-  } catch {
-    return null;
-  }
-}
-
 type EstimateCalculatorPageProps = {
   /** When true, render step content only (no page chrome). */
   embedded?: boolean;
+  /** Business profile from Step 1 — included in exported PDFs. */
+  intro?: IntroFormData | null;
+  /**
+   * When provided (wizard mode), shows an extra action that navigates to the
+   * loan form before generating a PDF that includes the loan application.
+   */
+  onGenerateWithLoan?: (payload: {
+    itemQty: Record<string, string>;
+    materialsTotal: number;
+    furnitureTotal: number;
+    grandTotal: number;
+  }) => void;
+  /**
+   * Wizard mode: persist estimate + any registered budget draft together.
+   * When omitted (standalone), only estimate quantities are saved.
+   */
+  onSaveEstimate?: (itemQty: Record<string, string>) => void;
+  /** Called after a successful PDF export so the wizard can reset all steps. */
+  onAfterPdfExport?: () => void;
+  /** Lets the wizard read current quantities when saving from another step. */
+  registerSnapshot?: (
+    getter: (() => Record<string, string>) | null
+  ) => void;
+  /** Pre-fill quantities from a saved estimate. */
+  initialItemQty?: Record<string, string>;
 };
 
 export default function EstimateCalculatorPage({
   embedded = false,
+  intro = null,
+  onGenerateWithLoan,
+  onSaveEstimate,
+  onAfterPdfExport,
+  registerSnapshot,
+  initialItemQty,
 }: EstimateCalculatorPageProps) {
-  const saved = useMemo(loadSavedEstimate, []);
-
   const [itemQty, setItemQty] = useState(() => ({
     ...emptyQtyMap(ALL_ESTIMATE_ITEMS),
-    ...(saved?.itemQty ?? {}),
+    ...(initialItemQty ?? {}),
   }));
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewErrorCode, setPreviewErrorCode] = useState<
+    "quota" | "generation_failed" | null
+  >(null);
+  const [previewErrorMessage, setPreviewErrorMessage] = useState<string | null>(
+    null,
+  );
+  const [generateSalonImage, { isLoading: isGeneratingPreview }] =
+    useGenerateSalonImageMutation();
 
   useEffect(() => {
     if (!embedded) {
       document.title = "Calculate Your Estimate • iFuntology Teacher";
     }
   }, [embedded]);
+
+  useEffect(() => {
+    if (!registerSnapshot) return;
+    registerSnapshot(() => itemQty);
+    return () => registerSnapshot(null);
+  }, [itemQty, registerSnapshot]);
 
   const materialsTotal = useMemo(
     () =>
@@ -294,7 +327,11 @@ export default function EstimateCalculatorPage({
     [itemQty]
   );
   const furnitureTotal = useMemo(
-    () => sumLineItems(FURNITURE_CATEGORY.items, itemQty),
+    () =>
+      sumLineItems(
+        FURNITURE_CATEGORIES.flatMap((c) => c.items),
+        itemQty
+      ),
     [itemQty]
   );
 
@@ -313,17 +350,72 @@ export default function EstimateCalculatorPage({
     (c) => sumLineItems(c.items, itemQty) > 0
   ).length;
   const materialsShare = grandTotal > 0 ? (materialsTotal / grandTotal) * 100 : 0;
+  const previewQty = useMemo(() => pickSalonPreviewQty(itemQty), [itemQty]);
+  const hasPreviewItems = Object.keys(previewQty).length > 0;
 
-  const handleSaveEstimate = () => {
+  const resetEstimateForm = () => {
+    setItemQty(emptyQtyMap(ALL_ESTIMATE_ITEMS));
+    setLastUpdated(new Date());
+    setPreviewSrc(null);
+    setPreviewErrorCode(null);
+    setPreviewErrorMessage(null);
+  };
+
+  const handleGenerateSalonPreview = async () => {
+    if (isGeneratingPreview) return;
+    if (!hasPreviewItems) {
+      setPreviewErrorCode("generation_failed");
+      setPreviewErrorMessage(
+        "Add at least one salon furniture or equipment quantity before generating a preview.",
+      );
+      return;
+    }
+
+    setPreviewErrorCode(null);
+    setPreviewErrorMessage(null);
+
     try {
-      const payload: SavedEstimate = { itemQty };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      setLastUpdated(new Date());
-      toast.success("Estimate saved.");
-    } catch {
-      toast.error("Failed to save estimate.");
+      const res: any = await generateSalonImage({ itemQty: previewQty }).unwrap();
+      if (!res?.status) {
+        const code =
+          res?.data?.errorCode === "quota" ? "quota" : "generation_failed";
+        setPreviewErrorCode(code);
+        setPreviewErrorMessage(res?.message ?? null);
+        return;
+      }
+      const imageBase64 = res?.data?.imageBase64 as string | undefined;
+      const mimeType = (res?.data?.mimeType as string | undefined) || "image/png";
+      if (!imageBase64) {
+        setPreviewErrorCode("generation_failed");
+        setPreviewErrorMessage(null);
+        return;
+      }
+      setPreviewSrc(`data:${mimeType};base64,${imageBase64}`);
+    } catch (err: any) {
+      const payload = err?.data;
+      const code =
+        payload?.data?.errorCode === "quota" ? "quota" : "generation_failed";
+      setPreviewErrorCode(code);
+      setPreviewErrorMessage(
+        typeof payload?.message === "string" ? payload.message : null,
+      );
     }
   };
+
+  const handleSaveEstimate = () => {
+    if (onSaveEstimate) {
+      onSaveEstimate(itemQty);
+      return;
+    }
+    toast.error("Sign in to save this estimate to your account.");
+  };
+
+  const buildEstimatePayload = () => ({
+    itemQty,
+    materialsTotal,
+    furnitureTotal,
+    grandTotal,
+  });
 
   const handleGeneratePdf = async () => {
     if (grandTotal <= 0) {
@@ -332,15 +424,24 @@ export default function EstimateCalculatorPage({
     }
     try {
       await generateEstimatePdf({
-        itemQty,
-        materialsTotal,
-        furnitureTotal,
-        grandTotal,
+        ...buildEstimatePayload(),
+        intro,
       });
+      clearBusinessBuilderDraft();
+      resetEstimateForm();
+      onAfterPdfExport?.();
       toast.success("Report exported.");
     } catch {
       toast.error("Failed to export report. Please try again.");
     }
+  };
+
+  const handleGenerateWithLoan = () => {
+    if (grandTotal <= 0) {
+      toast.error("Add at least one cost before exporting a report.");
+      return;
+    }
+    onGenerateWithLoan?.(buildEstimatePayload());
   };
 
   const lastUpdatedDate = lastUpdated.toLocaleDateString("en-US", {
@@ -352,6 +453,50 @@ export default function EstimateCalculatorPage({
     hour: "numeric",
     minute: "2-digit",
   });
+
+  // Stack shorter sections under Registration beside the tall Building card
+  const besideBuildingIds = [
+    "registration",
+    "professional",
+    "insurance",
+    "utilities",
+    "laundry",
+    "barber",
+    "reception",
+  ] as const;
+  const besideBuildingCategories = besideBuildingIds
+    .map((id) => ESTIMATE_CATEGORIES.find((c) => c.id === id))
+    .filter(
+      (c): c is (typeof ESTIMATE_CATEGORIES)[number] => Boolean(c)
+    );
+  const buildingCategory = ESTIMATE_CATEGORIES.find((c) => c.id === "building");
+  const remainingCategories = ESTIMATE_CATEGORIES.filter(
+    (c) =>
+      c.id !== "building" &&
+      !(besideBuildingIds as readonly string[]).includes(c.id)
+  );
+
+  const renderCategory = (
+    category: (typeof ESTIMATE_CATEGORIES)[number]
+  ) => {
+    const sectionTotal = sumLineItems(category.items, itemQty);
+    return (
+      <QuantityTable
+        key={category.id}
+        title={category.title}
+        subtitle={category.subtitle}
+        items={category.items}
+        qtyById={itemQty}
+        onQtyChange={(id, value) =>
+          setItemQty((prev) => ({ ...prev, [id]: value }))
+        }
+        sectionTotal={sectionTotal}
+        totalLabel="Section Total"
+        headerGradient={category.headerGradient}
+        headerIcon={category.headerIcon}
+      />
+    );
+  };
 
   const content = (
       <>
@@ -388,8 +533,9 @@ export default function EstimateCalculatorPage({
             </h1>
           )}
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Enter quantities for raw materials and salon furniture &amp;
-            equipment. Final total is the sum of all selected line items.
+            Enter quantities for registration, build-out, furniture, equipment,
+            and operating costs. Final total is the sum of all selected line
+            items (unit price × quantity).
           </p>
         </div>
 
@@ -403,8 +549,8 @@ export default function EstimateCalculatorPage({
             sparkline={[4, 8, 6, 12, 9, 15, 13, 18]}
           />
           <KpiCard
-            label="Raw Materials"
-            sublabel="Construction Materials"
+            label="Build & Setup"
+            sublabel="Registration & Construction"
             value={formatCurrency(materialsTotal)}
             helper={
               grandTotal > 0
@@ -416,8 +562,8 @@ export default function EstimateCalculatorPage({
             sparkline={[3, 5, 4, 7, 6, 9, 8, 11]}
           />
           <KpiCard
-            label="Furniture & Equipment"
-            sublabel="Salon Retail Items"
+            label="Furniture & Ops"
+            sublabel="Equipment, Tools & Services"
             value={formatCurrency(furnitureTotal)}
             icon={PieChart}
             gradient="bg-gradient-to-br from-sky-500 to-blue-700"
@@ -434,26 +580,19 @@ export default function EstimateCalculatorPage({
 
         <ProfitBreakdownCharts />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          {ESTIMATE_CATEGORIES.map((category) => {
-            const sectionTotal = sumLineItems(category.items, itemQty);
-            return (
-              <QuantityTable
-                key={category.id}
-                title={category.title}
-                subtitle={category.subtitle}
-                items={category.items}
-                qtyById={itemQty}
-                onQtyChange={(id, value) =>
-                  setItemQty((prev) => ({ ...prev, [id]: value }))
-                }
-                sectionTotal={sectionTotal}
-                totalLabel="Section Total"
-                headerGradient={category.headerGradient}
-                headerIcon={category.headerIcon}
-              />
-            );
-          })}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            <div className="flex flex-col gap-4">
+              {besideBuildingCategories.map(renderCategory)}
+            </div>
+            {buildingCategory ? (
+              <div>{renderCategory(buildingCategory)}</div>
+            ) : null}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            {remainingCategories.map(renderCategory)}
+          </div>
         </div>
 
         <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 shadow-lg">
@@ -493,7 +632,7 @@ export default function EstimateCalculatorPage({
               />
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 className="gap-2 rounded-xl border-0 bg-gradient-to-r from-fuchsia-500 to-pink-500 font-semibold text-white hover:from-fuchsia-600 hover:to-pink-600"
@@ -511,7 +650,33 @@ export default function EstimateCalculatorPage({
                 <FileDown className="h-4 w-4" />
                 Export Report
               </Button>
+              {embedded && onGenerateWithLoan ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2 rounded-xl border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                  onClick={handleGenerateWithLoan}
+                >
+                  <FileDown className="h-4 w-4" />
+                  Export with Loan Application
+                </Button>
+              ) : null}
             </div>
+          </div>
+
+          <div className="mt-5 border-t border-white/10 pt-5">
+            <SalonPreviewCard
+              generating={isGeneratingPreview}
+              imageSrc={previewSrc}
+              errorCode={previewErrorCode}
+              errorMessage={previewErrorMessage}
+              disabledReason={
+                hasPreviewItems
+                  ? null
+                  : "Add a quantity for furniture or equipment (chairs, desks, washer, etc.) to generate a preview."
+              }
+              onGenerate={handleGenerateSalonPreview}
+            />
           </div>
         </Card>
       </>

@@ -52,11 +52,13 @@ export const purchaseOrderSlice = createApi({
     }),
     uploadPurchaseOrderDocument: builder.mutation<
       any,
-      { id: string; file: File }
+      { id: string; files: File[] }
     >({
-      query: ({ id, file }) => {
+      query: ({ id, files }) => {
         const formData = new FormData();
-        formData.append("file", file);
+        for (const file of files) {
+          formData.append("files", file);
+        }
         return {
           url: `/porder/${id}/upload-po-document`,
           method: "POST",

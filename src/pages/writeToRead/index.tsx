@@ -43,6 +43,7 @@ export default function WriteToRead() {
         seatsTotal > 0 ? Math.min(100, Math.round((seatsUsed / seatsTotal) * 100)) : 0;
 
     const [activeTab, setActiveTab] = useState("students");
+    const [createBookRequestId, setCreateBookRequestId] = useState(0);
 
     useEffect(() => {
         document.title = "Write to Read Platform • iFuntology Teacher";
@@ -133,15 +134,28 @@ export default function WriteToRead() {
                                     ) : null}
                                 </div>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="shrink-0 rounded-full border-slate-200 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                                onClick={() => navigate("/pay-invoice")}
-                            >
-                                View Invoice
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                            </Button>
+                            <div className="flex shrink-0 flex-col items-stretch gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-full border-slate-200 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    onClick={() => navigate("/pay-invoice")}
+                                >
+                                    View Invoice
+                                    <ChevronRight className="ml-1 h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    className="gap-2 rounded-full border-none bg-lime-600 px-5 font-bold text-white hover:bg-lime-700"
+                                    onClick={() => {
+                                        setActiveTab("grade");
+                                        setCreateBookRequestId((id) => id + 1);
+                                    }}
+                                >
+                                    <BookOpen className="h-4 w-4" />
+                                    Create Book
+                                </Button>
+                            </div>
                         </div>
                     </Card>
                 </div>
@@ -157,7 +171,7 @@ export default function WriteToRead() {
                             <TabsList className="scrollbar-hide h-auto w-full justify-start gap-8 overflow-x-auto rounded-none bg-transparent p-0">
                                 {[
                                     { id: "students", label: "Students & Batches", icon: Users },
-                                    { id: "grade", label: "Grade Books", icon: BookOpen },
+                                    { id: "grade", label: "Book Assessment Center", icon: BookOpen },
                                     { id: "print", label: "Print Orders", icon: Printer },
                                     { id: "assignments", label: "Assignments", icon: FileText },
                                 ].map((t) => (
@@ -175,7 +189,7 @@ export default function WriteToRead() {
 
                         <div className="p-6">
                             <StudentsAndBatchesTab />
-                            <GradeBooksTab />
+                            <GradeBooksTab createBookRequestId={createBookRequestId} />
                             <PrintOrdersTab />
                             <AssignmentsTab />
                         </div>

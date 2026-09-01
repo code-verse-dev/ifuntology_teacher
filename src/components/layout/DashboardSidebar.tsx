@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Box,
+  ClipboardList,
   FileText,
   GraduationCap,
   LayoutDashboard,
@@ -88,6 +89,7 @@ export default function DashboardSidebar() {
     { title: "Learning Management", url: "/subscribe-to-lms", icon: GraduationCap },
     { title: "My Courses", url: "/my-courses", icon: BookOpen },
     { title: "My Students", url: "/my-students", icon: Users },
+    { title: "Practical Sheets", url: "/practical-sheets", icon: ClipboardList },
     { title: "Video Library", url: "/video-library", icon: Video },
   ];
 
@@ -119,8 +121,6 @@ export default function DashboardSidebar() {
         <div className="overflow-hidden rounded-2xl border-sidebar-border p-2 group-data-[collapsible=icon]:p-1">
           <a
             href="https://ifuntology.com"
-            target="_blank"
-            rel="noopener noreferrer"
             className={`flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               collapsed ? "justify-center px-0 py-1" : "block px-1"
             }`}

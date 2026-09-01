@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useGetQuoteByIdQuery } from "@/redux/services/apiSlices/quoteSlice";
 import QuoteItemsBreakdown from "@/components/quotes/QuoteItemsBreakdown";
 import { serviceTypeLabel } from "@/components/quotes/quoteBreakdownUtils";
+import DeleteQuoteConfirmDialog from "@/components/quotes/DeleteQuoteConfirmDialog";
 
 const formatDate = (dateVal: string | undefined) => {
   if (!dateVal) return "—";
@@ -32,6 +33,7 @@ export default function QuoteDetails() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetQuoteByIdQuery(id!, { skip: !id });
   const quote = data?.data;
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     document.title = quote
@@ -118,9 +120,16 @@ export default function QuoteDetails() {
               {quote.updatedAt ? ` · Updated ${formatDate(quote.updatedAt)}` : ""}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/quotes")}>
-            Close
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {(status === "pending" || status === "revision") && (
+              <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+                Delete
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/quotes")}>
+              Close
+            </Button>
+          </div>
         </div>
 
         {showReason && (
@@ -136,6 +145,13 @@ export default function QuoteDetails() {
 
         <QuoteItemsBreakdown quoteData={quote} />
       </section>
+      <DeleteQuoteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        quoteId={quote._id}
+        organizationName={quote.organizationName}
+        onDeleted={() => navigate("/quotes")}
+      />
     </DashboardWithSidebarLayout>
   );
 }

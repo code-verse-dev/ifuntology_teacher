@@ -32,10 +32,10 @@ export type PracticalColumn = {
   creditWeight: number;
 };
 
-/** Editable day rows (after weight row 0) */
+/** @deprecated sheets are date-based; kept for any leftover references */
 export const PRACTICAL_SHEET_DATA_ROW_COUNT = 30;
 
-/** Total rows including weight row at index 0 */
+/** @deprecated */
 export const PRACTICAL_SHEET_ROW_COUNT = PRACTICAL_SHEET_DATA_ROW_COUNT + 1;
 
 export const PRACTICAL_SHEET_INTRO =
@@ -138,7 +138,7 @@ export const NAILTOLOGY_PRACTICAL_COLUMNS: PracticalColumn[] = [
   col("handArmMassages", "Hand/Arm Massages", 1, C.cream),
   col("nailArtServices", "Nail Art Services", 1.5, C.red),
   col("manicures", "Manicures", 1, C.blueSoft),
-  col("facialMassages", "Facial Massages", 1, C.tan),
+  // col("facialMassages", "Facial Massages", 1, C.tan),
   col("pedicures", "Pedicures", 1, C.teal),
   col("nailPolishing5Nails", "Nail Polishing: 5 Nails", 0.75, C.sky),
   col("nailPolishing10Nails", "Nail Polishing: 10 Nails", 1.5, C.green),
@@ -204,19 +204,36 @@ export function formatCreditWeight(weight: number): string {
   return fixed;
 }
 
-export function createEmptyPracticalRows(columns: PracticalColumn[]) {
-  const weightRow = {
-    cells: Object.fromEntries(
-      columns.map((col) => [
-        col.key,
-        col.key === "total" ? "" : formatCreditWeight(col.creditWeight),
-      ]),
-    ),
-  };
-  const dataRows = Array.from({ length: PRACTICAL_SHEET_DATA_ROW_COUNT }, () => ({
-    cells: Object.fromEntries(columns.map((col) => [col.key, ""])),
-  }));
-  return [weightRow, ...dataRows];
+export function createEmptyEntryCells(columns: PracticalColumn[]) {
+  return Object.fromEntries(columns.map((col) => [col.key, ""]));
+}
+
+export function todayDateString(now = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function currentMonthRange(now = new Date()): { from: string; to: string } {
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const from = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const to = `${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { from, to };
+}
+
+export function formatEntryDateLabel(value?: string | null) {
+  if (!value) return "—";
+  const dt = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return value;
+  return dt.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function computeRowCreditTotal(

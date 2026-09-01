@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, Calculator, ZoomIn } from "lucide-react";
+import { Briefcase, Calculator, FolderOpen, ZoomIn } from "lucide-react";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,8 +41,7 @@ export default function FuntologyBusinessBuilderPage() {
             Funtology Business Builder
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Tap a card to view the full image. Use zoom controls or scroll to
-            enlarge details.
+          Create your own business using the Business Builder. Tap any image card to view examples of completed projects. Select View & Zoom to enlarge images for inspiration. When you're ready, click Student Budget to begin building your business plan. Be sure to save your work as you complete each section.
           </p>
         </div>
 
@@ -89,11 +88,17 @@ export default function FuntologyBusinessBuilderPage() {
           })}
         </div>
 
-        <div className="flex justify-center pt-2">
+        <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
           <Button asChild variant="brand" size="lg" className="min-w-[240px]">
             <Link to="/funtology-business-builder/estimate">
               <Calculator className="h-4 w-4" />
               Calculate Your Estimate
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="min-w-[240px]">
+            <Link to="/funtology-business-builder/estimates">
+              <FolderOpen className="h-4 w-4" />
+              Saved Estimates
             </Link>
           </Button>
         </div>

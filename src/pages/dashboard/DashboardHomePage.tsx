@@ -26,6 +26,23 @@ import socket from "@/config/socket";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useGetDashboardStatsQuery } from "@/redux/services/apiSlices/subscriptionSlice";
+import {
+  calendarDateYmdFromApi,
+  formatUtcSlotLocalDate,
+  formatUtcTimeInLocal,
+  getLocalTimezoneAbbr,
+  utcSlotToDate,
+} from "@/utils/sessionTimezone";
+
+function formatWallClock12h(time: string): string {
+  if (!time) return "—";
+  const [h, m] = time.split(":").map(Number);
+  const hour = typeof h === "number" && !Number.isNaN(h) ? h % 24 : 0;
+  const min = typeof m === "number" && !Number.isNaN(m) ? m : 0;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${String(min).padStart(2, "0")} ${ampm}`;
+}
 
 function StatCard({
   icon,
@@ -221,16 +238,6 @@ export default function DashboardHomePage() {
 
   const upcomingSessions = upcomingSessionsData?.data?.docs ?? [];
 
-  const to12Hour = (time: string) => {
-    if (!time) return "—";
-    const [h, m] = time.split(":").map(Number);
-    const hour = typeof h === "number" && !isNaN(h) ? h % 24 : 0;
-    const min = typeof m === "number" && !isNaN(m) ? m : 0;
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${min.toString().padStart(2, "0")} ${ampm}`;
-  };
-
   useEffect(() => {
     document.title = "Dashboard • iFuntology Teacher";
   }, []);
@@ -288,7 +295,7 @@ export default function DashboardHomePage() {
                 <Button
                   size="pill"
                   className="w-full rounded-full border-0 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 sm:w-auto"
-                  onClick={() => navigate("/quotes/request")}
+                  onClick={() => navigate("/shop")}
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   Request a Quote
@@ -391,15 +398,23 @@ export default function DashboardHomePage() {
                 </div>
               ) : (
                 upcomingSessions.map((session: any) => {
-                  const sessionDate = session?.date
-                    ? format(new Date(session.date), "yyyy-MM-dd")
-                    : "—";
-                  const timeStr =
+                  const teacherHosted = Boolean(session.teacherHosted);
+                  const startTime =
                     session?.slots?.[0]?.startTime != null
-                      ? to12Hour(
-                        String(session.slots[0].startTime).slice(0, 5)
-                      )
-                      : "—";
+                      ? String(session.slots[0].startTime)
+                      : "";
+                  const dateYmd = calendarDateYmdFromApi(session?.date);
+                  const sessionDate =
+                    startTime && !teacherHosted
+                      ? formatUtcSlotLocalDate(session.date, startTime)
+                      : dateYmd || "—";
+                  const timeStr = !startTime
+                    ? "—"
+                    : teacherHosted
+                      ? formatWallClock12h(startTime)
+                      : `${formatUtcTimeInLocal(dateYmd, startTime)} ${getLocalTimezoneAbbr(
+                          utcSlotToDate(dateYmd, startTime)
+                        )}`.trim();
                   const platform = session?.platform ?? "—";
                   const status =
                     (session?.status ?? "approved").toLowerCase() === "approved"
@@ -415,7 +430,7 @@ export default function DashboardHomePage() {
                       status={status}
                       title={title}
                       sessionId={session._id}
-                      teacherHosted={Boolean(session.teacherHosted)}
+                      teacherHosted={teacherHosted}
                     />
                   );
                 })

@@ -52,6 +52,8 @@ import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplore
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
 import StudentPracticalSheetView from "./pages/myStudents/StudentPracticalSheetView";
+import PracticalSheetsPage from "./pages/practicalSheets";
+import PracticalSheetEntryDetailsPage from "./pages/practicalSheets/PracticalSheetEntryDetailsPage";
 import AffiliateProgram from "./pages/affiliateProgram";
 import Notifications from "./pages/notifications";
 import MyProfile from "./pages/myProfile";
@@ -87,6 +89,8 @@ import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
 import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
 import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
 import BusinessBuilderWizard from "./pages/funtologyBusinessBuilder/BusinessBuilderWizard";
+import SavedEstimatesListPage from "./pages/funtologyBusinessBuilder/SavedEstimatesListPage";
+import SavedEstimateDetailPage from "./pages/funtologyBusinessBuilder/SavedEstimateDetailPage";
 import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
@@ -188,14 +192,14 @@ const App = () => {
                   <QutationTracking />
                 </ProtectedRoute>
               } />
-              <Route
+              {/* <Route
                 path="/quotes/request"
                 element={
                   <ProtectedRoute>
                     <RequestQuotation />
                   </ProtectedRoute>
                 }
-              />
+              /> */}
               <Route
                 path="/quotes/:id"
                 element={
@@ -344,6 +348,16 @@ const App = () => {
               <Route path="/my-students" element={
                 <ProtectedRoute>
                   <MyStudents />
+                </ProtectedRoute>
+              } />
+              <Route path="/practical-sheets/:studentId/:courseType/:entryDate" element={
+                <ProtectedRoute>
+                  <PracticalSheetEntryDetailsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/practical-sheets" element={
+                <ProtectedRoute>
+                  <PracticalSheetsPage />
                 </ProtectedRoute>
               } />
               <Route path="/affiliate-program" element={
@@ -561,6 +575,22 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <BusinessBuilderWizard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder/estimates"
+                element={
+                  <ProtectedRoute>
+                    <SavedEstimatesListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder/estimates/:id"
+                element={
+                  <ProtectedRoute>
+                    <SavedEstimateDetailPage />
                   </ProtectedRoute>
                 }
               />
