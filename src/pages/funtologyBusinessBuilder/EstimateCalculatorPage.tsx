@@ -38,11 +38,7 @@ import {
 import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
-import {
-  clearBusinessBuilderDraft,
-  loadBusinessBuilderDraft,
-  saveBusinessBuilderDraft,
-} from "./businessBuilderDraftStorage";
+import { clearBusinessBuilderDraft } from "./businessBuilderDraftStorage";
 
 function Sparkline({
   color,
@@ -279,6 +275,8 @@ type EstimateCalculatorPageProps = {
   registerSnapshot?: (
     getter: (() => Record<string, string>) | null
   ) => void;
+  /** Pre-fill quantities from a saved estimate. */
+  initialItemQty?: Record<string, string>;
 };
 
 export default function EstimateCalculatorPage({
@@ -288,12 +286,11 @@ export default function EstimateCalculatorPage({
   onSaveEstimate,
   onAfterPdfExport,
   registerSnapshot,
+  initialItemQty,
 }: EstimateCalculatorPageProps) {
-  const saved = useMemo(() => loadBusinessBuilderDraft(), []);
-
   const [itemQty, setItemQty] = useState(() => ({
     ...emptyQtyMap(ALL_ESTIMATE_ITEMS),
-    ...(saved?.itemQty ?? {}),
+    ...(initialItemQty ?? {}),
   }));
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
@@ -348,17 +345,11 @@ export default function EstimateCalculatorPage({
   };
 
   const handleSaveEstimate = () => {
-    try {
-      if (onSaveEstimate) {
-        onSaveEstimate(itemQty);
-      } else {
-        saveBusinessBuilderDraft({ itemQty });
-        toast.success("Estimate saved.");
-      }
-      setLastUpdated(new Date());
-    } catch {
-      toast.error("Failed to save estimate.");
+    if (onSaveEstimate) {
+      onSaveEstimate(itemQty);
+      return;
     }
+    toast.error("Sign in to save this estimate to your account.");
   };
 
   const buildEstimatePayload = () => ({

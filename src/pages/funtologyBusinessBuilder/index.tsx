@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, Calculator, ZoomIn } from "lucide-react";
+import { Briefcase, Calculator, FolderOpen, ZoomIn } from "lucide-react";
 import DashboardWithSidebarLayout from "@/components/layout/DashboardWithSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -88,11 +88,17 @@ export default function FuntologyBusinessBuilderPage() {
           })}
         </div>
 
-        <div className="flex justify-center pt-2">
+        <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
           <Button asChild variant="brand" size="lg" className="min-w-[240px]">
             <Link to="/funtology-business-builder/estimate">
               <Calculator className="h-4 w-4" />
               Calculate Your Estimate
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="min-w-[240px]">
+            <Link to="/funtology-business-builder/estimates">
+              <FolderOpen className="h-4 w-4" />
+              Saved Estimates
             </Link>
           </Button>
         </div>

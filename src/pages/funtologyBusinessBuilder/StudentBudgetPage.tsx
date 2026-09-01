@@ -41,8 +41,6 @@ import type { IntroFormData } from "./introFormData";
 import {
   clearBusinessBuilderDraft,
   createEmptyBudgetInput,
-  loadBusinessBuilderDraft,
-  saveBusinessBuilderDraft,
 } from "./businessBuilderDraftStorage";
 
 function StatCard({
@@ -106,6 +104,8 @@ type StudentBudgetPageProps = {
   onAfterPdfExport?: () => void;
   /** Lets the wizard read current budget when saving from another step. */
   registerSnapshot?: (getter: (() => StudentBudgetInput) | null) => void;
+  /** Pre-fill budget fields from a saved estimate. */
+  initialBudget?: StudentBudgetInput | null;
 };
 
 export default function StudentBudgetPage({
@@ -115,11 +115,9 @@ export default function StudentBudgetPage({
   onSaveEstimate,
   onAfterPdfExport,
   registerSnapshot,
+  initialBudget = null,
 }: StudentBudgetPageProps) {
-  const savedBudget = useMemo(
-    () => loadBusinessBuilderDraft()?.budget ?? null,
-    []
-  );
+  const savedBudget = initialBudget;
 
   const [annualSalary, setAnnualSalary] = useState(
     () => savedBudget?.annualSalary ?? ""
@@ -233,16 +231,11 @@ export default function StudentBudgetPage({
   };
 
   const handleSaveEstimate = () => {
-    try {
-      if (onSaveEstimate) {
-        onSaveEstimate(input);
-      } else {
-        saveBusinessBuilderDraft({ budget: input });
-        toast.success("Estimate saved.");
-      }
-    } catch {
-      toast.error("Failed to save estimate.");
+    if (onSaveEstimate) {
+      onSaveEstimate(input);
+      return;
     }
+    toast.error("Sign in to save this estimate to your account.");
   };
 
   const handleGeneratePdf = async () => {
