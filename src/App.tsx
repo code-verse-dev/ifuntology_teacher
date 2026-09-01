@@ -89,6 +89,8 @@ import NailtologyPage from "./pages/ifuntology/courses/NailtologyPage";
 import SkintologyPage from "./pages/ifuntology/courses/SkintologyPage";
 import FuntologyBusinessBuilderPage from "./pages/funtologyBusinessBuilder";
 import BusinessBuilderWizard from "./pages/funtologyBusinessBuilder/BusinessBuilderWizard";
+import SavedEstimatesListPage from "./pages/funtologyBusinessBuilder/SavedEstimatesListPage";
+import SavedEstimateDetailPage from "./pages/funtologyBusinessBuilder/SavedEstimateDetailPage";
 import ActorPortalSessionSync from "@/components/ActorPortalSessionSync";
 
 const App = () => {
@@ -573,6 +575,22 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <BusinessBuilderWizard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder/estimates"
+                element={
+                  <ProtectedRoute>
+                    <SavedEstimatesListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/funtology-business-builder/estimates/:id"
+                element={
+                  <ProtectedRoute>
+                    <SavedEstimateDetailPage />
                   </ProtectedRoute>
                 }
               />

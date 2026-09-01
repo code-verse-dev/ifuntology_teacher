@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -36,10 +36,20 @@ import {
 } from "./generateEstimatePdf";
 import { generateStudentBudgetPdf } from "./generateStudentBudgetPdf";
 import type { StudentBudgetInput } from "./studentBudgetData";
+import { clearBusinessBuilderDraft } from "./businessBuilderDraftStorage";
+import SaveEstimateDialog from "./SaveEstimateDialog";
+import SavedEstimatesPicker from "./SavedEstimatesPicker";
 import {
-  clearBusinessBuilderDraft,
-  saveBusinessBuilderDraft,
-} from "./businessBuilderDraftStorage";
+  budgetFromEstimate,
+  buildSavedEstimatePayload,
+  defaultSavedEstimateName,
+  introFromEstimate,
+} from "./savedEstimateUtils";
+import { useGetSavedEstimateByIdQuery } from "@/redux/services/apiSlices/businessBuilderSlice";
+import type {
+  SavedEstimate,
+  SavedEstimatePayload,
+} from "@/redux/services/apiSlices/businessBuilderSlice";
 
 const STEPS = [
   {
@@ -86,6 +96,10 @@ type PendingPdfIntent =
     };
 
 export default function BusinessBuilderWizard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const loadId = searchParams.get("load");
+  const appliedLoadRef = useRef<string | null>(null);
+
   const [step, setStep] = useState(1);
   const [intro, setIntro] = useState<IntroFormData>(() => createEmptyIntroForm());
   const [loan, setLoan] = useState<LoanApplicationData>(() =>
@@ -97,16 +111,36 @@ export default function BusinessBuilderWizard() {
   const [pendingPdf, setPendingPdf] = useState<PendingPdfIntent | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [activeEstimate, setActiveEstimate] = useState<SavedEstimate | null>(
+    null
+  );
+  const [loadedItemQty, setLoadedItemQty] = useState<
+    Record<string, string> | undefined
+  >(undefined);
+  const [loadedBudget, setLoadedBudget] = useState<
+    StudentBudgetInput | undefined
+  >(undefined);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<Omit<
+    SavedEstimatePayload,
+    "name"
+  > | null>(null);
 
   const estimateSnapshotRef = useRef<(() => Record<string, string>) | null>(
     null
   );
   const budgetSnapshotRef = useRef<(() => StudentBudgetInput) | null>(null);
 
+  const { data: loadData, error: loadError } = useGetSavedEstimateByIdQuery(
+    loadId!,
+    { skip: !loadId }
+  );
+
   const canAccessLoanStep = pendingPdf !== null;
 
   useEffect(() => {
     document.title = "Calculate Your Estimate • iFuntology Teacher";
+    clearBusinessBuilderDraft();
   }, []);
 
   useEffect(() => {
@@ -130,29 +164,69 @@ export default function BusinessBuilderWizard() {
     []
   );
 
-  const persistEstimateDraft = useCallback((itemQty: Record<string, string>) => {
-    try {
-      saveBusinessBuilderDraft({
+  const applySavedEstimate = useCallback((estimate: SavedEstimate) => {
+    setIntro(introFromEstimate(estimate.intro));
+    setLoadedItemQty(estimate.itemQty ?? {});
+    setLoadedBudget(budgetFromEstimate(estimate));
+    setActiveEstimate(estimate);
+    setVisitedEstimate(true);
+    setVisitedBudget(true);
+    setFormKey((k) => k + 1);
+    toast.success(`Loaded “${estimate.name}”.`);
+  }, []);
+
+  useEffect(() => {
+    if (!loadId) return;
+    if (loadError) {
+      toast.error("Could not load that saved estimate.");
+      setSearchParams({}, { replace: true });
+      return;
+    }
+    const estimate = loadData?.data as SavedEstimate | undefined;
+    if (!estimate?._id || appliedLoadRef.current === loadId) return;
+    appliedLoadRef.current = loadId;
+    applySavedEstimate(estimate);
+    setStep(2);
+    setSearchParams({}, { replace: true });
+  }, [loadId, loadData, loadError, applySavedEstimate, setSearchParams]);
+
+  const openSaveDialog = useCallback(
+    (partial: {
+      itemQty?: Record<string, string>;
+      budget?: StudentBudgetInput;
+    }) => {
+      setPendingSave(
+        buildSavedEstimatePayload({
+          name: "",
+          intro,
+          itemQty: partial.itemQty ?? estimateSnapshotRef.current?.() ?? {},
+          budget: partial.budget ?? budgetSnapshotRef.current?.() ?? null,
+        })
+      );
+      setSaveOpen(true);
+    },
+    [intro]
+  );
+
+  const persistEstimateDraft = useCallback(
+    (itemQty: Record<string, string>) => {
+      openSaveDialog({
         itemQty,
         budget: budgetSnapshotRef.current?.(),
       });
-      toast.success("Estimate saved.");
-    } catch {
-      toast.error("Failed to save estimate.");
-    }
-  }, []);
+    },
+    [openSaveDialog]
+  );
 
-  const persistBudgetDraft = useCallback((budget: StudentBudgetInput) => {
-    try {
-      saveBusinessBuilderDraft({
+  const persistBudgetDraft = useCallback(
+    (budget: StudentBudgetInput) => {
+      openSaveDialog({
         budget,
         itemQty: estimateSnapshotRef.current?.(),
       });
-      toast.success("Estimate saved.");
-    } catch {
-      toast.error("Failed to save estimate.");
-    }
-  }, []);
+    },
+    [openSaveDialog]
+  );
 
   const resetWizardForms = useCallback(() => {
     clearBusinessBuilderDraft();
@@ -162,6 +236,9 @@ export default function BusinessBuilderWizard() {
     setVisitedEstimate(false);
     setVisitedBudget(false);
     setVisitedLoan(false);
+    setActiveEstimate(null);
+    setLoadedItemQty(undefined);
+    setLoadedBudget(undefined);
     setFormKey((k) => k + 1);
     setStep(1);
   }, []);
@@ -268,7 +345,8 @@ export default function BusinessBuilderWizard() {
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Complete your business profile, salon cost estimate, and student
-            budget. To include a loan application in your PDF, use{" "}
+            budget. Save at any time — estimates are stored on your account and
+            remain after logout. To include a loan application in your PDF, use{" "}
             <span className="font-medium text-foreground">
               Export with Loan Application
             </span>{" "}
@@ -381,12 +459,25 @@ export default function BusinessBuilderWizard() {
           <div className={step === 1 ? "block" : "hidden"}>
             <IntroFormStep value={intro} onChange={setIntro} />
           </div>
+          {(step === 2 || step === 3) && (
+            <div className="mb-5">
+              <SavedEstimatesPicker
+                selectedId={activeEstimate?._id}
+                onSelect={(estimate) => {
+                  applySavedEstimate(estimate);
+                  if (step !== 2 && step !== 3) setStep(2);
+                }}
+                onClear={() => setActiveEstimate(null)}
+              />
+            </div>
+          )}
           {visitedEstimate && (
             <div className={step === 2 ? "block" : "hidden"}>
               <EstimateCalculatorPage
                 key={`estimate-${formKey}`}
                 embedded
                 intro={intro}
+                initialItemQty={loadedItemQty}
                 onGenerateWithLoan={(payload) =>
                   goToLoanForPdf({ kind: "estimate", payload })
                 }
@@ -402,6 +493,7 @@ export default function BusinessBuilderWizard() {
                 key={`budget-${formKey}`}
                 embedded
                 intro={intro}
+                initialBudget={loadedBudget}
                 onGenerateWithLoan={(payload) =>
                   goToLoanForPdf({ kind: "budget", payload })
                 }
@@ -512,6 +604,15 @@ export default function BusinessBuilderWizard() {
           </div>
         </Card>
       </section>
+
+      <SaveEstimateDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        defaultName={defaultSavedEstimateName(intro)}
+        existing={activeEstimate}
+        payload={pendingSave}
+        onSaved={(saved) => setActiveEstimate(saved)}
+      />
     </DashboardWithSidebarLayout>
   );
 }

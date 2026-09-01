@@ -33,6 +33,7 @@ import { shopSlice } from "./services/apiSlices/shopSlice";
 import { characterSlice } from "./services/apiSlices/characterSlice";
 import { lessonSlice } from "./services/apiSlices/lessonSlice";
 import { practicalSheetSlice } from "./services/apiSlices/practicalSheetSlice";
+import { businessBuilderSlice } from "./services/apiSlices/businessBuilderSlice";
 
 
 const rootReducer = combineReducers({
@@ -67,6 +68,7 @@ const rootReducer = combineReducers({
   [characterSlice.reducerPath]: characterSlice.reducer,
   [lessonSlice.reducerPath]: lessonSlice.reducer,
   [practicalSheetSlice.reducerPath]: practicalSheetSlice.reducer,
+  [businessBuilderSlice.reducerPath]: businessBuilderSlice.reducer,
 });
 
 const persistConfig = {
@@ -103,6 +105,7 @@ const persistConfig = {
     characterSlice.reducerPath,
     lessonSlice.reducerPath,
     practicalSheetSlice.reducerPath,
+    businessBuilderSlice.reducerPath,
   ],
 };
 
@@ -143,7 +146,8 @@ export const store = configureStore({
       .concat(shopSlice.middleware)
       .concat(characterSlice.middleware)
       .concat(lessonSlice.middleware)
-      .concat(practicalSheetSlice.middleware),
+      .concat(practicalSheetSlice.middleware)
+      .concat(businessBuilderSlice.middleware),
 });
 
 setupListeners(store.dispatch);
