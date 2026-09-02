@@ -531,6 +531,33 @@ export function normalizeContentPageCharacters(
   return { ...rest, characters }
 }
 
+/** Text boxes on a content page (multiple allowed). */
+export function getPageTextBoxes(page: BookPageData): PlacedTextBox[] {
+  if (page.kind !== 'content') return []
+  if (page.textBoxes?.length) return page.textBoxes
+  const legacy = (page as BookPageData & { textBox?: PlacedTextBox | null })
+    .textBox
+  return legacy ? [legacy] : []
+}
+
+export function normalizeContentPageTextBoxes(page: BookPageData): BookPageData {
+  if (page.kind !== 'content') return page
+  const raw = page as BookPageData & {
+    textBox?: unknown
+    textBoxes?: unknown
+  }
+  const list = Array.isArray(raw.textBoxes)
+    ? raw.textBoxes
+    : raw.textBox != null
+      ? [raw.textBox]
+      : []
+  const textBoxes = list
+    .map((tb) => normalizePlacedTextBox(tb as PlacedTextBox))
+    .filter((tb): tb is PlacedTextBox => !!tb)
+  const { textBox: _legacy, ...rest } = raw
+  return { ...rest, textBoxes }
+}
+
 export type BookPageData = {
   id: string
   label: string
@@ -543,8 +570,8 @@ export type BookPageData = {
   thoughtBubble: PlacedThoughtBubble | null
   /** Stretch/rotate custom shapes on content pages. */
   shapes: PlacedShape[]
-  /** Free text on content pages; uses a global font from admin. */
-  textBox: PlacedTextBox | null
+  /** Free text boxes on content pages (multiple allowed); uses global fonts from admin. */
+  textBoxes: PlacedTextBox[]
   kind: 'content' | 'toc'
   tocStyle: TocStyle | null
   /** Full TOC structure — only on the root TOC page of a block. */
@@ -561,21 +588,28 @@ export type BookPageData = {
 /** Older drafts stored bubble on `textBox.bubbleImageUrl`; move to `thoughtBubble`. */
 export function migrateLegacyTextBoxBubble(page: BookPageData): BookPageData {
   if (page.kind !== 'content') return page
-  const tb = page.textBox
-  const bubbleUrl = tb?.bubbleImageUrl?.trim()
-  if (!bubbleUrl || page.thoughtBubble) return page
+  const boxes = getPageTextBoxes(page)
+  const idx = boxes.findIndex((tb) => tb.bubbleImageUrl?.trim())
+  if (idx < 0 || page.thoughtBubble) return page
+  const tb = boxes[idx]!
+  const bubbleUrl = tb.bubbleImageUrl!.trim()
   const nb = normalizePlacedThoughtBubble({
     imageUrl: bubbleUrl,
-    x: tb!.x,
-    y: tb!.y,
-    widthPx: tb!.widthPx,
-    heightPx: tb!.heightPx,
+    x: tb.x,
+    y: tb.y,
+    widthPx: tb.widthPx,
+    heightPx: tb.heightPx,
   })
   if (!nb) return page
+  const textBoxes = boxes.map((box, i) =>
+    i === idx
+      ? normalizePlacedTextBox({ ...box, bubbleImageUrl: undefined })
+      : box,
+  )
   return {
     ...page,
     thoughtBubble: nb,
-    textBox: normalizePlacedTextBox({ ...tb!, bubbleImageUrl: undefined }),
+    textBoxes,
   }
 }
 

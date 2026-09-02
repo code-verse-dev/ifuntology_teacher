@@ -664,7 +664,7 @@ export default function EstimateCalculatorPage({
             </div>
           </div>
 
-          <div className="mt-5 border-t border-white/10 pt-5">
+          {/* <div className="mt-5 border-t border-white/10 pt-5">
             <SalonPreviewCard
               generating={isGeneratingPreview}
               imageSrc={previewSrc}
@@ -677,7 +677,7 @@ export default function EstimateCalculatorPage({
               }
               onGenerate={handleGenerateSalonPreview}
             />
-          </div>
+          </div> */}
         </Card>
       </>
   );
