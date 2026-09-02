@@ -6,6 +6,7 @@ import {
 } from './pageContentBounds'
 import {
   getPageCharacters,
+  getPageTextBoxes,
   effectivePageFrame,
   type BookPageData,
 } from '../types/bookPage'
@@ -20,7 +21,13 @@ export type GroupDragSnap = {
     widthPx?: number
     heightPx?: number
   }>
-  textBox?: { x: number; y: number; widthPx: number; heightPx: number }
+  textBoxes?: Array<{
+    index: number
+    x: number
+    y: number
+    widthPx: number
+    heightPx: number
+  }>
   thoughtBubble?: {
     x: number
     y: number
@@ -57,13 +64,20 @@ export function captureGroupDragSnap(
   if (characters.length > 0) {
     out.characters = characters
   }
-  if (page.textBox?.groupId === groupId) {
-    out.textBox = {
-      x: page.textBox.x,
-      y: page.textBox.y,
-      widthPx: page.textBox.widthPx,
-      heightPx: page.textBox.heightPx,
+  const textBoxes: NonNullable<GroupDragSnap['textBoxes']> = []
+  getPageTextBoxes(page).forEach((tb, index) => {
+    if (tb.groupId === groupId) {
+      textBoxes.push({
+        index,
+        x: tb.x,
+        y: tb.y,
+        widthPx: tb.widthPx,
+        heightPx: tb.heightPx,
+      })
     }
+  })
+  if (textBoxes.length > 0) {
+    out.textBoxes = textBoxes
   }
   if (page.thoughtBubble?.groupId === groupId) {
     out.thoughtBubble = {
@@ -101,7 +115,7 @@ export function captureGroupDragSnap(
   }
   const n =
     (out.characters?.length ?? 0) +
-    (out.textBox ? 1 : 0) +
+    (out.textBoxes?.length ?? 0) +
     (out.thoughtBubble ? 1 : 0) +
     (out.shapes?.length ?? 0)
   return n >= 2 ? out : null
@@ -120,7 +134,11 @@ export function applyGroupTranslate(
     surface,
     effectivePageFrame(page, globalFrame),
   )
-  let next: BookPageData = { ...page, characters: [...getPageCharacters(page)] }
+  let next: BookPageData = {
+    ...page,
+    characters: [...getPageCharacters(page)],
+    textBoxes: [...getPageTextBoxes(page)],
+  }
   let tx = dx
   let ty = dy
 
@@ -141,13 +159,15 @@ export function applyGroupTranslate(
         rects.push({ x: ch.x, y: ch.y, w: dims.w, h: dims.h })
       }
     }
-    if (snap.textBox) {
-      rects.push({
-        x: snap.textBox.x,
-        y: snap.textBox.y,
-        w: snap.textBox.widthPx,
-        h: snap.textBox.heightPx,
-      })
+    if (snap.textBoxes?.length) {
+      for (const tb of snap.textBoxes) {
+        rects.push({
+          x: tb.x,
+          y: tb.y,
+          w: tb.widthPx,
+          h: tb.heightPx,
+        })
+      }
     }
     if (snap.thoughtBubble) {
       rects.push({
@@ -220,24 +240,27 @@ export function applyGroupTranslate(
       }),
     }
   }
-  if (snap.textBox && next.textBox) {
-    const nx = snap.textBox.x + tx
-    const ny = snap.textBox.y + ty
-    const w = next.textBox.widthPx
-    const h = next.textBox.heightPx
-    const c = sz
-      ? clampTextBoxRect(nx, ny, w, h, sz.cw, sz.ch)
-      : { x: nx, y: ny, widthPx: w, heightPx: h }
+  if (snap.textBoxes?.length) {
+    const byIndex = new Map(snap.textBoxes.map((t) => [t.index, t]))
     next = {
       ...next,
-      textBox: {
-        ...next.textBox,
-        pagePlacement: 'free',
-        x: c.x,
-        y: c.y,
-        widthPx: c.widthPx,
-        heightPx: c.heightPx,
-      },
+      textBoxes: next.textBoxes.map((tb, i) => {
+        const snapTb = byIndex.get(i)
+        if (!snapTb) return tb
+        const nx = snapTb.x + tx
+        const ny = snapTb.y + ty
+        const c = sz
+          ? clampTextBoxRect(nx, ny, tb.widthPx, tb.heightPx, sz.cw, sz.ch)
+          : { x: nx, y: ny, widthPx: tb.widthPx, heightPx: tb.heightPx }
+        return {
+          ...tb,
+          pagePlacement: 'free' as const,
+          x: c.x,
+          y: c.y,
+          widthPx: c.widthPx,
+          heightPx: c.heightPx,
+        }
+      }),
     }
   }
   if (snap.thoughtBubble && next.thoughtBubble) {

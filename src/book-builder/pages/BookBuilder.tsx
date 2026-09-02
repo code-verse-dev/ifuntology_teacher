@@ -126,8 +126,10 @@ import {
   effectivePageFrame,
   migrateLegacyTextBoxBubble,
   getPageCharacters,
+  getPageTextBoxes,
   normalizeCanvasElementOpacity,
   normalizeContentPageCharacters,
+  normalizeContentPageTextBoxes,
   normalizePlacedCharacter,
   normalizePlacedShape,
   normalizePlacedTextBox,
@@ -611,7 +613,7 @@ function createInitialPages(): BookPageData[] {
       characters: [],
       thoughtBubble: null,
       shapes: [],
-      textBox: null,
+      textBoxes: [],
       kind: 'content',
       tocStyle: null,
       tocData: null,
@@ -640,21 +642,21 @@ const CHARACTER_MIN_H = 48
 
 function minScaleForGroupResize(opts: {
   shapes: Array<{ w: number; h: number }>
-  textBox: { w: number; h: number } | null
+  textBoxes: Array<{ w: number; h: number }>
   thoughtBubble: { w: number; h: number } | null
   character: { w: number; h: number } | null
 }): number {
-  const { shapes, textBox, thoughtBubble, character } = opts
+  const { shapes, textBoxes, thoughtBubble, character } = opts
   const safe = (minDim: number, dim: number) => minDim / Math.max(1, dim)
   let m = 0
   for (const sh of shapes) {
     m = Math.max(m, safe(SHAPE_MIN_W, sh.w), safe(SHAPE_MIN_H, sh.h))
   }
-  if (textBox) {
+  for (const tb of textBoxes) {
     m = Math.max(
       m,
-      safe(TEXT_BOX_MIN_W, textBox.w),
-      safe(TEXT_BOX_MIN_H, textBox.h),
+      safe(TEXT_BOX_MIN_W, tb.w),
+      safe(TEXT_BOX_MIN_H, tb.h),
     )
   }
   if (thoughtBubble) {
@@ -696,6 +698,9 @@ export function BookBuilder() {
   const [pageSettingsScope, setPageSettingsScope] = useState<'global' | 'page'>('global')
   const [textBoxSelectedPageId, setTextBoxSelectedPageId] = useState<
     string | null
+  >(null)
+  const [textBoxSelectedIndex, setTextBoxSelectedIndex] = useState<
+    number | null
   >(null)
   const [thoughtBubbleSelectedPageId, setThoughtBubbleSelectedPageId] =
     useState<string | null>(null)
@@ -841,6 +846,7 @@ export function BookBuilder() {
     target: 'character' | 'textBox' | 'thoughtBubble' | 'shape'
     shapeIndex?: number
     characterIndex?: number
+    textBoxIndex?: number
     dx: number
     dy: number
     startX: number
@@ -880,6 +886,7 @@ export function BookBuilder() {
 
   const [textBoxResize, setTextBoxResize] = useState<{
     pageIndex: number
+    textBoxIndex: number
     w0: number
     h0: number
     startX: number
@@ -932,7 +939,7 @@ export function BookBuilder() {
     startClientY: number
     minScale: number
     shapes: Array<{ index: number; x: number; y: number; w: number; h: number }>
-    textBox: { x: number; y: number; w: number; h: number } | null
+    textBoxes: Array<{ index: number; x: number; y: number; w: number; h: number }>
     thoughtBubble: { x: number; y: number; w: number; h: number } | null
     character: { x: number; y: number; w: number; h: number } | null
   } | null>(null)
@@ -981,6 +988,7 @@ export function BookBuilder() {
   const textBoxPointerRef = useRef<{
     pageIndex: number
     pageId: string
+    textBoxIndex: number
     startX: number
     startY: number
     tb: PlacedTextBox
@@ -1024,13 +1032,15 @@ export function BookBuilder() {
           rects.push({ x: ch.x, y: ch.y, w, h })
         }
       }
-      if (page.textBox?.groupId === groupId && page.textBox) {
-        rects.push({
-          x: page.textBox.x,
-          y: page.textBox.y,
-          w: page.textBox.widthPx,
-          h: page.textBox.heightPx,
-        })
+      for (const tb of getPageTextBoxes(page)) {
+        if (tb.groupId === groupId) {
+          rects.push({
+            x: tb.x,
+            y: tb.y,
+            w: tb.widthPx,
+            h: tb.heightPx,
+          })
+        }
       }
       if (page.thoughtBubble?.groupId === groupId && page.thoughtBubble) {
         rects.push({
@@ -1261,7 +1271,9 @@ export function BookBuilder() {
       if (getPageCharacters(page).some((ch) => ch.groupId === groupId)) {
         kinds.push('character')
       }
-      if (page.textBox?.groupId === groupId) kinds.push('textBox')
+      if (getPageTextBoxes(page).some((tb) => tb.groupId === groupId)) {
+        kinds.push('textBox')
+      }
       if (page.thoughtBubble?.groupId === groupId) kinds.push('thoughtBubble')
       const shapeIndices = page.shapes
         .map((s, i) => (s.groupId === groupId ? i : -1))
@@ -1320,7 +1332,13 @@ export function BookBuilder() {
       if (selKinds?.pageId === p.id) {
         for (const k of selKinds.kinds) kinds.add(k)
       }
-      if (textBoxSelectedPageId === p.id && p.textBox) kinds.add('textBox')
+      if (
+        textBoxSelectedPageId === p.id &&
+        textBoxSelectedIndex != null &&
+        getPageTextBoxes(p)[textBoxSelectedIndex]
+      ) {
+        kinds.add('textBox')
+      }
       if (thoughtBubbleSelectedPageId === p.id && p.thoughtBubble) {
         kinds.add('thoughtBubble')
       }
@@ -1340,8 +1358,9 @@ export function BookBuilder() {
           const ch = p.characters[characterSelectedIndex ?? -1]
           if (ch?.groupId) selectedGroupIds.add(ch.groupId)
         }
-        if (kind === 'textBox' && p.textBox?.groupId) {
-          selectedGroupIds.add(p.textBox.groupId)
+        if (kind === 'textBox' && textBoxSelectedPageId === p.id) {
+          const tb = getPageTextBoxes(p)[textBoxSelectedIndex ?? -1]
+          if (tb?.groupId) selectedGroupIds.add(tb.groupId)
         }
         if (kind === 'thoughtBubble' && p.thoughtBubble?.groupId) {
           selectedGroupIds.add(p.thoughtBubble.groupId)
@@ -1355,7 +1374,9 @@ export function BookBuilder() {
       if (selectedGroupIds.size > 0) {
         for (const gid of selectedGroupIds) {
           if (p.characters.some((c) => c.groupId === gid)) kinds.add('character')
-          if (p.textBox?.groupId === gid) kinds.add('textBox')
+          if (getPageTextBoxes(p).some((tb) => tb.groupId === gid)) {
+            kinds.add('textBox')
+          }
           if (p.thoughtBubble?.groupId === gid) kinds.add('thoughtBubble')
           p.shapes.forEach((s, i) => {
             if (s.groupId === gid) {
@@ -1382,8 +1403,17 @@ export function BookBuilder() {
           ),
         }
       }
-      if (kinds.has('textBox') && next.textBox) {
-        next = { ...next, textBox: { ...next.textBox, groupId: gid } }
+      if (
+        kinds.has('textBox') &&
+        textBoxSelectedPageId === p.id &&
+        textBoxSelectedIndex != null
+      ) {
+        next = {
+          ...next,
+          textBoxes: getPageTextBoxes(next).map((tb, ti) =>
+            ti === textBoxSelectedIndex ? { ...tb, groupId: gid } : tb,
+          ),
+        }
       }
       if (kinds.has('thoughtBubble') && next.thoughtBubble) {
         next = {
@@ -1408,8 +1438,11 @@ export function BookBuilder() {
     shapeMultiSelection,
     shapeSelectedIndex,
     shapeSelectedPageId,
+    textBoxSelectedIndex,
     textBoxSelectedPageId,
     thoughtBubbleSelectedPageId,
+    characterSelectedIndex,
+    characterSelectedPageId,
   ])
 
   const handleCanvasContextUngroup = useCallback(() => {
@@ -1429,8 +1462,9 @@ export function BookBuilder() {
           const ch = p.characters[characterSelectedIndex ?? -1]
           if (ch?.groupId) groupIds.add(ch.groupId)
         }
-        if (kind === 'textBox' && p.textBox?.groupId) {
-          groupIds.add(p.textBox.groupId)
+        if (kind === 'textBox' && textBoxSelectedPageId === p.id) {
+          const tb = getPageTextBoxes(p)[textBoxSelectedIndex ?? -1]
+          if (tb?.groupId) groupIds.add(tb.groupId)
         }
         if (kind === 'thoughtBubble' && p.thoughtBubble?.groupId) {
           groupIds.add(p.thoughtBubble.groupId)
@@ -1463,9 +1497,15 @@ export function BookBuilder() {
           return ch
         }),
       }
-      if (next.textBox?.groupId && groupIds.has(next.textBox.groupId)) {
-        const { groupId: _gt, ...tb } = next.textBox
-        next = { ...next, textBox: tb }
+      next = {
+        ...next,
+        textBoxes: getPageTextBoxes(next).map((tb) => {
+          if (tb.groupId && groupIds.has(tb.groupId)) {
+            const { groupId: _gt, ...rest } = tb
+            return rest
+          }
+          return tb
+        }),
       }
       if (
         next.thoughtBubble?.groupId &&
@@ -1487,7 +1527,15 @@ export function BookBuilder() {
       return prev.map((pp, i) => (i === pageIndex ? next : pp))
     })
     setCanvasContextMenu(null)
-  }, [canvasContextMenu, canvasMultiSelection, shapeMultiSelection])
+  }, [
+    canvasContextMenu,
+    canvasMultiSelection,
+    shapeMultiSelection,
+    textBoxSelectedIndex,
+    textBoxSelectedPageId,
+    characterSelectedIndex,
+    characterSelectedPageId,
+  ])
 
   const handleCanvasContextAlign = useCallback((
     mode: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom',
@@ -1515,7 +1563,13 @@ export function BookBuilder() {
       if (sel?.pageId === p.id) {
         for (const k of sel.kinds) kinds.add(k)
       }
-      if (textBoxSelectedPageId === p.id && p.textBox) kinds.add('textBox')
+      if (
+        textBoxSelectedPageId === p.id &&
+        textBoxSelectedIndex != null &&
+        getPageTextBoxes(p)[textBoxSelectedIndex]
+      ) {
+        kinds.add('textBox')
+      }
       if (thoughtBubbleSelectedPageId === p.id && p.thoughtBubble) {
         kinds.add('thoughtBubble')
       }
@@ -1533,6 +1587,7 @@ export function BookBuilder() {
         kind: CanvasSelectableKind | 'shape'
         index?: number
         charIndex?: number
+        textBoxIndex?: number
         cx: number
         cy: number
         x: number
@@ -1555,16 +1610,26 @@ export function BookBuilder() {
               h,
             })
           })
-        } else if (kind === 'textBox' && p.textBox) {
-          entries.push({
-            kind,
-            cx: p.textBox.x + p.textBox.widthPx / 2,
-            cy: p.textBox.y + p.textBox.heightPx / 2,
-            x: p.textBox.x,
-            y: p.textBox.y,
-            w: p.textBox.widthPx,
-            h: p.textBox.heightPx,
-          })
+        } else if (kind === 'textBox') {
+          const boxes = getPageTextBoxes(p)
+          const idxs =
+            textBoxSelectedPageId === p.id && textBoxSelectedIndex != null
+              ? [textBoxSelectedIndex]
+              : boxes.map((_, i) => i)
+          for (const textBoxIndex of idxs) {
+            const tb = boxes[textBoxIndex]
+            if (!tb) continue
+            entries.push({
+              kind,
+              textBoxIndex,
+              cx: tb.x + tb.widthPx / 2,
+              cy: tb.y + tb.heightPx / 2,
+              x: tb.x,
+              y: tb.y,
+              w: tb.widthPx,
+              h: tb.heightPx,
+            })
+          }
         } else if (kind === 'thoughtBubble' && p.thoughtBubble) {
           entries.push({
             kind,
@@ -1625,30 +1690,29 @@ export function BookBuilder() {
           ),
         }
       }
-      if (kinds.has('textBox') && next.textBox) {
+      for (const e of entries) {
+        if (e.kind !== 'textBox' || e.textBoxIndex == null) continue
         const nx =
           mode === 'left'
             ? Math.round(left)
             : mode === 'center'
-              ? Math.round(cx - next.textBox.widthPx / 2)
+              ? Math.round(cx - e.w / 2)
               : mode === 'right'
-                ? Math.round(right - next.textBox.widthPx)
-                : next.textBox.x
+                ? Math.round(right - e.w)
+                : e.x
         const ny =
           mode === 'top'
             ? Math.round(top)
             : mode === 'middle'
-              ? Math.round(cy - next.textBox.heightPx / 2)
+              ? Math.round(cy - e.h / 2)
               : mode === 'bottom'
-                ? Math.round(bottom - next.textBox.heightPx)
-                : next.textBox.y
+                ? Math.round(bottom - e.h)
+                : e.y
         next = {
           ...next,
-          textBox: {
-            ...next.textBox,
-            x: nx,
-            y: ny,
-          },
+          textBoxes: getPageTextBoxes(next).map((tb, ti) =>
+            ti === e.textBoxIndex ? { ...tb, x: nx, y: ny } : tb,
+          ),
         }
       }
       if (kinds.has('thoughtBubble') && next.thoughtBubble) {
@@ -1711,6 +1775,7 @@ export function BookBuilder() {
     shapeMultiSelection,
     shapeSelectedIndex,
     shapeSelectedPageId,
+    textBoxSelectedIndex,
     textBoxSelectedPageId,
     thoughtBubbleSelectedPageId,
     characterBoundsOnPage,
@@ -1721,6 +1786,7 @@ export function BookBuilder() {
       pg: BookPageData,
       anchorKind: CanvasSelectableKind,
       anchorCharacterIndex?: number,
+      anchorTextBoxIndex?: number,
     ) => {
       if (pg.kind !== 'content') return null
       const sel = canvasMultiSelection
@@ -1748,19 +1814,34 @@ export function BookBuilder() {
               ]
             })()
           : undefined
+      const textBoxSnaps =
+        sel.kinds.includes('textBox') && anchorTextBoxIndex != null
+          ? (() => {
+              const tb = getPageTextBoxes(pg)[anchorTextBoxIndex]
+              if (!tb) return undefined
+              return [
+                {
+                  index: anchorTextBoxIndex,
+                  x: tb.x,
+                  y: tb.y,
+                  widthPx: tb.widthPx,
+                  heightPx: tb.heightPx,
+                },
+              ]
+            })()
+          : sel.kinds.includes('textBox')
+            ? getPageTextBoxes(pg).map((tb, index) => ({
+                index,
+                x: tb.x,
+                y: tb.y,
+                widthPx: tb.widthPx,
+                heightPx: tb.heightPx,
+              }))
+            : undefined
       return {
         groupId: '__multi__',
         ...(characterSnaps?.length ? { characters: characterSnaps } : {}),
-        ...(sel.kinds.includes('textBox') && pg.textBox
-          ? {
-              textBox: {
-                x: pg.textBox.x,
-                y: pg.textBox.y,
-                widthPx: pg.textBox.widthPx,
-                heightPx: pg.textBox.heightPx,
-              },
-            }
-          : {}),
+        ...(textBoxSnaps?.length ? { textBoxes: textBoxSnaps } : {}),
         ...(sel.kinds.includes('thoughtBubble') && pg.thoughtBubble
           ? {
               thoughtBubble: {
@@ -1794,6 +1875,7 @@ export function BookBuilder() {
         w: number
         h: number
         charIndex?: number
+        textBoxIndex?: number
       }
       const items: Item[] = []
       if (kinds.has('character')) {
@@ -1802,14 +1884,24 @@ export function BookBuilder() {
           items.push({ kind: 'character', x: ch.x, y: ch.y, w, h, charIndex })
         })
       }
-      if (kinds.has('textBox') && p.textBox) {
-        items.push({
-          kind: 'textBox',
-          x: p.textBox.x,
-          y: p.textBox.y,
-          w: p.textBox.widthPx,
-          h: p.textBox.heightPx,
-        })
+      if (kinds.has('textBox')) {
+        const boxes = getPageTextBoxes(p)
+        const idxs =
+          textBoxSelectedPageId === p.id && textBoxSelectedIndex != null
+            ? [textBoxSelectedIndex]
+            : boxes.map((_, i) => i)
+        for (const textBoxIndex of idxs) {
+          const tb = boxes[textBoxIndex]
+          if (!tb) continue
+          items.push({
+            kind: 'textBox',
+            x: tb.x,
+            y: tb.y,
+            w: tb.widthPx,
+            h: tb.heightPx,
+            textBoxIndex,
+          })
+        }
       }
       if (kinds.has('thoughtBubble') && p.thoughtBubble) {
         items.push({
@@ -1838,8 +1930,13 @@ export function BookBuilder() {
               ci === it.charIndex ? { ...ch, x: nx, y: ny } : ch,
             ),
           }
-        } else if (it.kind === 'textBox' && next.textBox) {
-          next = { ...next, textBox: { ...next.textBox, x: nx, y: ny } }
+        } else if (it.kind === 'textBox' && it.textBoxIndex != null) {
+          next = {
+            ...next,
+            textBoxes: getPageTextBoxes(next).map((tb, ti) =>
+              ti === it.textBoxIndex ? { ...tb, x: nx, y: ny } : tb,
+            ),
+          }
         } else if (it.kind === 'thoughtBubble' && next.thoughtBubble) {
           next = {
             ...next,
@@ -1851,7 +1948,13 @@ export function BookBuilder() {
       return prev.map((pp, i) => (i === cm.pageIndex ? next : pp))
     })
     setCanvasContextMenu(null)
-  }, [canvasContextMenu, canvasMultiSelection, characterBoundsOnPage])
+  }, [
+    canvasContextMenu,
+    canvasMultiSelection,
+    characterBoundsOnPage,
+    textBoxSelectedIndex,
+    textBoxSelectedPageId,
+  ])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1946,9 +2049,11 @@ export function BookBuilder() {
       if (p.kind === 'toc') {
         const href = p.tocStyle?.font?.stylesheetUrl
         if (href) ensureTocStylesheetLoaded(href)
-      } else if (p.textBox) {
-        const f = availableFonts.find((x) => x.id === p.textBox?.globalFontId)
-        if (f?.stylesheetUrl) ensureTocStylesheetLoaded(f.stylesheetUrl)
+      } else if (p.kind === 'content') {
+        for (const tb of getPageTextBoxes(p)) {
+          const f = availableFonts.find((x) => x.id === tb.globalFontId)
+          if (f?.stylesheetUrl) ensureTocStylesheetLoaded(f.stylesheetUrl)
+        }
       }
     }
   }, [pages, availableFonts])
@@ -1993,7 +2098,6 @@ export function BookBuilder() {
           approximateDrawableSizePx(draftPaper).cw,
         )
         const normalized = data.pages.map((raw) => {
-          const rawBox = (raw as BookPageData).textBox ?? null
           const rawPf = (raw as BookPageData).pageFrame
           const rawTb = (raw as BookPageData).thoughtBubble
           const rawShape = (raw as BookPageData & { shape?: unknown }).shape
@@ -2006,23 +2110,22 @@ export function BookBuilder() {
                 const one = normalizePlacedShape(rawShape)
                 return one ? [one] : []
               })()
-          let p = normalizeContentPageCharacters(
-            migrateLegacyTextBoxBubble({
-              ...raw,
-              textBox: rawBox
-                ? normalizePlacedTextBox(rawBox as PlacedTextBox)
-                : null,
-              thoughtBubble: normalizePlacedThoughtBubble(rawTb),
-              shapes: normalizedShapes,
-              canvasLayerOrder: normalizeCanvasLayerOrder(
-                (raw as BookPageData).canvasLayerOrder,
-              ),
-              pageFrame:
-                rawPf != null
-                  ? normalizePageFrameSettings(rawPf)
-                  : undefined,
-            } as BookPageData),
-            defaultCharacterPlacementSize,
+          let p = normalizeContentPageTextBoxes(
+            normalizeContentPageCharacters(
+              migrateLegacyTextBoxBubble({
+                ...raw,
+                thoughtBubble: normalizePlacedThoughtBubble(rawTb),
+                shapes: normalizedShapes,
+                canvasLayerOrder: normalizeCanvasLayerOrder(
+                  (raw as BookPageData).canvasLayerOrder,
+                ),
+                pageFrame:
+                  rawPf != null
+                    ? normalizePageFrameSettings(rawPf)
+                    : undefined,
+              } as BookPageData),
+              defaultCharacterPlacementSize,
+            ),
           )
           if (p.kind !== 'toc' || !p.tocStyle) return p
           const m =
@@ -2047,8 +2150,11 @@ export function BookBuilder() {
             if (oldP.shapes?.length && !p.shapes?.length) {
               out = { ...out, shapes: oldP.shapes }
             }
-            if (oldP.textBox && !p.textBox) {
-              out = { ...out, textBox: oldP.textBox }
+            if (
+              getPageTextBoxes(oldP).length > 0 &&
+              getPageTextBoxes(p).length === 0
+            ) {
+              out = { ...out, textBoxes: getPageTextBoxes(oldP) }
             }
             if (oldP.characters?.length && !p.characters?.length) {
               out = { ...out, characters: oldP.characters }
@@ -2213,6 +2319,24 @@ export function BookBuilder() {
   }, [activePageIndex, pages])
 
   useEffect(() => {
+    if (!textBoxSelectedPageId) {
+      setTextBoxSelectedIndex(null)
+      return
+    }
+    const p = pages.find(
+      (x) => x.id === textBoxSelectedPageId && x.kind === 'content',
+    )
+    if (!p) {
+      setTextBoxSelectedIndex(null)
+      return
+    }
+    const boxes = getPageTextBoxes(p)
+    setTextBoxSelectedIndex((ix) =>
+      ix != null && ix >= 0 && ix < boxes.length ? ix : null,
+    )
+  }, [pages, textBoxSelectedPageId])
+
+  useEffect(() => {
     const ap = pages[activePageIndex]
     setThoughtBubbleSelectedPageId((sel) => {
       if (!sel) return null
@@ -2253,6 +2377,7 @@ export function BookBuilder() {
       }
       if (e.key === 'Escape') {
         setTextBoxSelectedPageId(null)
+        setTextBoxSelectedIndex(null)
         setThoughtBubbleSelectedPageId(null)
         setShapeSelectedPageId(null)
         setShapeSelectedIndex(null)
@@ -2371,26 +2496,37 @@ export function BookBuilder() {
                 setThoughtBubbleSelectedPageId(null)
               }
             }
-          } else if (textBoxSelectedPageId) {
+          } else if (
+            textBoxSelectedPageId &&
+            textBoxSelectedIndex != null
+          ) {
             const pg = pages.find(
               (p) => p.id === textBoxSelectedPageId && p.kind === 'content',
             )
-            if (pg?.textBox) {
+            const tb = pg ? getPageTextBoxes(pg)[textBoxSelectedIndex] : null
+            if (tb) {
               canvasClipboardRef.current = {
                 target: 'kind',
                 kind: 'textBox',
-                payload: { ...pg.textBox },
+                payload: { ...tb },
               }
               handled = true
               if (key === 'x') {
+                const rmIdx = textBoxSelectedIndex
                 setPages((prev) =>
                   prev.map((p) =>
                     p.id === textBoxSelectedPageId && p.kind === 'content'
-                      ? { ...p, textBox: null }
+                      ? {
+                          ...p,
+                          textBoxes: getPageTextBoxes(p).filter(
+                            (_, i) => i !== rmIdx,
+                          ),
+                        }
                       : p,
                   ),
                 )
                 setTextBoxSelectedPageId(null)
+                setTextBoxSelectedIndex(null)
               }
             }
           }
@@ -2434,22 +2570,24 @@ export function BookBuilder() {
           const payload = clip.payload as Record<string, unknown>
           if (clip.kind === 'textBox') {
             const src = payload as PlacedTextBox
+            const { groupId: _gid, ...placedBase } = src
+            const dup: PlacedTextBox = {
+              ...placedBase,
+              x: src.x + 18,
+              y: src.y + 18,
+              pagePlacement: 'free',
+            }
+            let nextTbIx: number | null = null
             setPages((prev) =>
-              prev.map((p) =>
-                p.id === targetPage.id && p.kind === 'content'
-                  ? {
-                      ...p,
-                      textBox: {
-                        ...src,
-                        x: src.x + 18,
-                        y: src.y + 18,
-                        pagePlacement: 'free',
-                      },
-                    }
-                  : p,
-              ),
+              prev.map((p) => {
+                if (p.id !== targetPage.id || p.kind !== 'content') return p
+                const existing = getPageTextBoxes(p)
+                nextTbIx = existing.length
+                return { ...p, textBoxes: [...existing, dup] }
+              }),
             )
             setTextBoxSelectedPageId(targetPage.id)
+            setTextBoxSelectedIndex(nextTbIx)
             setThoughtBubbleSelectedPageId(null)
             setShapeSelectedPageId(null)
             setShapeSelectedIndex(null)
@@ -2469,6 +2607,7 @@ export function BookBuilder() {
             )
             setThoughtBubbleSelectedPageId(targetPage.id)
             setTextBoxSelectedPageId(null)
+            setTextBoxSelectedIndex(null)
             setShapeSelectedPageId(null)
             setShapeSelectedIndex(null)
             return
@@ -2557,15 +2696,22 @@ export function BookBuilder() {
         setThoughtBubbleSelectedPageId(null)
         return
       }
-      if (textBoxSelectedPageId) {
+      if (textBoxSelectedPageId != null && textBoxSelectedIndex != null) {
         e.preventDefault()
         const pid = textBoxSelectedPageId
+        const rmIdx = textBoxSelectedIndex
         setPages((prev) =>
           prev.map((p) =>
-            p.id === pid && p.kind === 'content' ? { ...p, textBox: null } : p,
+            p.id === pid && p.kind === 'content'
+              ? {
+                  ...p,
+                  textBoxes: getPageTextBoxes(p).filter((_, i) => i !== rmIdx),
+                }
+              : p,
           ),
         )
         setTextBoxSelectedPageId(null)
+        setTextBoxSelectedIndex(null)
       }
     }
     document.addEventListener('keydown', onKey)
@@ -2578,10 +2724,13 @@ export function BookBuilder() {
     shapeSelectedIndex,
     shapeSelectedPageId,
     textBoxSelectedPageId,
+    textBoxSelectedIndex,
     thoughtBubbleSelectedPageId,
     undoPages,
     canvasMultiSelection,
     paperSize,
+    characterSelectedPageId,
+    characterSelectedIndex,
   ])
 
   useEffect(() => {
@@ -2620,8 +2769,10 @@ export function BookBuilder() {
     }
     let wordCount = 0
     for (const p of pages) {
-      const text = p.textBox?.text?.trim()
-      if (text) wordCount += text.split(/\s+/).filter(Boolean).length
+      for (const tb of getPageTextBoxes(p)) {
+        const text = tb.text?.trim()
+        if (text) wordCount += text.split(/\s+/).filter(Boolean).length
+      }
     }
     return {
       pagesHtml,
@@ -2791,35 +2942,45 @@ export function BookBuilder() {
               np = { ...np, characters: nextChars }
             }
           }
-          if (p.textBox) {
-            const tb = np.textBox!
-            if (tb.pagePlacement === 'free') {
-              const c = clampTextBoxRect(
-                tb.x,
-                tb.y,
-                tb.widthPx,
-                tb.heightPx,
-                sz.cw,
-                sz.ch,
-              )
-              if (
-                c.x !== tb.x ||
-                c.y !== tb.y ||
-                c.widthPx !== tb.widthPx ||
-                c.heightPx !== tb.heightPx
-              ) {
-                np = { ...np, textBox: { ...tb, ...c } }
-              }
-            } else if (tb.pagePlacement !== 'margin_fill') {
-              const w = Math.min(tb.widthPx, sz.cw)
-              const h = Math.min(tb.heightPx, sz.ch)
-              const w2 = Math.max(TEXT_BOX_MIN_W, w)
-              const h2 = Math.max(TEXT_BOX_MIN_H, h)
-              if (w2 !== tb.widthPx || h2 !== tb.heightPx) {
-                np = {
-                  ...np,
-                  textBox: { ...tb, widthPx: w2, heightPx: h2 },
+          if (p.kind === 'content') {
+            const boxes = getPageTextBoxes(np)
+            if (boxes.length > 0) {
+              let boxesChanged = false
+              const nextBoxes = boxes.map((tb) => {
+                if (tb.pagePlacement === 'free') {
+                  const c = clampTextBoxRect(
+                    tb.x,
+                    tb.y,
+                    tb.widthPx,
+                    tb.heightPx,
+                    sz.cw,
+                    sz.ch,
+                  )
+                  if (
+                    c.x !== tb.x ||
+                    c.y !== tb.y ||
+                    c.widthPx !== tb.widthPx ||
+                    c.heightPx !== tb.heightPx
+                  ) {
+                    boxesChanged = true
+                    return { ...tb, ...c }
+                  }
+                  return tb
                 }
+                if (tb.pagePlacement !== 'margin_fill') {
+                  const w = Math.min(tb.widthPx, sz.cw)
+                  const h = Math.min(tb.heightPx, sz.ch)
+                  const w2 = Math.max(TEXT_BOX_MIN_W, w)
+                  const h2 = Math.max(TEXT_BOX_MIN_H, h)
+                  if (w2 !== tb.widthPx || h2 !== tb.heightPx) {
+                    boxesChanged = true
+                    return { ...tb, widthPx: w2, heightPx: h2 }
+                  }
+                }
+                return tb
+              })
+              if (boxesChanged) {
+                np = { ...np, textBoxes: nextBoxes }
               }
             }
           }
@@ -3024,16 +3185,19 @@ export function BookBuilder() {
   const onTextBoxResizeMouseDown = (
     e: React.MouseEvent,
     pageIndex: number,
+    textBoxIndex: number,
   ) => {
     e.preventDefault()
     e.stopPropagation()
     const pg = pages[pageIndex]
-    const tb = pg?.textBox
+    const tb = pg ? getPageTextBoxes(pg)[textBoxIndex] : null
     if (!tb || !pg) return
     setActivePageIndex(pageIndex)
     setTextBoxSelectedPageId(pg.id)
+    setTextBoxSelectedIndex(textBoxIndex)
     setTextBoxResize({
       pageIndex,
+      textBoxIndex,
       w0: tb.widthPx,
       h0: tb.heightPx,
       startX: e.clientX,
@@ -3203,15 +3367,24 @@ export function BookBuilder() {
         }
       })
 
-      const textBox =
-        pg.textBox?.groupId === groupId
-          ? {
-              x: pg.textBox.x,
-              y: pg.textBox.y,
-              w: pg.textBox.widthPx,
-              h: pg.textBox.heightPx,
-            }
-          : null
+      const textBoxes: Array<{
+        index: number
+        x: number
+        y: number
+        w: number
+        h: number
+      }> = []
+      getPageTextBoxes(pg).forEach((tb, index) => {
+        if (tb.groupId === groupId) {
+          textBoxes.push({
+            index,
+            x: tb.x,
+            y: tb.y,
+            w: tb.widthPx,
+            h: tb.heightPx,
+          })
+        }
+      })
 
       const thoughtBubble =
         pg.thoughtBubble?.groupId === groupId
@@ -3250,7 +3423,7 @@ export function BookBuilder() {
 
       const minScale = minScaleForGroupResize({
         shapes: shapeSnaps,
-        textBox,
+        textBoxes,
         thoughtBubble,
         character,
       })
@@ -3263,7 +3436,7 @@ export function BookBuilder() {
         startClientY: e.clientY,
         minScale,
         shapes: shapeSnaps,
-        textBox,
+        textBoxes,
         thoughtBubble,
         character,
       })
@@ -3392,7 +3565,11 @@ export function BookBuilder() {
     })
   }
 
-  const onMouseDownTextBox = (e: React.MouseEvent, pageIndex: number) => {
+  const onMouseDownTextBox = (
+    e: React.MouseEvent,
+    pageIndex: number,
+    textBoxIndex: number,
+  ) => {
     if (e.button !== 0) return
     if (
       (e.target as HTMLElement).closest('.book-page__text-box__resize-handle')
@@ -3400,7 +3577,7 @@ export function BookBuilder() {
       return
     }
     const pg = pages[pageIndex]
-    const tb = pg?.textBox
+    const tb = pg ? getPageTextBoxes(pg)[textBoxIndex] : null
     if (!tb || !pg || pg.kind !== 'content') return
     e.preventDefault()
     e.stopPropagation()
@@ -3432,11 +3609,14 @@ export function BookBuilder() {
     setCharacterSelectedIndex(null)
     setShapeSelectedPageId(null)
     setShapeSelectedIndex(null)
+    setTextBoxSelectedPageId(pg.id)
+    setTextBoxSelectedIndex(textBoxIndex)
     setActivePageIndex(pageIndex)
 
     textBoxPointerRef.current = {
       pageIndex,
       pageId: pg.id,
+      textBoxIndex,
       startX: e.clientX,
       startY: e.clientY,
       tb: { ...tb },
@@ -3452,7 +3632,9 @@ export function BookBuilder() {
       window.removeEventListener('mouseup', onUp)
       textBoxPointerRef.current = null
       const pgAtMove = pages[pr.pageIndex]
-      const tbLive = pgAtMove?.textBox
+      const tbLive = pgAtMove
+        ? getPageTextBoxes(pgAtMove)[pr.textBoxIndex]
+        : null
       if (!pgAtMove || !tbLive) return
       const surface = pageSurfaceRefs.current.get(pgAtMove.id)
       const sz = readDrawableSizeFromPageSurface(
@@ -3468,28 +3650,34 @@ export function BookBuilder() {
             heightPx: tbLive.heightPx,
           }
       setPages((prev) =>
-        prev.map((pp, idx) =>
-          idx === pr.pageIndex && pp.textBox
-            ? {
-                ...pp,
-                textBox: {
-                  ...pp.textBox,
-                  pagePlacement: 'free',
-                  x: cur.x,
-                  y: cur.y,
-                  widthPx: cur.widthPx,
-                  heightPx: cur.heightPx,
-                },
-              }
-            : pp,
-        ),
+        prev.map((pp, idx) => {
+          if (idx !== pr.pageIndex || pp.kind !== 'content') return pp
+          const boxes = getPageTextBoxes(pp)
+          if (!boxes[pr.textBoxIndex]) return pp
+          return {
+            ...pp,
+            textBoxes: boxes.map((box, bi) =>
+              bi === pr.textBoxIndex
+                ? {
+                    ...box,
+                    pagePlacement: 'free' as const,
+                    x: cur.x,
+                    y: cur.y,
+                    widthPx: cur.widthPx,
+                    heightPx: cur.heightPx,
+                  }
+                : box,
+            ),
+          }
+        }),
       )
       const groupSnap =
-        buildMultiDragSnap(pgAtMove, 'textBox') ??
+        buildMultiDragSnap(pgAtMove, 'textBox', undefined, pr.textBoxIndex) ??
         captureGroupDragSnap(pgAtMove, tbLive.groupId)
       setDrag({
         pageIndex: pr.pageIndex,
         target: 'textBox',
+        textBoxIndex: pr.textBoxIndex,
         dx: cur.x,
         dy: cur.y,
         startX: pr.startX,
@@ -3503,7 +3691,10 @@ export function BookBuilder() {
       window.removeEventListener('mouseup', onUp)
       const pr = textBoxPointerRef.current
       textBoxPointerRef.current = null
-      if (pr) setTextBoxSelectedPageId(pr.pageId)
+      if (pr) {
+        setTextBoxSelectedPageId(pr.pageId)
+        setTextBoxSelectedIndex(pr.textBoxIndex)
+      }
     }
 
     window.addEventListener('mousemove', onMove)
@@ -3533,7 +3724,12 @@ export function BookBuilder() {
       ) {
         return { kind: 'character', characterIndex: characterSelectedIndex }
       }
-      if (textBoxSelectedPageId === pageId) return { kind: 'textBox' }
+      if (
+        textBoxSelectedPageId === pageId &&
+        textBoxSelectedIndex != null
+      ) {
+        return { kind: 'textBox', textBoxIndex: textBoxSelectedIndex }
+      }
       if (thoughtBubbleSelectedPageId === pageId) {
         return { kind: 'thoughtBubble' }
       }
@@ -3545,6 +3741,7 @@ export function BookBuilder() {
       shapeMultiSelection,
       shapeSelectedIndex,
       shapeSelectedPageId,
+      textBoxSelectedIndex,
       textBoxSelectedPageId,
       thoughtBubbleSelectedPageId,
     ],
@@ -3615,7 +3812,7 @@ export function BookBuilder() {
       return
     }
     if (picked.kind === 'textBox') {
-      onMouseDownTextBox(e, pageIndex)
+      onMouseDownTextBox(e, pageIndex, picked.textBoxIndex)
       return
     }
     onMouseDownThoughtBubble(e, pageIndex)
@@ -3664,26 +3861,35 @@ export function BookBuilder() {
                     })()
               ddx = x - anchor.x
               ddy = y - anchor.y
-            } else if (drag.target === 'textBox' && p.textBox && gs.textBox) {
+            } else if (
+              drag.target === 'textBox' &&
+              drag.textBoxIndex != null &&
+              gs.textBoxes?.length
+            ) {
+              const anchor = gs.textBoxes.find(
+                (t) => t.index === drag.textBoxIndex,
+              )
+              const live = getPageTextBoxes(p)[drag.textBoxIndex]
+              if (!anchor || !live) return p
               const nx = drag.dx + (e.clientX - drag.startX)
               const ny = drag.dy + (e.clientY - drag.startY)
               const c = sz
                 ? clampTextBoxRect(
                     nx,
                     ny,
-                    p.textBox.widthPx,
-                    p.textBox.heightPx,
+                    live.widthPx,
+                    live.heightPx,
                     sz.cw,
                     sz.ch,
                   )
                 : {
                     x: nx,
                     y: ny,
-                    widthPx: p.textBox.widthPx,
-                    heightPx: p.textBox.heightPx,
+                    widthPx: live.widthPx,
+                    heightPx: live.heightPx,
                   }
-              ddx = c.x - gs.textBox.x
-              ddy = c.y - gs.textBox.y
+              ddx = c.x - anchor.x
+              ddy = c.y - anchor.y
             } else if (
               drag.target === 'thoughtBubble' &&
               p.thoughtBubble &&
@@ -3785,34 +3991,44 @@ export function BookBuilder() {
               ),
             }
           }
-          if (drag.target === 'textBox' && p.textBox) {
+          if (
+            drag.target === 'textBox' &&
+            drag.textBoxIndex != null &&
+            p.kind === 'content'
+          ) {
+            const tb = getPageTextBoxes(p)[drag.textBoxIndex]
+            if (!tb) return p
             const nx = drag.dx + (e.clientX - drag.startX)
             const ny = drag.dy + (e.clientY - drag.startY)
             const c = sz
               ? clampTextBoxRect(
                   nx,
                   ny,
-                  p.textBox.widthPx,
-                  p.textBox.heightPx,
+                  tb.widthPx,
+                  tb.heightPx,
                   sz.cw,
                   sz.ch,
                 )
               : {
                   x: nx,
                   y: ny,
-                  widthPx: p.textBox.widthPx,
-                  heightPx: p.textBox.heightPx,
+                  widthPx: tb.widthPx,
+                  heightPx: tb.heightPx,
                 }
             return {
               ...p,
-              textBox: {
-                ...p.textBox,
-                pagePlacement: 'free',
-                x: c.x,
-                y: c.y,
-                widthPx: c.widthPx,
-                heightPx: c.heightPx,
-              },
+              textBoxes: getPageTextBoxes(p).map((box, bi) =>
+                bi === drag.textBoxIndex
+                  ? {
+                      ...box,
+                      pagePlacement: 'free' as const,
+                      x: c.x,
+                      y: c.y,
+                      widthPx: c.widthPx,
+                      heightPx: c.heightPx,
+                    }
+                  : box,
+              ),
             }
           }
           if (drag.target === 'thoughtBubble' && p.thoughtBubble) {
@@ -3967,7 +4183,7 @@ export function BookBuilder() {
 
   useEffect(() => {
     if (!textBoxResize) return
-    const { pageIndex, w0, h0, startX, startY } = textBoxResize
+    const { pageIndex, textBoxIndex, w0, h0, startX, startY } = textBoxResize
     const move = (e: MouseEvent) => {
       const w = Math.max(
         TEXT_BOX_MIN_W,
@@ -3979,7 +4195,10 @@ export function BookBuilder() {
       )
       setPages((prev) =>
         prev.map((p, idx) => {
-          if (idx !== pageIndex || !p.textBox) return p
+          if (idx !== pageIndex || p.kind !== 'content') return p
+          const boxes = getPageTextBoxes(p)
+          const tb = boxes[textBoxIndex]
+          if (!tb) return p
           const surface = pageSurfaceRefs.current.get(p.id)
           const sz = readDrawableSizeFromPageSurface(
             surface,
@@ -3988,25 +4207,33 @@ export function BookBuilder() {
           if (!sz) {
             return {
               ...p,
-              textBox: {
-                ...p.textBox,
-                pagePlacement: 'free',
-                widthPx: w,
-                heightPx: h,
-              },
+              textBoxes: boxes.map((box, bi) =>
+                bi === textBoxIndex
+                  ? {
+                      ...box,
+                      pagePlacement: 'free' as const,
+                      widthPx: w,
+                      heightPx: h,
+                    }
+                  : box,
+              ),
             }
           }
-          const c = clampTextBoxRect(p.textBox.x, p.textBox.y, w, h, sz.cw, sz.ch)
+          const c = clampTextBoxRect(tb.x, tb.y, w, h, sz.cw, sz.ch)
           return {
             ...p,
-            textBox: {
-              ...p.textBox,
-              pagePlacement: 'free',
-              x: c.x,
-              y: c.y,
-              widthPx: c.widthPx,
-              heightPx: c.heightPx,
-            },
+            textBoxes: boxes.map((box, bi) =>
+              bi === textBoxIndex
+                ? {
+                    ...box,
+                    pagePlacement: 'free' as const,
+                    x: c.x,
+                    y: c.y,
+                    widthPx: c.widthPx,
+                    heightPx: c.heightPx,
+                  }
+                : box,
+            ),
           }
         }),
       )
@@ -4287,31 +4514,36 @@ export function BookBuilder() {
 
         let nextPage: BookPageData = { ...p, shapes: nextShapes }
 
-        if (gr.textBox && nextPage.textBox) {
-          const tb = gr.textBox
-          const nx = Math.round(bx + (tb.x - bx) * s)
-          const ny = Math.round(by + (tb.y - by) * s)
-          const nw = Math.max(TEXT_BOX_MIN_W, Math.round(tb.w * s))
-          const nh = Math.max(TEXT_BOX_MIN_H, Math.round(tb.h * s))
-          let updated = {
-            ...nextPage.textBox,
-            pagePlacement: 'free' as const,
-            x: nx,
-            y: ny,
-            widthPx: nw,
-            heightPx: nh,
-          }
-          if (sz) {
-            const c = clampTextBoxRect(nx, ny, nw, nh, sz.cw, sz.ch)
-            updated = {
-              ...updated,
-              x: c.x,
-              y: c.y,
-              widthPx: c.widthPx,
-              heightPx: c.heightPx,
+        if (gr.textBoxes?.length) {
+          const boxes = [...getPageTextBoxes(nextPage)]
+          for (const snap of gr.textBoxes) {
+            const orig = boxes[snap.index]
+            if (!orig) continue
+            const nx = Math.round(bx + (snap.x - bx) * s)
+            const ny = Math.round(by + (snap.y - by) * s)
+            const nw = Math.max(TEXT_BOX_MIN_W, Math.round(snap.w * s))
+            const nh = Math.max(TEXT_BOX_MIN_H, Math.round(snap.h * s))
+            let updated = {
+              ...orig,
+              pagePlacement: 'free' as const,
+              x: nx,
+              y: ny,
+              widthPx: nw,
+              heightPx: nh,
             }
+            if (sz) {
+              const c = clampTextBoxRect(nx, ny, nw, nh, sz.cw, sz.ch)
+              updated = {
+                ...updated,
+                x: c.x,
+                y: c.y,
+                widthPx: c.widthPx,
+                heightPx: c.heightPx,
+              }
+            }
+            boxes[snap.index] = updated
           }
-          nextPage = { ...nextPage, textBox: updated }
+          nextPage = { ...nextPage, textBoxes: boxes }
         }
 
         if (gr.thoughtBubble && nextPage.thoughtBubble) {
@@ -4425,7 +4657,7 @@ export function BookBuilder() {
           characters: [],
           thoughtBubble: null,
           shapes: [],
-          textBox: null,
+          textBoxes: [],
           kind: 'content' as const,
           tocStyle: null,
           tocData: null,
@@ -4454,7 +4686,7 @@ export function BookBuilder() {
         characters: [],
         thoughtBubble: null,
         shapes: [],
-        textBox: null,
+        textBoxes: [],
         kind: 'toc',
         tocStyle: style,
         tocData,
@@ -4598,14 +4830,32 @@ export function BookBuilder() {
     )
   }
 
-  const updateTextBoxForPage = useCallback(
-    (pageId: string, next: PlacedTextBox | null) => {
+  const updateTextBoxForPageAtIndex = useCallback(
+    (pageId: string, index: number, next: PlacedTextBox | null) => {
       setPages((prev) =>
-        prev.map((p) =>
-          p.id === pageId && p.kind === 'content' ? { ...p, textBox: next } : p,
-        ),
+        prev.map((p) => {
+          if (p.id !== pageId || p.kind !== 'content') return p
+          const boxes = getPageTextBoxes(p)
+          if (!boxes[index]) return p
+          if (next === null) {
+            return {
+              ...p,
+              textBoxes: boxes.filter((_, i) => i !== index),
+            }
+          }
+          const nb = normalizePlacedTextBox(next)
+          return nb
+            ? {
+                ...p,
+                textBoxes: boxes.map((tb, i) => (i === index ? nb : tb)),
+              }
+            : p
+        }),
       )
-      if (next === null) setTextBoxSelectedPageId(null)
+      if (next === null) {
+        setTextBoxSelectedPageId(null)
+        setTextBoxSelectedIndex(null)
+      }
     },
     [],
   )
@@ -4699,7 +4949,10 @@ export function BookBuilder() {
     [pages, textBoxSelectedPageId],
   )
 
-  const selectedTextBox = selectedTextEditPage?.textBox ?? null
+  const selectedTextBox =
+    selectedTextEditPage && textBoxSelectedIndex != null
+      ? getPageTextBoxes(selectedTextEditPage)[textBoxSelectedIndex] ?? null
+      : null
 
   const selectedThoughtBubblePage = useMemo(
     () =>
@@ -4931,7 +5184,15 @@ export function BookBuilder() {
               : activeContentPage.characters[0]
           return ch?.groupId ?? null
         }
-        if (row.kind === 'textBox') return activeContentPage.textBox?.groupId ?? null
+        if (row.kind === 'textBox') {
+          const boxes = getPageTextBoxes(activeContentPage)
+          const tb =
+            textBoxSelectedPageId === activeContentPage.id &&
+            textBoxSelectedIndex != null
+              ? boxes[textBoxSelectedIndex]
+              : boxes[0]
+          return tb?.groupId ?? null
+        }
         return activeContentPage.thoughtBubble?.groupId ?? null
       }
       return row.shape.groupId ?? null
@@ -4968,7 +5229,16 @@ export function BookBuilder() {
         label: layerGroupNames[entry.groupId] ?? fallback,
       }
     })
-  }, [activeContentPage, activeLayerRows, collectGroupedSelection, layerGroupNames])
+  }, [
+    activeContentPage,
+    activeLayerRows,
+    collectGroupedSelection,
+    layerGroupNames,
+    characterSelectedIndex,
+    characterSelectedPageId,
+    textBoxSelectedIndex,
+    textBoxSelectedPageId,
+  ])
   const defaultLayerLabel = useCallback((row: LayerRow) => {
     if (row.section === 'canvas') {
       return row.kind === 'textBox'
@@ -5009,7 +5279,7 @@ export function BookBuilder() {
     ) {
       return
     }
-    updateTextBoxForPage(selectedTextEditPage.id, {
+    updateTextBoxForPageAtIndex(selectedTextEditPage.id, textBoxSelectedIndex!, {
       ...selectedTextBox,
       globalFontId: availableFonts[0].id,
     })
@@ -5017,8 +5287,9 @@ export function BookBuilder() {
     selectedTextEditPage?.id,
     selectedTextBox?.globalFontId,
     availableFonts,
-    updateTextBoxForPage,
+    updateTextBoxForPageAtIndex,
     selectedTextBox,
+    textBoxSelectedIndex,
   ])
 
   const showShellTopBack = !builderHost?.backHref
@@ -5104,21 +5375,24 @@ export function BookBuilder() {
                 setCharacterSelectedPageId(null)
                 setCharacterSelectedIndex(null)
                 setShapeSelectedPageId(null)
-                if (!activeContentPage.textBox) {
-                  setPages((prev) =>
-                    prev.map((p) =>
-                      p.id === pid && p.kind === 'content'
-                        ? {
-                            ...p,
-                            textBox: createDefaultPlacedTextBox(
-                              tocDbFonts[0]?.id ?? '',
-                            ),
-                          }
-                        : p,
-                    ),
-                  )
+                setShapeSelectedIndex(null)
+                const existing = getPageTextBoxes(activeContentPage)
+                const stagger = existing.length
+                const box = {
+                  ...createDefaultPlacedTextBox(tocDbFonts[0]?.id ?? ''),
+                  x: 24 + stagger * 28,
+                  y: 72 + stagger * 20,
                 }
+                setPages((prev) =>
+                  prev.map((p) =>
+                    p.id === pid && p.kind === 'content'
+                      ? { ...p, textBoxes: [...getPageTextBoxes(p), box] }
+                      : p,
+                  ),
+                )
                 setTextBoxSelectedPageId(pid)
+                setTextBoxSelectedIndex(existing.length)
+                setCanvasMultiSelection(null)
               }}
             >
               <span className="book-tool-sidebar__btn-visual" aria-hidden>
@@ -5413,29 +5687,8 @@ Delete/Backspace: remove selected element"
                     surface,
                     frame,
                   )
-                  const textLay =
-                    p.textBox && drawable
-                      ? resolveTextBoxLayout(
-                          p.textBox,
-                          drawable.cw,
-                          drawable.ch,
-                        )
-                      : p.textBox
-                        ? {
-                            x: p.textBox.x,
-                            y: p.textBox.y,
-                            widthPx: p.textBox.widthPx,
-                            heightPx: p.textBox.heightPx,
-                          }
-                        : null
-                  const textBoxForCanvas =
-                    p.textBox && textLay
-                      ? {
-                          ...p.textBox,
-                          widthPx: textLay.widthPx,
-                          heightPx: textLay.heightPx,
-                        }
-                      : null
+                  const pageTextBoxes =
+                    p.kind === 'content' ? getPageTextBoxes(p) : []
                   const layersForPage =
                     p.kind === 'content' ? pageLayerTokens(p) : []
                   const hasGroupOutlineOnPage =
@@ -5532,6 +5785,7 @@ Delete/Backspace: remove selected element"
                         onMouseDown={(e) => {
                           if (e.target === e.currentTarget) {
                             setTextBoxSelectedPageId(null)
+                            setTextBoxSelectedIndex(null)
                             setThoughtBubbleSelectedPageId(null)
                             setShapeSelectedPageId(null)
                             setShapeSelectedIndex(null)
@@ -5683,76 +5937,100 @@ Delete/Backspace: remove selected element"
                                     </>
                                   )
                                 }
-                                if (
-                                  kind === 'textBox' &&
-                                  p.textBox &&
-                                  textLay &&
-                                  textBoxForCanvas
-                                ) {
+                                if (kind === 'textBox' && pageTextBoxes.length) {
                                   return (
-                                    <div
-                                      key={`${p.id}-textBox`}
-                                      data-canvas-pick="textBox"
-                                      className={
-                                        'book-page__text-box-wrap' +
-                                        (textBoxSelectedPageId === p.id &&
-                                        !(
+                                    <>
+                                      {pageTextBoxes.map((tb, tbIdx) => {
+                                        const textLay = drawable
+                                          ? resolveTextBoxLayout(
+                                              tb,
+                                              drawable.cw,
+                                              drawable.ch,
+                                            )
+                                          : {
+                                              x: tb.x,
+                                              y: tb.y,
+                                              widthPx: tb.widthPx,
+                                              heightPx: tb.heightPx,
+                                            }
+                                        const textBoxForCanvas = {
+                                          ...tb,
+                                          widthPx: textLay.widthPx,
+                                          heightPx: textLay.heightPx,
+                                        }
+                                        const textBoxSingleSelected =
+                                          textBoxSelectedPageId === p.id &&
+                                          textBoxSelectedIndex === tbIdx
+                                        const inActiveGroup =
                                           hasGroupOutlineOnPage &&
-                                          p.textBox?.groupId === activeGroupId
+                                          tb.groupId === activeGroupId
+                                        return (
+                                          <div
+                                            key={`${p.id}-textBox-${tbIdx}`}
+                                            data-canvas-pick={canvasPickKey({
+                                              kind: 'textBox',
+                                              textBoxIndex: tbIdx,
+                                            })}
+                                            className={
+                                              'book-page__text-box-wrap' +
+                                              (textBoxSingleSelected &&
+                                              !inActiveGroup
+                                                ? ' book-page__text-box-wrap--selected'
+                                                : '') +
+                                              (!textBoxSingleSelected &&
+                                              canvasMultiSelection?.pageId ===
+                                                p.id &&
+                                              !inActiveGroup &&
+                                              canvasMultiSelection.kinds.includes(
+                                                'textBox',
+                                              )
+                                                ? ' book-page__text-box-wrap--multi'
+                                                : '')
+                                            }
+                                            style={{
+                                              zIndex: z,
+                                              transform: `translate(${textLay.x}px, ${textLay.y}px)`,
+                                            }}
+                                            onMouseDown={(e) =>
+                                              onMouseDownTextBox(e, i, tbIdx)
+                                            }
+                                            onContextMenu={(e) => {
+                                              setTextBoxSelectedPageId(p.id)
+                                              setTextBoxSelectedIndex(tbIdx)
+                                              openCanvasContextMenu(
+                                                e,
+                                                i,
+                                                'textBox',
+                                              )
+                                            }}
+                                            role="presentation"
+                                          >
+                                            <BookPageTextBoxLayer
+                                              textBox={textBoxForCanvas}
+                                              fonts={availableFonts}
+                                            />
+                                            {textBoxSingleSelected &&
+                                            !inActiveGroup &&
+                                            tb.pagePlacement !==
+                                              'margin_fill' ? (
+                                              <button
+                                                type="button"
+                                                className="book-page__text-box__resize-handle"
+                                                aria-label="Resize text box"
+                                                title="Drag to resize"
+                                                onMouseDown={(e) =>
+                                                  onTextBoxResizeMouseDown(
+                                                    e,
+                                                    i,
+                                                    tbIdx,
+                                                  )
+                                                }
+                                              />
+                                            ) : null}
+                                          </div>
                                         )
-                                          ? ' book-page__text-box-wrap--selected'
-                                          : '') +
-                                        (textBoxSelectedPageId !== p.id &&
-                                        canvasMultiSelection?.pageId ===
-                                          p.id &&
-                                        !(
-                                          hasGroupOutlineOnPage &&
-                                          p.textBox?.groupId === activeGroupId
-                                        ) &&
-                                        canvasMultiSelection.kinds.includes(
-                                          'textBox',
-                                        )
-                                          ? ' book-page__text-box-wrap--multi'
-                                          : '')
-                                      }
-                                      style={{
-                                        zIndex: z,
-                                        transform: `translate(${textLay.x}px, ${textLay.y}px)`,
-                                      }}
-                                      onMouseDown={(e) =>
-                                        onMouseDownTextBox(e, i)
-                                      }
-                                      onContextMenu={(e) =>
-                                        openCanvasContextMenu(
-                                          e,
-                                          i,
-                                          'textBox',
-                                        )
-                                      }
-                                      role="presentation"
-                                    >
-                                      <BookPageTextBoxLayer
-                                        textBox={textBoxForCanvas}
-                                        fonts={availableFonts}
-                                      />
-                                      {textBoxSelectedPageId === p.id &&
-                                      !(
-                                        hasGroupOutlineOnPage &&
-                                        p.textBox?.groupId === activeGroupId
-                                      ) &&
-                                      p.textBox.pagePlacement !==
-                                        'margin_fill' ? (
-                                        <button
-                                          type="button"
-                                          className="book-page__text-box__resize-handle"
-                                          aria-label="Resize text box"
-                                          title="Drag to resize"
-                                          onMouseDown={(e) =>
-                                            onTextBoxResizeMouseDown(e, i)
-                                          }
-                                        />
-                                      ) : null}
-                                    </div>
+                                      })}
+                                    </>
                                   )
                                 }
                                 if (kind === 'thoughtBubble' && p.thoughtBubble) {
@@ -6062,17 +6340,30 @@ Delete/Backspace: remove selected element"
               setPageFrameSettings(nextFrame)
             }}
           />
-          {selectedTextBox && selectedTextEditPage ? (
+          {selectedTextBox &&
+          selectedTextEditPage &&
+          textBoxSelectedIndex != null ? (
             <BookTextBoxPanel
               fonts={availableFonts}
               textBox={selectedTextBox}
               onChange={(next) =>
-                updateTextBoxForPage(selectedTextEditPage.id, next)
+                updateTextBoxForPageAtIndex(
+                  selectedTextEditPage.id,
+                  textBoxSelectedIndex,
+                  next,
+                )
               }
               onRemove={() =>
-                updateTextBoxForPage(selectedTextEditPage.id, null)
+                updateTextBoxForPageAtIndex(
+                  selectedTextEditPage.id,
+                  textBoxSelectedIndex,
+                  null,
+                )
               }
-              onClose={() => setTextBoxSelectedPageId(null)}
+              onClose={() => {
+                setTextBoxSelectedPageId(null)
+                setTextBoxSelectedIndex(null)
+              }}
             />
           ) : null}
           {selectedThoughtBubblePage?.thoughtBubble ? (
@@ -6195,7 +6486,14 @@ Delete/Backspace: remove selected element"
                                   characterSelectedIndex ?? 0
                                 ]?.groupId
                               : entry.row.kind === 'textBox'
-                                ? activeContentPage.textBox?.groupId
+                                ? (textBoxSelectedPageId ===
+                                    activeContentPage.id &&
+                                  textBoxSelectedIndex != null
+                                    ? getPageTextBoxes(activeContentPage)[
+                                        textBoxSelectedIndex
+                                      ]
+                                    : getPageTextBoxes(activeContentPage)[0]
+                                  )?.groupId
                                 : activeContentPage.thoughtBubble?.groupId
                           const groupedSel = collectGroupedSelection(
                             activeContentPage,
@@ -6230,9 +6528,23 @@ Delete/Backspace: remove selected element"
                           }
                           setShapeSelectedPageId(null)
                           setShapeSelectedIndex(null)
-                          setTextBoxSelectedPageId(
-                            entry.row.kind === 'textBox' ? activeContentPage.id : null,
-                          )
+                          if (entry.row.kind === 'textBox') {
+                            setTextBoxSelectedPageId(activeContentPage.id)
+                            setTextBoxSelectedIndex((prev) => {
+                              const boxes = getPageTextBoxes(activeContentPage)
+                              if (
+                                prev != null &&
+                                prev >= 0 &&
+                                prev < boxes.length
+                              ) {
+                                return prev
+                              }
+                              return boxes.length > 0 ? 0 : null
+                            })
+                          } else {
+                            setTextBoxSelectedPageId(null)
+                            setTextBoxSelectedIndex(null)
+                          }
                           setThoughtBubbleSelectedPageId(
                             entry.row.kind === 'thoughtBubble' ? activeContentPage.id : null,
                           )
@@ -6295,7 +6607,14 @@ Delete/Backspace: remove selected element"
                                   characterSelectedIndex ?? 0
                                 ]?.groupId
                               : entry.row.kind === 'textBox'
-                                ? activeContentPage.textBox?.groupId
+                                ? (textBoxSelectedPageId ===
+                                    activeContentPage.id &&
+                                  textBoxSelectedIndex != null
+                                    ? getPageTextBoxes(activeContentPage)[
+                                        textBoxSelectedIndex
+                                      ]
+                                    : getPageTextBoxes(activeContentPage)[0]
+                                  )?.groupId
                                 : activeContentPage.thoughtBubble?.groupId
                           const groupedSel = collectGroupedSelection(
                             activeContentPage,
@@ -6325,9 +6644,23 @@ Delete/Backspace: remove selected element"
                           }
                           setShapeSelectedPageId(null)
                           setShapeSelectedIndex(null)
-                          setTextBoxSelectedPageId(
-                            entry.row.kind === 'textBox' ? activeContentPage.id : null,
-                          )
+                          if (entry.row.kind === 'textBox') {
+                            setTextBoxSelectedPageId(activeContentPage.id)
+                            setTextBoxSelectedIndex((prev) => {
+                              const boxes = getPageTextBoxes(activeContentPage)
+                              if (
+                                prev != null &&
+                                prev >= 0 &&
+                                prev < boxes.length
+                              ) {
+                                return prev
+                              }
+                              return boxes.length > 0 ? 0 : null
+                            })
+                          } else {
+                            setTextBoxSelectedPageId(null)
+                            setTextBoxSelectedIndex(null)
+                          }
                           setThoughtBubbleSelectedPageId(
                             entry.row.kind === 'thoughtBubble' ? activeContentPage.id : null,
                           )
@@ -6596,9 +6929,23 @@ Delete/Backspace: remove selected element"
                                   if (row.section === 'canvas') {
                                     setShapeSelectedPageId(null)
                                     setShapeSelectedIndex(null)
-                                    setTextBoxSelectedPageId(
-                                      row.kind === 'textBox' ? activeContentPage.id : null,
-                                    )
+                                    if (row.kind === 'textBox') {
+                                      setTextBoxSelectedPageId(activeContentPage.id)
+                                      setTextBoxSelectedIndex((prev) => {
+                                        const boxes = getPageTextBoxes(activeContentPage)
+                                        if (
+                                          prev != null &&
+                                          prev >= 0 &&
+                                          prev < boxes.length
+                                        ) {
+                                          return prev
+                                        }
+                                        return boxes.length > 0 ? 0 : null
+                                      })
+                                    } else {
+                                      setTextBoxSelectedPageId(null)
+                                      setTextBoxSelectedIndex(null)
+                                    }
                                     setThoughtBubbleSelectedPageId(
                                       row.kind === 'thoughtBubble'
                                         ? activeContentPage.id
@@ -6610,6 +6957,7 @@ Delete/Backspace: remove selected element"
                                     })
                                   } else {
                                     setTextBoxSelectedPageId(null)
+                                    setTextBoxSelectedIndex(null)
                                     setThoughtBubbleSelectedPageId(null)
                                     setCanvasMultiSelection(null)
                                     setShapeMultiSelection(null)
@@ -6632,9 +6980,23 @@ Delete/Backspace: remove selected element"
                                     setShapeMultiSelection(null)
                                     setShapeSelectedPageId(null)
                                     setShapeSelectedIndex(null)
-                                    setTextBoxSelectedPageId(
-                                      row.kind === 'textBox' ? activeContentPage.id : null,
-                                    )
+                                    if (row.kind === 'textBox') {
+                                      setTextBoxSelectedPageId(activeContentPage.id)
+                                      setTextBoxSelectedIndex((prev) => {
+                                        const boxes = getPageTextBoxes(activeContentPage)
+                                        if (
+                                          prev != null &&
+                                          prev >= 0 &&
+                                          prev < boxes.length
+                                        ) {
+                                          return prev
+                                        }
+                                        return boxes.length > 0 ? 0 : null
+                                      })
+                                    } else {
+                                      setTextBoxSelectedPageId(null)
+                                      setTextBoxSelectedIndex(null)
+                                    }
                                     setThoughtBubbleSelectedPageId(
                                       row.kind === 'thoughtBubble'
                                         ? activeContentPage.id
@@ -6913,8 +7275,10 @@ Delete/Backspace: remove selected element"
                         if (ch.groupId) gIds.add(ch.groupId)
                       }
                     }
-                    if (kind === 'textBox' && page.textBox?.groupId) {
-                      gIds.add(page.textBox.groupId)
+                    if (kind === 'textBox') {
+                      for (const tb of getPageTextBoxes(page)) {
+                        if (tb.groupId) gIds.add(tb.groupId)
+                      }
                     }
                     if (kind === 'thoughtBubble' && page.thoughtBubble?.groupId) {
                       gIds.add(page.thoughtBubble.groupId)
@@ -7005,7 +7369,8 @@ Delete/Backspace: remove selected element"
                   cmPg?.kind === 'content' &&
                   ((anchor === 'character' &&
                     getPageCharacters(cmPg).length > 0) ||
-                    (anchor === 'textBox' && !!cmPg.textBox) ||
+                    (anchor === 'textBox' &&
+                      getPageTextBoxes(cmPg).length > 0) ||
                     (anchor === 'thoughtBubble' && !!cmPg.thoughtBubble))
                 return (
                   <div
@@ -7118,16 +7483,29 @@ Delete/Backspace: remove selected element"
                             if (!cmPg || cmPg.kind !== 'content' || !anchor) return
                             if (anchor === 'textBox') {
                               setTextBoxSelectedPageId(cmPg.id)
+                              setTextBoxSelectedIndex((prev) => {
+                                const boxes = getPageTextBoxes(cmPg)
+                                if (
+                                  prev != null &&
+                                  prev >= 0 &&
+                                  prev < boxes.length
+                                ) {
+                                  return prev
+                                }
+                                return boxes.length > 0 ? 0 : null
+                              })
                               setThoughtBubbleSelectedPageId(null)
                               setShapeSelectedPageId(null)
                               setShapeSelectedIndex(null)
                             } else if (anchor === 'thoughtBubble') {
                               setThoughtBubbleSelectedPageId(cmPg.id)
                               setTextBoxSelectedPageId(null)
+                              setTextBoxSelectedIndex(null)
                               setShapeSelectedPageId(null)
                               setShapeSelectedIndex(null)
                             } else {
                               setTextBoxSelectedPageId(null)
+                              setTextBoxSelectedIndex(null)
                               setThoughtBubbleSelectedPageId(null)
                               setShapeSelectedPageId(null)
                               setShapeSelectedIndex(null)
@@ -7155,11 +7533,16 @@ Delete/Backspace: remove selected element"
                                 kind: anchor,
                                 payload: { ...ch },
                               }
-                            } else if (anchor === 'textBox' && cmPg.textBox) {
+                            } else if (anchor === 'textBox') {
+                              const tb =
+                                getPageTextBoxes(cmPg)[
+                                  textBoxSelectedIndex ?? 0
+                                ]
+                              if (!tb) return
                               canvasClipboardRef.current = {
                                 target: 'kind',
                                 kind: anchor,
-                                payload: { ...cmPg.textBox },
+                                payload: { ...tb },
                               }
                             } else if (
                               anchor === 'thoughtBubble' &&
@@ -7208,20 +7591,29 @@ Delete/Backspace: remove selected element"
                               )
                               setCharacterSelectedPageId(null)
                               setCharacterSelectedIndex(null)
-                            } else if (anchor === 'textBox' && cmPg.textBox) {
+                            } else if (anchor === 'textBox') {
+                              const rmIdx = textBoxSelectedIndex ?? 0
+                              const tb = getPageTextBoxes(cmPg)[rmIdx]
+                              if (!tb) return
                               canvasClipboardRef.current = {
                                 target: 'kind',
                                 kind: anchor,
-                                payload: { ...cmPg.textBox },
+                                payload: { ...tb },
                               }
                               setPages((prev) =>
                                 prev.map((p) =>
                                   p.id === cmPg.id && p.kind === 'content'
-                                    ? { ...p, textBox: null }
+                                    ? {
+                                        ...p,
+                                        textBoxes: getPageTextBoxes(p).filter(
+                                          (_, i) => i !== rmIdx,
+                                        ),
+                                      }
                                     : p,
                                 ),
                               )
                               setTextBoxSelectedPageId(null)
+                              setTextBoxSelectedIndex(null)
                             } else if (
                               anchor === 'thoughtBubble' &&
                               cmPg.thoughtBubble

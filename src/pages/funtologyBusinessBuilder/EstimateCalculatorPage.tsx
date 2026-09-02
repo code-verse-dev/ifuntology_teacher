@@ -39,6 +39,9 @@ import type { IntroFormData } from "./introFormData";
 import { generateEstimatePdf } from "./generateEstimatePdf";
 import ProfitBreakdownCharts from "./ProfitBreakdownCharts";
 import { clearBusinessBuilderDraft } from "./businessBuilderDraftStorage";
+import SalonPreviewCard from "./SalonPreviewCard";
+import { pickSalonPreviewQty } from "./salonPreviewItems";
+import { useGenerateSalonImageMutation } from "@/redux/services/apiSlices/businessBuilderSlice";
 
 function Sparkline({
   color,
@@ -293,6 +296,15 @@ export default function EstimateCalculatorPage({
     ...(initialItemQty ?? {}),
   }));
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewErrorCode, setPreviewErrorCode] = useState<
+    "quota" | "generation_failed" | null
+  >(null);
+  const [previewErrorMessage, setPreviewErrorMessage] = useState<string | null>(
+    null,
+  );
+  const [generateSalonImage, { isLoading: isGeneratingPreview }] =
+    useGenerateSalonImageMutation();
 
   useEffect(() => {
     if (!embedded) {
@@ -338,10 +350,56 @@ export default function EstimateCalculatorPage({
     (c) => sumLineItems(c.items, itemQty) > 0
   ).length;
   const materialsShare = grandTotal > 0 ? (materialsTotal / grandTotal) * 100 : 0;
+  const previewQty = useMemo(() => pickSalonPreviewQty(itemQty), [itemQty]);
+  const hasPreviewItems = Object.keys(previewQty).length > 0;
 
   const resetEstimateForm = () => {
     setItemQty(emptyQtyMap(ALL_ESTIMATE_ITEMS));
     setLastUpdated(new Date());
+    setPreviewSrc(null);
+    setPreviewErrorCode(null);
+    setPreviewErrorMessage(null);
+  };
+
+  const handleGenerateSalonPreview = async () => {
+    if (isGeneratingPreview) return;
+    if (!hasPreviewItems) {
+      setPreviewErrorCode("generation_failed");
+      setPreviewErrorMessage(
+        "Add at least one salon furniture or equipment quantity before generating a preview.",
+      );
+      return;
+    }
+
+    setPreviewErrorCode(null);
+    setPreviewErrorMessage(null);
+
+    try {
+      const res: any = await generateSalonImage({ itemQty: previewQty }).unwrap();
+      if (!res?.status) {
+        const code =
+          res?.data?.errorCode === "quota" ? "quota" : "generation_failed";
+        setPreviewErrorCode(code);
+        setPreviewErrorMessage(res?.message ?? null);
+        return;
+      }
+      const imageBase64 = res?.data?.imageBase64 as string | undefined;
+      const mimeType = (res?.data?.mimeType as string | undefined) || "image/png";
+      if (!imageBase64) {
+        setPreviewErrorCode("generation_failed");
+        setPreviewErrorMessage(null);
+        return;
+      }
+      setPreviewSrc(`data:${mimeType};base64,${imageBase64}`);
+    } catch (err: any) {
+      const payload = err?.data;
+      const code =
+        payload?.data?.errorCode === "quota" ? "quota" : "generation_failed";
+      setPreviewErrorCode(code);
+      setPreviewErrorMessage(
+        typeof payload?.message === "string" ? payload.message : null,
+      );
+    }
   };
 
   const handleSaveEstimate = () => {
@@ -605,6 +663,21 @@ export default function EstimateCalculatorPage({
               ) : null}
             </div>
           </div>
+
+          {/* <div className="mt-5 border-t border-white/10 pt-5">
+            <SalonPreviewCard
+              generating={isGeneratingPreview}
+              imageSrc={previewSrc}
+              errorCode={previewErrorCode}
+              errorMessage={previewErrorMessage}
+              disabledReason={
+                hasPreviewItems
+                  ? null
+                  : "Add a quantity for furniture or equipment (chairs, desks, washer, etc.) to generate a preview."
+              }
+              onGenerate={handleGenerateSalonPreview}
+            />
+          </div> */}
         </Card>
       </>
   );

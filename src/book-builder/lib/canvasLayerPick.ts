@@ -1,23 +1,27 @@
 export type CanvasPickTarget =
   | { kind: 'shape'; shapeIndex: number }
   | { kind: 'character'; characterIndex: number }
-  | { kind: 'textBox' }
+  | { kind: 'textBox'; textBoxIndex: number }
   | { kind: 'thoughtBubble' }
 
 export function canvasPickKey(target: CanvasPickTarget): string {
   if (target.kind === 'shape') return `shape:${target.shapeIndex}`
   if (target.kind === 'character') return `character:${target.characterIndex}`
+  if (target.kind === 'textBox') return `textBox:${target.textBoxIndex}`
   return target.kind
 }
 
 export function parseCanvasPickAttr(raw: string | null): CanvasPickTarget | null {
   if (!raw?.trim()) return null
-  if (raw === 'textBox') return { kind: 'textBox' }
   if (raw === 'thoughtBubble') return { kind: 'thoughtBubble' }
+  // Legacy single-box pick attr from older sessions / markup
+  if (raw === 'textBox') return { kind: 'textBox', textBoxIndex: 0 }
   const shape = /^shape:(\d+)$/.exec(raw)
   if (shape) return { kind: 'shape', shapeIndex: Number(shape[1]) }
   const ch = /^character:(\d+)$/.exec(raw)
   if (ch) return { kind: 'character', characterIndex: Number(ch[1]) }
+  const tb = /^textBox:(\d+)$/.exec(raw)
+  if (tb) return { kind: 'textBox', textBoxIndex: Number(tb[1]) }
   return null
 }
 

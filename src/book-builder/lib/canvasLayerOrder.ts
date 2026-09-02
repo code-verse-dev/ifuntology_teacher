@@ -1,5 +1,6 @@
 import {
   getPageCharacters,
+  getPageTextBoxes,
   type BookPageData,
   type CanvasSelectableKind,
 } from '../types/bookPage'
@@ -16,7 +17,7 @@ function layerPresent(
 ): boolean {
   if (page.kind !== 'content') return false
   if (kind === 'character') return getPageCharacters(page).length > 0
-  if (kind === 'textBox') return !!page.textBox
+  if (kind === 'textBox') return getPageTextBoxes(page).length > 0
   return !!page.thoughtBubble
 }
 
@@ -155,7 +156,7 @@ export function resolveCanvasStackKeyTarget(
   if (thoughtBubbleSelectedPageId === pid && p.thoughtBubble) {
     return { pageId: pid, kind: 'thoughtBubble' }
   }
-  if (textBoxSelectedPageId === pid && p.textBox) {
+  if (textBoxSelectedPageId === pid && getPageTextBoxes(p).length > 0) {
     return { pageId: pid, kind: 'textBox' }
   }
   if (getPageCharacters(p).length > 0) {
