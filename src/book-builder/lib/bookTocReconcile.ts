@@ -53,7 +53,7 @@ function makeContinuationPage(
     characters: [],
     thoughtBubble: null,
     shapes: [],
-    textBox: null,
+    textBoxes: [],
     kind: 'toc',
     tocStyle: root.tocStyle,
     tocData: null,
@@ -93,7 +93,7 @@ export function reconcileTocContinuationPages(
             kind: 'toc',
             fill: existing.fill ?? root.fill,
             thoughtBubble: existing.thoughtBubble ?? null,
-            textBox: existing.textBox ?? null,
+            textBoxes: existing.textBoxes ?? [],
           })
         } else {
           out.push(makeContinuationPage(root, newPageId, k))

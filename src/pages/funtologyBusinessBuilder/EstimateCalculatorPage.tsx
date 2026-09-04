@@ -417,20 +417,29 @@ export default function EstimateCalculatorPage({
     grandTotal,
   });
 
-  const handleGeneratePdf = async () => {
+  const handleGeneratePdf = async (includePreview = false) => {
     if (grandTotal <= 0) {
       toast.error("Add at least one cost before exporting a report.");
+      return;
+    }
+    if (includePreview && !previewSrc) {
+      toast.error("Generate a salon preview before exporting with preview.");
       return;
     }
     try {
       await generateEstimatePdf({
         ...buildEstimatePayload(),
         intro,
+        salonPreviewImage: includePreview ? previewSrc : null,
       });
       clearBusinessBuilderDraft();
       resetEstimateForm();
       onAfterPdfExport?.();
-      toast.success("Report exported.");
+      toast.success(
+        includePreview
+          ? "Report with salon preview exported."
+          : "Report exported.",
+      );
     } catch {
       toast.error("Failed to export report. Please try again.");
     }
@@ -645,11 +654,22 @@ export default function EstimateCalculatorPage({
                 type="button"
                 variant="outline"
                 className="gap-2 rounded-xl border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
-                onClick={handleGeneratePdf}
+                onClick={() => void handleGeneratePdf(false)}
               >
                 <FileDown className="h-4 w-4" />
                 Export Report
               </Button>
+              {previewSrc ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2 rounded-xl border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                  onClick={() => void handleGeneratePdf(true)}
+                >
+                  <FileDown className="h-4 w-4" />
+                  Export Report with Preview
+                </Button>
+              ) : null}
               {embedded && onGenerateWithLoan ? (
                 <Button
                   type="button"
