@@ -36,7 +36,67 @@ export type PdfEstimateInput = {
   grandTotal: number;
   intro?: IntroFormData | null;
   loan?: LoanApplicationData | null;
+  /** Data URL of a generated salon preview image to embed in the PDF. */
+  salonPreviewImage?: string | null;
 };
+
+function previewImageFormat(dataUrl: string): "PNG" | "JPEG" {
+  if (
+    dataUrl.startsWith("data:image/jpeg") ||
+    dataUrl.startsWith("data:image/jpg")
+  ) {
+    return "JPEG";
+  }
+  return "PNG";
+}
+
+function loadPreviewImageSize(
+  dataUrl: string,
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () =>
+      resolve({ width: img.naturalWidth || 1, height: img.naturalHeight || 1 });
+    img.onerror = () => reject(new Error("Failed to load salon preview image"));
+    img.src = dataUrl;
+  });
+}
+
+async function drawSalonPreviewSection(
+  pdf: jsPDF,
+  dataUrl: string,
+  yStart: number,
+) {
+  let y = drawSectionHeader(pdf, "Salon Preview", yStart, {
+    accent: PDF.colors.purple,
+    icon: "chair",
+  });
+  y += 2;
+
+  const { width: natW, height: natH } = await loadPreviewImageSize(dataUrl);
+  const maxW = PDF.contentWidth;
+  const maxH = 120;
+  const scale = Math.min(maxW / natW, maxH / natH);
+  const drawW = Math.max(40, natW * scale);
+  const drawH = Math.max(30, natH * scale);
+
+  y = ensureSpace(pdf, y, drawH + 8);
+  const x = PDF.marginX + (PDF.contentWidth - drawW) / 2;
+  pdf.setDrawColor(...PDF.colors.line);
+  pdf.setFillColor(...PDF.colors.white);
+  pdf.roundedRect(x - 1.5, y - 1.5, drawW + 3, drawH + 3, 2, 2, "FD");
+  pdf.addImage(
+    dataUrl,
+    previewImageFormat(dataUrl),
+    x,
+    y,
+    drawW,
+    drawH,
+    undefined,
+    "FAST",
+  );
+  return y + drawH + 6;
+}
 
 type Rgb = [number, number, number];
 
@@ -298,15 +358,26 @@ export async function generateEstimatePdf(input: PdfEstimateInput) {
     }
   );
 
+  const previewImage = input.salonPreviewImage?.trim();
+  if (previewImage) {
+    y += 4;
+    y = await drawSalonPreviewSection(pdf, previewImage, y);
+  }
+
   if (input.loan) {
     y += 4;
     drawLoanApplicationSection(pdf, input.loan, y);
   }
 
   addPageFooters(pdf);
+  const withPreview = Boolean(previewImage);
   pdf.save(
     input.loan
-      ? "funtology-estimate-with-loan.pdf"
-      : "funtology-business-estimate.pdf"
+      ? withPreview
+        ? "funtology-estimate-with-loan-preview.pdf"
+        : "funtology-estimate-with-loan.pdf"
+      : withPreview
+        ? "funtology-business-estimate-with-preview.pdf"
+        : "funtology-business-estimate.pdf"
   );
 }
