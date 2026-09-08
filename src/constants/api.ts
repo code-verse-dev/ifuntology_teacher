@@ -44,3 +44,5 @@ export const CAREER_SUCCESS_PLANNER_PDF =
     "https://ifuntology.com/pdfs/iFuntology_Career_Success_Planner.pdf";
 export const FUNTOLOGY_BRAIDING_PDF =
     "https://ifuntology.com/pdfs/Funtology-Braiding.pdf";
+export const STORY_BUILDER_JOURNEY_PDF =
+    "https://ifuntology.com/pdfs/StoryBuilderJourney.pdf";

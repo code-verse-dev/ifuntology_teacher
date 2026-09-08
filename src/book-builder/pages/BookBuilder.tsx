@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { STORY_BUILDER_JOURNEY_PDF } from '@/constants/api'
 import { BookTocEditorPanel } from '../components/BookTocEditorPanel'
 import { CharacterComposite } from '../components/CharacterComposite'
 import { PageBackgroundModal } from '../components/PageBackgroundModal'
@@ -5579,13 +5580,22 @@ export function BookBuilder() {
                 <option value="bottom-center">Pg No. — Bottom center</option>
                 <option value="bottom-outside">Pg No. — Below page</option>
               </select>
+              <a
+                href={STORY_BUILDER_JOURNEY_PDF}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="book-toolbar-assignment-btn"
+                title="Story Builder Journey"
+              >
+                Story Builder Journey
+              </a>
               {builderHost?.wurtleAssignmentsHref ? (
                 <Link
                   to={builderHost.wurtleAssignmentsHref}
                   className="book-toolbar-assignment-btn"
                   title="Daily Wurtle Assignments"
                 >
-                  Daily Wurtle Assignments
+                  Meet Wurtle's World
                 </Link>
               ) : null}
               {builderHost?.wtrAssignmentsHref ? (
@@ -5594,7 +5604,7 @@ export function BookBuilder() {
                   className="book-toolbar-assignment-btn"
                   title="Daily WTR Assignments"
                 >
-                  Daily WTR Assignments
+                  Daily Writing Topics
                 </Link>
               ) : null}
             </div>
