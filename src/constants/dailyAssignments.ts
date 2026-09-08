@@ -15,7 +15,7 @@ export function getDailyAssignmentImageUrl(
 ): string {
   const safeIndex = Math.max(1, Math.floor(index));
   if (variant === "wurtle") {
-    return `${DAILY_WURTLE_ASSIGNMENTS_BASE}/${safeIndex}.jpeg`;
+    return `${DAILY_WURTLE_ASSIGNMENTS_BASE}/${safeIndex}.png`;
   }
   return `${DAILY_WTR_ASSIGNMENTS_BASE}/${safeIndex}.png`;
 }
