@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { STORY_BUILDER_JOURNEY_PDF } from '@/constants/api'
+import { STORY_BUILDER_JOURNEY_PATH } from '@/constants/api'
 import { BookTocEditorPanel } from '../components/BookTocEditorPanel'
 import { CharacterComposite } from '../components/CharacterComposite'
 import { PageBackgroundModal } from '../components/PageBackgroundModal'
@@ -5580,15 +5580,13 @@ export function BookBuilder() {
                 <option value="bottom-center">Pg No. — Bottom center</option>
                 <option value="bottom-outside">Pg No. — Below page</option>
               </select>
-              <a
-                href={STORY_BUILDER_JOURNEY_PDF}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to={STORY_BUILDER_JOURNEY_PATH}
                 className="book-toolbar-assignment-btn"
                 title="Story Builder Journey"
               >
                 Story Builder Journey
-              </a>
+              </Link>
               {builderHost?.wurtleAssignmentsHref ? (
                 <Link
                   to={builderHost.wurtleAssignmentsHref}

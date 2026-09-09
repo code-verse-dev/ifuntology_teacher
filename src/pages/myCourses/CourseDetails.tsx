@@ -23,7 +23,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, CAREER_SUCCESS_PLANNER_PDF, FUNTOLOGY_BRAIDING_PDF } from "@/constants/api";
+import { UPLOADS_URL, WORKFORCE_EXPLORATION_FORM_PDF, IFUNTOLOGY_GLOSSARY_PDF, CAREER_SUCCESS_PLANNER_PDF, FUNTOLOGY_BRAIDING_PDF, isSkintologyCourseType } from "@/constants/api";
 import { useFindByCourseTypeQuery, useGetCourseModuleByCourseTypeQuery } from "@/redux/services/apiSlices/courseModuleSlice";
 import { useGetAverageProgressQuery } from "@/redux/services/apiSlices/invitationSlice";
 import { isImportedAssessmentModule } from "@/constants/quiz";
@@ -81,6 +81,8 @@ export default function CourseDetails() {
 
     const encodedCourseType = encodeURIComponent(courseType ?? "");
     const courseTitle = course?.courseType ?? courseType ?? "Course";
+    const isSkintology =
+        isSkintologyCourseType(courseType) || isSkintologyCourseType(course?.courseType);
     const courseImage = course?.image
         ? UPLOADS_URL + course.image
         : "https://images.unsplash.com/photo-1522337660859-02fbefca4702?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
@@ -150,6 +152,16 @@ export default function CourseDetails() {
                     {/* Lessons */}
                     <div className="lg:col-span-8">
                         <div className="mb-4 flex flex-wrap gap-3">
+                            {isSkintology ? (
+                                <Button
+                                    variant="brand"
+                                    className="gap-2 rounded-full font-semibold"
+                                    onClick={() => navigate("/my-courses/face-painting-curriculum")}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Face Painting Curriculum
+                                </Button>
+                            ) : null}
                             <Button
                                 variant="brand"
                                 className="gap-2 rounded-full font-semibold"

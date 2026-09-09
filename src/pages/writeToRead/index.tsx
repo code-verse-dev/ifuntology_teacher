@@ -60,25 +60,36 @@ export default function WriteToRead() {
     return (
         <DashboardWithSidebarLayout>
             <div className="mx-auto w-full max-w-7xl space-y-6 pb-12">
-                <div className="space-y-3 text-left">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        Write to Read Platform
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            Status
-                        </span>
-                        <Badge
-                            className={cn(
-                                "border-none rounded-full px-3 py-0.5 text-[10px] font-bold uppercase text-white",
-                                wtrSub?.status === "ACTIVE"
-                                    ? "bg-green-500 hover:bg-green-500"
-                                    : "bg-slate-500 hover:bg-slate-500"
-                            )}
-                        >
-                            {(wtrSub?.status ?? "Active").toString()}
-                        </Badge>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-3 text-left">
+                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                            Write to Read Platform
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                Status
+                            </span>
+                            <Badge
+                                className={cn(
+                                    "border-none rounded-full px-3 py-0.5 text-[10px] font-bold uppercase text-white",
+                                    wtrSub?.status === "ACTIVE"
+                                        ? "bg-green-500 hover:bg-green-500"
+                                        : "bg-slate-500 hover:bg-slate-500"
+                                )}
+                            >
+                                {(wtrSub?.status ?? "Active").toString()}
+                            </Badge>
+                        </div>
                     </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="shrink-0 rounded-full border-orange-200 font-bold text-orange-600 hover:bg-orange-50 dark:border-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-950/30 gap-2"
+                        onClick={() => navigate("/write-to-read/face-painting-curriculum")}
+                    >
+                        <FileText className="h-4 w-4" />
+                        Skintology Face Painting Curriculum
+                    </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
