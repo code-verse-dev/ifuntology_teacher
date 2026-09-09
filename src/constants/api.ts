@@ -45,4 +45,13 @@ export const CAREER_SUCCESS_PLANNER_PDF =
 export const FUNTOLOGY_BRAIDING_PDF =
     "https://ifuntology.com/pdfs/Funtology-Braiding.pdf";
 export const STORY_BUILDER_JOURNEY_PDF =
-    "https://ifuntology.com/pdfs/StoryBuilderJourney.pdf";
+    "https://ifuntology.com/pdfs/StoryBuilderJourney.docx";
+export const STORY_BUILDER_JOURNEY_PATH = "/write-to-read/story-builder-journey";
+export const FACE_PAINTING_CURRICULUM_FILENAME =
+    "SkintologyFacePaintingCurriculumWorkbook.pdf";
+export const FACE_PAINTING_CURRICULUM_PDF =
+    `${UPLOADS_URL}${FACE_PAINTING_CURRICULUM_FILENAME}`;
+
+export function isSkintologyCourseType(courseType?: string | null) {
+    return (courseType ?? "").trim().toLowerCase() === "skintology";
+}

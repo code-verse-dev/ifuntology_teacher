@@ -48,6 +48,7 @@ import CourseExams from "./pages/myCourses/CourseExams";
 import AssessmentPreview from "./pages/myCourses/AssessmentPreview";
 import PdfFullPage from "./pages/myCourses/PdfFullPage";
 import PdfFullscreenPage from "./pages/myCourses/PdfFullscreenPage";
+import FacePaintingCurriculumPage from "./pages/myCourses/FacePaintingCurriculumPage";
 import TeacherCareerExplorerPathway from "./pages/myCourses/TeacherCareerExplorerPathway";
 import MyStudents from "./pages/myStudents";
 import StudentProfile from "./pages/myStudents/StudentProfile";
@@ -69,6 +70,7 @@ import WriteToReadRouterLayout from "./pages/writeToRead/WriteToReadRouterLayout
 import WriteToRead from "./pages/writeToRead";
 import BookBuilderPage from "./pages/writeToRead/BookBuilderPage";
 import WtrAssignmentPreviewPage from "./pages/writeToRead/WtrAssignmentPreviewPage";
+import StoryBuilderJourneyPage from "./pages/writeToRead/StoryBuilderJourneyPage";
 import WriteToReadSubscribePage from "./pages/writeToReadSubscribe";
 import PublicBookReaderPage from "./pages/writeToRead/PublicBookReaderPage";
 import AllSessions from "./pages/allSessions";
@@ -305,6 +307,11 @@ const App = () => {
                   <PdfFullPage />
                 </ProtectedRoute>
               } />
+              <Route path="/my-courses/face-painting-curriculum" element={
+                <ProtectedRoute>
+                  <FacePaintingCurriculumPage />
+                </ProtectedRoute>
+              } />
               <Route path="/my-courses/:courseType/quizzes" element={
                 <ProtectedRoute>
                   <CourseQuizzes />
@@ -444,6 +451,8 @@ const App = () => {
                 <Route element={<WriteToReadRouterLayout />}>
                   <Route path="builder/:bookId/*" element={<BookBuilderPage />} />
                   <Route path="assignment-preview/:assignmentId" element={<WtrAssignmentPreviewPage />} />
+                  <Route path="story-builder-journey" element={<StoryBuilderJourneyPage />} />
+                  <Route path="face-painting-curriculum" element={<FacePaintingCurriculumPage />} />
                   <Route index element={<WriteToRead />} />
                 </Route>
               </Route>
