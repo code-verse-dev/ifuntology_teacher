@@ -224,15 +224,61 @@ export function currentMonthRange(now = new Date()): { from: string; to: string 
   return { from, to };
 }
 
-export function formatEntryDateLabel(value?: string | null) {
-  if (!value) return "—";
-  const dt = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(dt.getTime())) return value;
+export function getViewerTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+/** Calendar YYYY-MM-DD in the accessing user's timezone. */
+export function normalizeEntryDateYmd(value?: string | Date | null): string {
+  if (value == null || value === "") return "";
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+
+  const dt = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(dt.getTime())) {
+    if (typeof value === "string") {
+      const prefix = value.trim().slice(0, 10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(prefix) ? prefix : "";
+    }
+    return "";
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: getViewerTimeZone(),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(dt);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  const d = parts.find((p) => p.type === "day")?.value;
+  return y && m && d ? `${y}-${m}-${d}` : "";
+}
+
+export function formatEntryDateLabel(value?: string | Date | null) {
+  if (value == null || value === "") return "—";
+  const ymd = normalizeEntryDateYmd(value);
+  if (!ymd) return typeof value === "string" ? value : "—";
+
+  const [year, month, day] = ymd.split("-").map(Number);
+  const dt = new Date(year, month - 1, day, 12, 0, 0);
+  if (Number.isNaN(dt.getTime())) return ymd;
+
   return dt.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: getViewerTimeZone(),
   });
 }
 

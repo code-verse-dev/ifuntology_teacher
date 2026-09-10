@@ -37,8 +37,10 @@ import {
   getPracticalColumnIcon,
   getPracticalColumns,
   getPracticalRowStatus,
+  normalizeEntryDateYmd,
   PRACTICAL_SHEET_INTRO,
   PRACTICAL_SHEET_LOG_TITLE,
+  todayDateString,
   type PracticalColumn,
   type PracticalRowStatus,
 } from "@/constants/practicalSheet";
@@ -319,6 +321,7 @@ export default function StudentPracticalSheetView() {
   };
 
   const monthProgress = sheet?.monthProgress;
+  const viewerToday = todayDateString();
 
   const stats = useMemo(() => {
     if (!sheet || !columns) {
@@ -702,7 +705,8 @@ export default function StudentPracticalSheetView() {
                         const entryDate = row.entryDate ?? "";
                         const meta = STATUS_META[status];
                         const isApproved = Boolean(row.approved);
-                        const isToday = sheet.today && entryDate === sheet.today;
+                        const isToday =
+                          normalizeEntryDateYmd(entryDate) === viewerToday;
                         const displayTotal = computeRowCreditTotal(row.cells, columns);
                         const rowBusy =
                           isUpdatingEntry && savingEntryDate === entryDate;
