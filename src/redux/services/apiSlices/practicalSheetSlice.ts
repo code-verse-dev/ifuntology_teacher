@@ -1,5 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import baseQueryWithReauth from "../../reauth/baseQueryWithReauth";
+import { getViewerTimeZone } from "@/constants/practicalSheet";
 
 export type PracticalSheetRow = {
   entryDate?: string | null;
@@ -55,6 +56,7 @@ export const practicalSheetSlice = createApi({
         url: `/practical-sheet/student/${studentId}/${encodeURIComponent(courseType)}`,
         method: "GET",
         params: {
+          timezone: getViewerTimeZone(),
           ...(from ? { from } : {}),
           ...(to ? { to } : {}),
         },
@@ -82,6 +84,7 @@ export const practicalSheetSlice = createApi({
         params: {
           page,
           limit,
+          timezone: getViewerTimeZone(),
           ...(courseType ? { courseType } : {}),
           ...(from ? { from } : {}),
           ...(to ? { to } : {}),
@@ -122,7 +125,10 @@ export const practicalSheetSlice = createApi({
       query: (body) => ({
         url: "/practical-sheet/teacher/entries/bulk-approve-today",
         method: "POST",
-        body: body ?? {},
+        body: {
+          ...(body ?? {}),
+          timezone: getViewerTimeZone(),
+        },
       }),
       invalidatesTags: ["TeacherPracticalEntries", "StudentPracticalSheet"],
     }),

@@ -34,6 +34,7 @@ import {
 import {
   currentMonthRange,
   formatEntryDateLabel,
+  normalizeEntryDateYmd,
   todayDateString,
 } from "@/constants/practicalSheet";
 import {
@@ -82,9 +83,12 @@ export default function PracticalSheetsPage() {
   const docs: TeacherPracticalEntry[] = payload?.docs ?? [];
   const totalDocs = payload?.totalDocs ?? 0;
   const totalPages = Math.max(1, payload?.totalPages ?? 1);
-  const today = payload?.today ?? todayDateString();
+  const today = todayDateString();
   const pendingTodayCount = useMemo(
-    () => docs.filter((d) => d.entryDate === today && !d.approved).length,
+    () =>
+      docs.filter(
+        (d) => normalizeEntryDateYmd(d.entryDate) === today && !d.approved,
+      ).length,
     [docs, today],
   );
 
@@ -275,7 +279,8 @@ export default function PracticalSheetsPage() {
                   </thead>
                   <tbody>
                     {docs.map((entry) => {
-                      const isToday = entry.entryDate === today;
+                      const isToday =
+                        normalizeEntryDateYmd(entry.entryDate) === today;
                       return (
                         <tr
                           key={`${entry.studentId}-${entry.courseType}-${entry.entryDate}`}

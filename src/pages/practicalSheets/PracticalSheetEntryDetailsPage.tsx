@@ -17,6 +17,7 @@ import {
   formatEntryDateLabel,
   getPracticalColumnIcon,
   getPracticalColumns,
+  normalizeEntryDateYmd,
   todayDateString,
 } from "@/constants/practicalSheet";
 import {
@@ -56,12 +57,16 @@ export default function PracticalSheetEntryDetailsPage() {
   const sheet = data?.data;
   const entry = useMemo(() => {
     const rows = sheet?.rows ?? [];
-    return rows.find((r: any) => r.entryDate === entryDate) ?? null;
+    return (
+      rows.find(
+        (r: any) => normalizeEntryDateYmd(r.entryDate) === normalizeEntryDateYmd(entryDate),
+      ) ?? null
+    );
   }, [sheet, entryDate]);
 
   const [cells, setCells] = useState<Record<string, string>>({});
   const today = todayDateString();
-  const isToday = entryDate === today;
+  const isToday = normalizeEntryDateYmd(entryDate) === today;
   const canEdit = Boolean(entry) && isToday && !entry?.approved;
 
   useEffect(() => {

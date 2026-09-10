@@ -182,9 +182,9 @@ export default function WriteToRead() {
                             <TabsList className="scrollbar-hide h-auto w-full justify-start gap-8 overflow-x-auto rounded-none bg-transparent p-0">
                                 {[
                                     { id: "students", label: "Students & Batches", icon: Users },
-                                    { id: "grade", label: "Book Assessment Center", icon: BookOpen },
-                                    { id: "print", label: "Print Orders", icon: Printer },
+                                    { id: "grade", label: "Story Builder", icon: BookOpen },
                                     { id: "assignments", label: "Assignments", icon: FileText },
+                                    { id: "print", label: "Print Orders", icon: Printer },
                                 ].map((t) => (
                                     <TabsTrigger
                                         key={t.id}
